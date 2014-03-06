@@ -8,6 +8,11 @@ class Files {
         this.body()
     }
 
+    fun append(files : Files) {
+        included.addAll(files.included)
+        excluded.addAll(files.excluded)
+    }
+
     fun include(path : String) {
         included.add(Path(path))
     }

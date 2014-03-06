@@ -18,8 +18,7 @@ abstract class ProjectConfiguration {
     }
 
     val depends = Dependencies()
-    val input = Files()
-    val output = Files()
+    val build = Build()
 
     val building = Event("building")
     val built = Event("built", EventStyle.reversed)
@@ -27,9 +26,6 @@ abstract class ProjectConfiguration {
     open fun dump(block: Block, indent : String = "") {
         println("$indent Version: $version")
         depends.dump(block, indent)
-        println("$indent Input:")
-        input.dump(block, indent + "  ")
-        println("$indent Output:")
-        output.dump(block, indent + "  ")
+        build.dump(block, indent)
     }
 }

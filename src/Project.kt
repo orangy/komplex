@@ -9,7 +9,7 @@ open class Project(val projectName: String, val parent: Project?) : ProjectConfi
     val projects = arrayListOf<Project>()
     val shared = arrayListOf<SharedConfiguration>()
 
-    fun share(pattern: String = "*", body: SharedConfiguration.() -> Unit): SharedConfiguration {
+    fun shared(pattern: String = "*", body: SharedConfiguration.() -> Unit): SharedConfiguration {
         val setting = SharedConfiguration(pattern, this)
         setting.body()
         shared.add(setting)
