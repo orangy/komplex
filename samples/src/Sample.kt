@@ -1,4 +1,6 @@
-package komplex
+package komplex.sample
+
+import komplex.*
 
 fun main(args: Array<String>) = block {
 
