@@ -20,20 +20,22 @@ fun main(args: Array<String>) = block {
 
         building { println("Building $title...") }
         built { println("Done building $title.") }
+        dumping { println("Dumping project '$projectName' with title '$title'...") }
     }
 
     project("spek") {
-        shared("*-test") {
+        shared("*-tests") {
             // shared settings for projects matching pattern
-            description("Applied to projects in $projectName with name ending with '-test'")
+            description("Test project")
         }
 
         // variable denoting project
         val core = project("spek-core") {
             description("Spek Core")
-            build using tools.kotlin from files("spek-core/src/**") to folder("out/spek-core")
+            val binaries = folder("out/spek-core")
+            build using tools.kotlin from files("spek-core/src/**") to binaries
             build(test) using tools.kotlin from files("spek-core/test/**") to folder("out/spek-core")
-            build(jar) using tools.jar from folder("out/spek-core") to file("artifacts/spek-core.jar")
+            build(jar) using tools.jar from binaries to file("artifacts/spek-core.jar")
         }
 
         project("spek-tests") {
