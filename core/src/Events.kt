@@ -6,19 +6,19 @@ enum class EventStyle {
 }
 
 open class Event(val name: String, val style: EventStyle = EventStyle.default) {
-    val handlers: MutableList<(Block.(Event) -> Unit)> = arrayListOf()
-    fun invoke(handler: Block.(Event) -> Unit) {
+    val handlers: MutableList<(Project.(Event) -> Unit)> = arrayListOf()
+    fun invoke(handler: Project.(Event) -> Unit) {
         handlers.add(handler)
     }
 
-    fun fire(block: Block) {
+    fun fire(project: Project) {
         val process =
                 when(style) {
                     EventStyle.default -> handlers
                     EventStyle.reversed -> handlers.reverse()
                 }
         for (handler in process) {
-            block.handler(this)
+            project.handler(this)
         }
     }
 }
