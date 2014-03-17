@@ -21,7 +21,7 @@ class Dependencies(val config: Configuration? = null,
     fun on(library: LibraryReference) = on(LibraryReferences(library))
     fun on(project: Project) = on(ProjectReferences(project.projectName))
 
-    fun dump(block : Block, indent: String = "") {
+    fun dump(indent: String = "") {
         if (projects.size == 0 && libraries.size == 0)
             return
 

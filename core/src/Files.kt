@@ -31,7 +31,7 @@ class Files {
         collection.body()
     }
 
-    fun dump(block: Block, indent: String = "") {
+    fun dump(indent: String = "") {
         if (included.isNotEmpty()) {
             for (child in included) {
                 println("$indent ${child.value}")

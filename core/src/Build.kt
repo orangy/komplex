@@ -16,12 +16,12 @@ class BuildProcess(val tool: Tool) {
         return this
     }
 
-    fun dump(block: Block, indent: String = "") {
+    fun dump(indent: String = "") {
         println("$indent ${tool.title}")
         println("$indent   From: ")
-        from.dump(block, indent + "    ")
+        from.dump(indent + "    ")
         println("$indent   To: ")
-        to.dump(block, indent + "    ")
+        to.dump(indent + "    ")
     }
 
 }
@@ -44,10 +44,10 @@ class Build() {
         return process
     }
 
-    fun dump(block: Block, indent: String = "") {
+    fun dump(indent: String = "") {
         println("$indent Build:")
         for (process in processes) {
-            process.dump(block, indent + "  ")
+            process.dump(indent + "  ")
         }
 
     }
