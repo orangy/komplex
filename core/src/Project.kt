@@ -1,19 +1,48 @@
 package komplex
 
-import java.util.ArrayList
-
-open class Project(val projectName: String, val parent: Project?) : ProjectConfiguration() {
-    override val title: String
+open class Project(val projectName: String, val parent: Project?) {
+    val title: String
         get() = if (description.isEmpty()) projectName else "$projectName ($description)"
 
     val projects = arrayListOf<Project>()
-    val shared = arrayListOf<SharedConfiguration>()
+    val sharedSettings = arrayListOf<SharedSettings>()
 
-    fun shared(pattern: String = "*", body: SharedConfiguration.() -> Unit): SharedConfiguration {
-        val setting = SharedConfiguration(pattern, this)
-        setting.body()
-        shared.add(setting)
-        return setting
+    private var _version: String = ""
+    public val version: String
+        get() = _version
+    fun version(value: String) {
+        _version = value
+    }
+
+    private var _description: String = ""
+    public val description: String
+        get() = _description
+    fun description(value: String) {
+        _description = value
+    }
+
+    val depends = Dependencies()
+    val build = Build()
+
+    val building = Event("building")
+    val built = Event("built", EventStyle.reversed)
+    val dumping = Event("dumping")
+
+    fun shared(pattern: String = "*", body: Project.() -> Unit) {
+        val setting = SharedSettings(pattern, this, body)
+        sharedSettings.add(setting)
+    }
+
+    fun applySharedSettings(configurations: List<SharedSettings>) {
+        for (config in configurations) {
+            if (config.matches(this)) {
+                val initializer = config.body
+                initializer()
+            }
+        }
+        val nestedConfigurations = configurations + sharedSettings
+        for (project in projects)
+            project.applySharedSettings(nestedConfigurations)
     }
 
     fun project(name: String): ProjectReference = ProjectReference(name)
@@ -25,15 +54,15 @@ open class Project(val projectName: String, val parent: Project?) : ProjectConfi
         return project
     }
 
-    override fun dump(block: Block, indent : String) {
-        super.dump(block, indent)
+    fun dump(indent: String) {
+        dumping.fire(this)
+        println("$indent Version: $version")
+        depends.dump(indent)
+        build.dump(indent)
+
         for (child in projects) {
             println("$indent Project: ${child.title}")
-            child.dump(block, indent + "  ")
-        }
-        for (child in shared) {
-            println("$indent Shared: ${child.title}")
-            child.dump(block, indent + "  ")
+            child.dump(indent + "  ")
         }
     }
 }
