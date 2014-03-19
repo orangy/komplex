@@ -1,6 +1,6 @@
 package komplex
 
-import java.util.HashMap
+import java.util.*
 
 public fun block(body: Block.() -> Unit): Block {
     val block = Block()
@@ -11,7 +11,9 @@ public fun block(body: Block.() -> Unit): Block {
 
 public class Block() : Project("<block>", null) {
 
-    val projectSet = HashMap<String, Project>()
+    val projectReferences = HashMap<String, Project>()
+    val projectBuilt = HashSet<Project>()
+
     fun build(config: String = "") {
         applySharedSettings(listOf())
         dump("")
@@ -25,24 +27,19 @@ public class Block() : Project("<block>", null) {
 
     fun makeProjectSet(projects: List<Project>) {
         for (project in projects) {
-            projectSet.put(project.projectName, project)
+            projectReferences.put(project.projectName, project)
             makeProjectSet(project.projects)
         }
     }
 
     fun resolve(reference: ProjectReference): Project? {
-        return projectSet[reference.name]
+        return projectReferences[reference.name]
     }
 
     fun build(project: Project, config: String) {
-        project.building.fire(project)
+        if (project in projectBuilt) return
 
-        // first build nested projects
-        for (nestedProject in project.projects) {
-            build(nestedProject, config)
-        }
-
-        // then build dependencies
+        // build dependencies
         for (dependency in project.depends.projects) {
             if (dependency.config.matches(config)) {
                 val dependentProject = resolve(dependency.reference)
@@ -54,6 +51,12 @@ public class Block() : Project("<block>", null) {
             }
         }
 
+        // build nested projects
+        for (nestedProject in project.projects) {
+            build(nestedProject, config)
+        }
+
+        project.building.fire(project)
         // now execute own build processes
         for (step in project.build.steps) {
             if (step.configurations.any { it.matches(config) }) {
@@ -63,6 +66,7 @@ public class Block() : Project("<block>", null) {
             }
         }
 
+        projectBuilt.add(project)
         project.built.fire(project)
     }
 }

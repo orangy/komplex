@@ -24,8 +24,8 @@ open class Project(val projectName: String, val parent: Project?) {
     val depends = Dependencies()
     val build = Builds()
 
-    val building = Event("building")
-    val built = Event("built", EventStyle.reversed)
+    val building = Event<Project>("building")
+    val built = Event<Project>("built", EventStyle.reversed)
 
     fun shared(pattern: String = "*", body: Project.() -> Unit) {
         val setting = SharedSettings(pattern, this, body)

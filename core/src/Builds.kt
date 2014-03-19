@@ -24,8 +24,13 @@ class BuildProcess(val tool: Tool) {
         to.dump(indent + "    ")
     }
 
+    val started = Event<BuildProcess>("Started")
+    val finished = Event<BuildProcess>("Finished")
+
     fun execute() {
+        started.fire(this)
         tool.execute(from, to)
+        finished.fire(this)
     }
 }
 

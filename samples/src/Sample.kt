@@ -1,10 +1,12 @@
 package komplex.sample
 
 import komplex.*
+import komplex.jar.*
+import komplex.kotlin.*
 
 fun main(args: Array<String>) = block {
 
-    val test = config("tests")
+    val test = config("test")
     val jar = config("jar")
 
     shared {
@@ -25,14 +27,7 @@ fun main(args: Array<String>) = block {
     }
 
     project("spek") {
-        // variable denoting project
-        val core = project("spek-core", "Core") {
-            val sources = files("spek-core/src/**")
-            val binaries = folder("out/spek-core")
-
-            build using tools.kotlin from sources to binaries
-            build(jar) using tools.jar from binaries to file("artifacts/spek-core.jar")
-        }
+        val core = project("spek-core") // forward declaration
 
         project("spek-tests", "Tests") {
             val sources = files("spek-core/test/**")
@@ -48,6 +43,23 @@ fun main(args: Array<String>) = block {
             build using tools.kotlin from sources to binaries
             depends on project("spek-core") // reference to project by name
         }
+
+        // variable denoting project
+        project("spek-core", "Core") {
+            val sources = files("spek-core/src/**")
+            val binaries = folder("out/spek-core")
+
+            val process = build using tools.kotlin from sources to binaries
+            process.started {
+                println("Compiling core...")
+            }
+            process.finished {
+                println("Finished core.")
+            }
+
+            build(jar) using tools.jar from binaries to file("artifacts/spek-core.jar")
+        }
+
     }
 
-}.build()
+}.build("jar")

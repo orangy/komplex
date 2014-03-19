@@ -4,6 +4,13 @@ class Files {
     val included = arrayListOf<Path>()
     val excluded = arrayListOf<Path>()
 
+    override fun toString(): String {
+        if (excluded.isEmpty())
+            return "$included"
+        else
+            return "$included - $excluded"
+    }
+
     fun invoke(body: Files.() -> Unit) {
         this.body()
     }
