@@ -24,18 +24,20 @@ class BuildProcess(val tool: Tool) {
         to.dump(indent + "    ")
     }
 
+    fun execute() {
+        tool.execute(from, to)
+    }
 }
 
 fun file(path: String) = Files().let { it.include(path); it }
 fun files(path: String) = Files().let { it.include(path); it }
 fun folder(path: String) = Files().let { it.include(path); it }
 
-class Build() {
-
+class BuildStep(val configurations : List<Config>) {
     val processes = ArrayList<BuildProcess>()
 
-    fun invoke(vararg config: Configuration): Build {
-        return this
+    fun invoke(body : BuildStep.()->Unit) {
+        body()
     }
 
     fun using(tool: Tool): BuildProcess {
@@ -45,10 +47,27 @@ class Build() {
     }
 
     fun dump(indent: String = "") {
-        println("$indent Build:")
+        println("$indent Build $configurations")
         for (process in processes) {
             process.dump(indent + "  ")
         }
+    }
+}
 
+class Builds() {
+    val steps = ArrayList<BuildStep>()
+
+    fun using(tool: Tool): BuildProcess = invoke(Config("*")).using(tool)
+
+    fun invoke(vararg config: Config): BuildStep {
+        val build = BuildStep(config.toList())
+        steps.add(build)
+        return build
+    }
+
+    fun dump(indent: String = "") {
+        for (builds in steps) {
+            builds.dump(indent)
+        }
     }
 }

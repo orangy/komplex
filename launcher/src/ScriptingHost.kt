@@ -28,7 +28,6 @@ class ScriptingHost {
         val configuration = CompilerConfiguration()
 
         val paths = PathUtil.getKotlinPathsForCompiler()
-        messageCollector.report(CompilerMessageSeverity.LOGGING, "Using Kotlin home directory " + paths.getHomePath(), CompilerMessageLocation.NO_LOCATION)
 
         configuration.addAll(JVMConfigurationKeys.CLASSPATH_KEY, getClasspath(paths, arguments))
         //configuration.addAll(JVMConfigurationKeys.ANNOTATIONS_PATH_KEY, getAnnotationsPath(paths, arguments))
@@ -40,13 +39,11 @@ class ScriptingHost {
         configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
         configuration.put(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, listOf(JetScriptDefinition(".kts")))
 
-        messageCollector.report(CompilerMessageSeverity.LOGGING, "Configuring the compilation environment", CompilerMessageLocation.NO_LOCATION)
-
         val environment = JetCoreEnvironment.createForProduction(rootDisposable, configuration)
         val scriptClass = KotlinToJVMBytecodeCompiler.compileScript(paths, environment)
         if (scriptClass == null)
             return
-        scriptClass.getConstructor(javaClass<Array<String>>()).newInstance(arguments.freeArgs?.copyToArray())
+        val instance = scriptClass.getConstructor(javaClass<Array<String>>()).newInstance(arguments.freeArgs?.copyToArray())
         rootDisposable.dispose()
     }
 

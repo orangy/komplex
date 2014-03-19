@@ -4,8 +4,8 @@ import komplex.*
 
 fun main(args: Array<String>) = block {
 
-    val test = configuration("tests")
-    val jar = configuration("jar")
+    val test = config("tests")
+    val jar = config("jar")
 
     shared {
         val testLibs = libraries {
@@ -18,36 +18,36 @@ fun main(args: Array<String>) = block {
         version("SNAPSHOT-0.1")
         depends(test) on testLibs // depends in configuration
 
+        description("Spek " + description) // update description
+
         building { println("Building $title...") }
         built { println("Done building $title.") }
-        dumping { println("Dumping project '$projectName' with title '$title'...") }
     }
 
     project("spek") {
-        shared("*-tests") {
-            // shared settings for projects matching pattern
-            description("Test project")
-        }
-
         // variable denoting project
-        val core = project("spek-core") {
-            description("Spek Core")
+        val core = project("spek-core", "Core") {
+            val sources = files("spek-core/src/**")
             val binaries = folder("out/spek-core")
-            build using tools.kotlin from files("spek-core/src/**") to binaries
-            build(test) using tools.kotlin from files("spek-core/test/**") to folder("out/spek-core")
+
+            build using tools.kotlin from sources to binaries
             build(jar) using tools.jar from binaries to file("artifacts/spek-core.jar")
         }
 
-        project("spek-tests") {
-            description("Spek Tests")
+        project("spek-tests", "Tests") {
+            val sources = files("spek-core/test/**")
+            val binaries = folder("out/spek-core")
+            build(test) using tools.kotlin from sources to binaries
             depends on core // reference to project with variable
             depends on library("mockito-all", "1.9.5", "org.mockito") // inline library dependence
         }
 
-        project("spek-samples") {
-            description("Spek Samples")
+        project("spek-samples", "Samples") {
+            val sources = files("spek-samples/src/**")
+            val binaries = folder("out/spek-samples")
+            build using tools.kotlin from sources to binaries
             depends on project("spek-core") // reference to project by name
         }
     }
 
-}.dump()
+}.build()

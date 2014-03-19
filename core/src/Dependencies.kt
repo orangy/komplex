@@ -1,16 +1,16 @@
 package komplex
 
-data class ProjectDependency(val config: Configuration?, val reference: ProjectReference)
-data class LibraryDependency(val config: Configuration?, val reference: LibraryReference)
+data class ProjectDependency(val config: Config, val reference: ProjectReference)
+data class LibraryDependency(val config: Config, val reference: LibraryReference)
 
 
-fun Dependencies() = Dependencies(null, arrayListOf(), arrayListOf())
+fun Dependencies() = Dependencies(Config("*"), arrayListOf(), arrayListOf())
 
-class Dependencies(val config: Configuration? = null,
+class Dependencies(val config: Config,
                    val projects: MutableList<ProjectDependency>,
                    val libraries: MutableList<LibraryDependency>) {
 
-    fun invoke(config: Configuration): Dependencies {
+    fun invoke(config: Config): Dependencies {
         return Dependencies(config, projects, libraries)
     }
 
@@ -27,16 +27,10 @@ class Dependencies(val config: Configuration? = null,
 
         println("$indent Depends on")
         for ((config, reference) in projects) {
-            if (config != null)
-                println("$indent   Project: ${reference.name} (in ${config.name})")
-            else
-                println("$indent   Project: ${reference.name}")
+            println("$indent   Project: ${reference.name} (in ${config.pattern})")
         }
         for ((config, reference) in libraries) {
-            if (config != null)
-                println("$indent   Library: ${reference.name} (in ${config.name})")
-            else
-                println("$indent   Library: ${reference.name}")
+            println("$indent   Library: ${reference.name} (in ${config.pattern})")
         }
     }
 

@@ -22,40 +22,41 @@ open class Project(val projectName: String, val parent: Project?) {
     }
 
     val depends = Dependencies()
-    val build = Build()
+    val build = Builds()
 
     val building = Event("building")
     val built = Event("built", EventStyle.reversed)
-    val dumping = Event("dumping")
 
     fun shared(pattern: String = "*", body: Project.() -> Unit) {
         val setting = SharedSettings(pattern, this, body)
         sharedSettings.add(setting)
     }
 
-    fun applySharedSettings(configurations: List<SharedSettings>) {
-        for (config in configurations) {
+    fun applySharedSettings(settings: List<SharedSettings>) {
+        for (config in settings) {
             if (config.matches(this)) {
                 val initializer = config.body
                 initializer()
             }
         }
-        val nestedConfigurations = configurations + sharedSettings
+
+        val nestedSettings = settings + sharedSettings
         for (project in projects)
-            project.applySharedSettings(nestedConfigurations)
+            project.applySharedSettings(nestedSettings)
     }
 
     fun project(name: String): ProjectReference = ProjectReference(name)
 
-    fun project(name: String, body: Project.() -> Unit): Project {
+    fun project(name: String, description : String? = null, body: Project.() -> Unit): Project {
         val project = Project(name, this)
+        if (description != null)
+            project.description(description)
         project.body()
         projects.add(project)
         return project
     }
 
     fun dump(indent: String) {
-        dumping.fire(this)
         println("$indent Version: $version")
         depends.dump(indent)
         build.dump(indent)
