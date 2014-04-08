@@ -2,26 +2,33 @@ package komplex
 
 import java.util.ArrayList
 
-class BuildProcess(val tool: Tool) {
-    val from = Files()
-    val to = Files()
+trait BuildEndPoint {
+    fun dump(indent: String = "")
+}
 
-    fun from(files: Files): BuildProcess {
-        from.append(files)
+class BuildProcess(val tool: Tool) {
+    val sources = arrayListOf<BuildEndPoint>()
+    val destinations = arrayListOf<BuildEndPoint>()
+
+    fun from(vararg endpoints: BuildEndPoint): BuildProcess {
+        sources.addAll(endpoints)
         return this
     }
 
-    fun to(files: Files): BuildProcess {
-        to.append(files)
+    fun to(vararg endpoints: BuildEndPoint): BuildProcess {
+        destinations.addAll(endpoints)
         return this
     }
 
     fun dump(indent: String = "") {
         println("$indent ${tool.title}")
+
         println("$indent   From: ")
-        from.dump(indent + "    ")
+        for (endpoint in sources)
+            endpoint.dump(indent + "    ")
         println("$indent   To: ")
-        to.dump(indent + "    ")
+        for (endpoint in destinations)
+            endpoint.dump(indent + "    ")
     }
 
     val started = Event<BuildProcess>("Started")
@@ -29,7 +36,7 @@ class BuildProcess(val tool: Tool) {
 
     fun execute() {
         started.fire(this)
-        tool.execute(from, to)
+        tool.execute(sources, destinations)
         finished.fire(this)
     }
 }

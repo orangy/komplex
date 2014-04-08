@@ -1,6 +1,6 @@
 package komplex
 
-class Files {
+class Files : BuildEndPoint {
     val included = arrayListOf<Path>()
     val excluded = arrayListOf<Path>()
 
@@ -38,7 +38,7 @@ class Files {
         collection.body()
     }
 
-    fun dump(indent: String = "") {
+    override fun dump(indent: String) {
         if (included.isNotEmpty()) {
             for (child in included) {
                 println("$indent ${child.value}")
