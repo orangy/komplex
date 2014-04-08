@@ -18,12 +18,30 @@ class BuildFolder(val path : Path) : BuildEndPoint {
     override fun dump(indent: String) {
         println("$indent Folder ${path}")
     }
+
+    fun findFiles(baseDir: String = ""): List<Path> {
+        val result = arrayListOf<Path>()
+        class Finder : SimpleFileVisitor<Path?>() {
+            override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
+                if (file != null) {
+                    result.add(file)
+                }
+                return FileVisitResult.CONTINUE
+            }
+        }
+        Files.walkFileTree(baseDir.toPath(), Finder())
+        return result
+    }
 }
 
 fun file(path: String) = BuildFile(path.toPath())
 class BuildFile(val path : Path) : BuildEndPoint {
     override fun dump(indent: String) {
         println("$indent File ${path}")
+    }
+
+    fun findFiles(baseDir: String = ""): List<Path> {
+        return listOf(baseDir.toPath().resolve(path))
     }
 }
 
@@ -66,7 +84,7 @@ class BuildFileSet : BuildEndPoint {
         collection.body()
     }
 
-    fun getFiles(baseDir : String = "") : List<Path> {
+    fun findFiles(baseDir : String = "") : List<Path> {
         val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
         val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
         val result = arrayListOf<Path>()
@@ -95,7 +113,7 @@ class BuildFileSet : BuildEndPoint {
                 println("$indent   ${child}")
             }
         }
-        for (child in getFiles()) {
+        for (child in findFiles()) {
             println("$indent   File: ${child}")
         }
     }
