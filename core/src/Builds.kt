@@ -41,10 +41,6 @@ class BuildProcess(val tool: Tool) {
     }
 }
 
-fun file(path: String) = Files().let { it.include(path); it }
-fun files(path: String) = Files().let { it.include(path); it }
-fun folder(path: String) = Files().let { it.include(path); it }
-
 class BuildStep(val configurations : List<Config>) {
     val processes = ArrayList<BuildProcess>()
 
