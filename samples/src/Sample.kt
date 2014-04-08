@@ -47,7 +47,7 @@ fun main(args: Array<String>) = block {
         // variable denoting project
         project("spek-core", "Core") {
             val sources = files("spek-core/src/**")
-            val binaries = folder("out/spek-core")
+            val binaries = folder("out/production/spek-core")
 
             val process = build using tools.kotlin from sources to binaries
             process.started {

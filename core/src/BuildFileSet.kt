@@ -5,7 +5,10 @@ import java.nio.file.*
 import java.nio.file.attribute.*
 
 val fileSystem = FileSystems.getDefault()!!
-fun String.toPath() = fileSystem.getPath(this)
+
+trait BuildFileSetEndPoint : BuildEndPoint {
+    fun findFiles(baseDir: Path? = null): List<BuildStreamEndPoint>
+}
 
 class GlobCollection(val collection: MutableList<String>) {
     fun path(value: String) {
@@ -13,40 +16,30 @@ class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-fun folder(path: String) = BuildFolder(path.toPath())
-class BuildFolder(val path : Path) : BuildEndPoint {
+fun folder(path: String) = BuildFolder(fileSystem.getPath(path))
+class BuildFolder(val path : Path) : BuildFileSetEndPoint {
     override fun dump(indent: String) {
         println("$indent Folder ${path}")
     }
 
-    fun findFiles(baseDir: String = ""): List<Path> {
-        val result = arrayListOf<Path>()
+    override fun findFiles(baseDir: Path?): List<BuildStreamEndPoint> {
+        val result = arrayListOf<BuildStreamEndPoint>()
         class Finder : SimpleFileVisitor<Path?>() {
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
                 if (file != null) {
-                    result.add(file)
+                    result.add(BuildFile(file))
                 }
                 return FileVisitResult.CONTINUE
             }
         }
-        Files.walkFileTree(baseDir.toPath(), Finder())
+        val dir = (baseDir ?: fileSystem.getPath("")).resolve(path)
+        Files.walkFileTree(dir, Finder())
         return result
     }
 }
 
-fun file(path: String) = BuildFile(path.toPath())
-class BuildFile(val path : Path) : BuildEndPoint {
-    override fun dump(indent: String) {
-        println("$indent File ${path}")
-    }
-
-    fun findFiles(baseDir: String = ""): List<Path> {
-        return listOf(baseDir.toPath().resolve(path))
-    }
-}
-
 fun files(glob: String) = BuildFileSet().let { it.include(glob); it }
-class BuildFileSet : BuildEndPoint {
+class BuildFileSet : BuildFileSetEndPoint {
     val included = arrayListOf<String>()
     val excluded = arrayListOf<String>()
 
@@ -84,20 +77,20 @@ class BuildFileSet : BuildEndPoint {
         collection.body()
     }
 
-    fun findFiles(baseDir : String = "") : List<Path> {
+    override fun findFiles(baseDir : Path?) : List<BuildStreamEndPoint> {
         val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
         val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
-        val result = arrayListOf<Path>()
+        val result = arrayListOf<BuildStreamEndPoint>()
 
         class Finder : SimpleFileVisitor<Path?>() {
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
                 if (file != null && includeFilter.any { it.matches(file)} && excludeFilter.none { it.matches(file) }) {
-                    result.add(file)
+                    result.add(BuildFile(file))
                 }
                 return FileVisitResult.CONTINUE
             }
         }
-        Files.walkFileTree(baseDir.toPath(), Finder())
+        Files.walkFileTree(baseDir ?: fileSystem.getPath(""), Finder())
         return result
     }
 
