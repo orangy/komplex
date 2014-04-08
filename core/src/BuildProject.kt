@@ -6,7 +6,7 @@ trait BuildEndPoint {
     fun dump(indent: String = "")
 }
 
-class BuildProcess(val tool: Tool) {
+class BuildProcess(val buildConfiguration : BuildConfiguration, val tool: Tool) {
     val sources = arrayListOf<BuildEndPoint>()
     val destinations = arrayListOf<BuildEndPoint>()
 
@@ -41,15 +41,15 @@ class BuildProcess(val tool: Tool) {
     }
 }
 
-class BuildStep(val configurations : List<Config>) {
+class BuildConfiguration(val buildProject: BuildProject, val configurations : List<Config>) {
     val processes = ArrayList<BuildProcess>()
 
-    fun invoke(body : BuildStep.()->Unit) {
+    fun invoke(body : BuildConfiguration.()->Unit) {
         body()
     }
 
     fun using(tool: Tool): BuildProcess {
-        val process = BuildProcess(tool)
+        val process = BuildProcess(this, tool)
         processes.add(process)
         return process
     }
@@ -62,19 +62,19 @@ class BuildStep(val configurations : List<Config>) {
     }
 }
 
-class Builds() {
-    val steps = ArrayList<BuildStep>()
+class BuildProject(val project : Project) {
+    val configurations = ArrayList<BuildConfiguration>()
 
     fun using(tool: Tool): BuildProcess = invoke(Config("*")).using(tool)
 
-    fun invoke(vararg config: Config): BuildStep {
-        val build = BuildStep(config.toList())
-        steps.add(build)
+    fun invoke(vararg config: Config): BuildConfiguration {
+        val build = BuildConfiguration(this, config.toList())
+        configurations.add(build)
         return build
     }
 
     fun dump(indent: String = "") {
-        for (builds in steps) {
+        for (builds in configurations) {
             builds.dump(indent)
         }
     }

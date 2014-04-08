@@ -58,9 +58,9 @@ public class Block() : Project("<block>", null) {
 
         project.building.fire(project)
         // now execute own build processes
-        for (step in project.build.steps) {
-            if (step.configurations.any { it.matches(config) }) {
-                for (process in step.processes) {
+        for (buildConfig in project.build.configurations) {
+            if (buildConfig.configurations.any { it.matches(config) }) {
+                for (process in buildConfig.processes) {
                     process.execute()
                 }
             }

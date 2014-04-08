@@ -22,7 +22,7 @@ open class Project(val projectName: String, val parent: Project?) {
     }
 
     val depends = Dependencies()
-    val build = Builds()
+    val build = BuildProject(this)
 
     val building = Event<Project>("building")
     val built = Event<Project>("built", EventStyle.reversed)
