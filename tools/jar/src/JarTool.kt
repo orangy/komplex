@@ -27,7 +27,7 @@ class JarPackager : Tool("Jar Packager") {
     }
 
 
-    override fun execute(process: BuildProcess, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 

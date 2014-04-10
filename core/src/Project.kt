@@ -7,6 +7,8 @@ open class Project(val projectName: String, val parent: Project?) {
     val projects = arrayListOf<Project>()
     val sharedSettings = arrayListOf<SharedSettings>()
 
+    val repository = Repository(this)
+
     private var _version: String = ""
     public val version: String
         get() = _version
@@ -32,6 +34,10 @@ open class Project(val projectName: String, val parent: Project?) {
         sharedSettings.add(setting)
     }
 
+    fun repository(body: Repository.() -> Unit) {
+        repository.body()
+    }
+
     fun applySharedSettings(settings: List<SharedSettings>) {
         for (config in settings) {
             if (config.matches(this)) {
@@ -47,7 +53,7 @@ open class Project(val projectName: String, val parent: Project?) {
 
     fun project(name: String): ProjectReference = ProjectReference(name)
 
-    fun project(name: String, description : String? = null, body: Project.() -> Unit): Project {
+    fun project(name: String, description: String? = null, body: Project.() -> Unit): Project {
         val project = Project(name, this)
         if (description != null)
             project.description(description)
@@ -65,6 +71,8 @@ open class Project(val projectName: String, val parent: Project?) {
             println("$indent Project: ${child.title}")
             child.dump(indent + "  ")
         }
+
+        repository.dump(indent + "  ")
     }
 }
 

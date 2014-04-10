@@ -2,7 +2,6 @@ package komplex.sample
 
 import komplex.*
 import komplex.jar.*
-import komplex.system.*
 import komplex.kotlin.*
 
 fun main(args: Array<String>) = block {
@@ -11,13 +10,17 @@ fun main(args: Array<String>) = block {
     val jar = config("jar")
     val publish = config("publish")
 
-    shared {
-        val testLibs = libraries {
-            // collection of libraries
-            library("junit")
-            library("hamcrest", "1.2")
-        }
+    val testLibs = libraries {
+        // collection of libraries
+        library("junit", "4.11")
+        library("hamcrest-core", "1.3")
+    }
 
+    repository {
+
+    }
+
+    shared {
         // shared settings for all projects
         version("SNAPSHOT-0.1")
         depends(test) on testLibs // depends in configuration
@@ -54,6 +57,8 @@ fun main(args: Array<String>) = block {
             val sources = files("spek-core/src/**")
             val binaries = folder("out/spek-core")
             val jarFile = file("artifacts/spek-core.jar")
+
+            depends on testLibs
 
             build using(tools.kotlin) from sources to binaries
             build(jar, publish) using tools.jar from binaries to jarFile

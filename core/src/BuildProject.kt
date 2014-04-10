@@ -37,7 +37,7 @@ class BuildProcess(val buildConfiguration : BuildConfiguration, val tool: Tool) 
     fun execute(context : BuildContext) : BuildResult {
         started.fire(this)
         try {
-            return tool.execute(this, sources, destinations)
+            return tool.execute(context, sources, destinations)
         } catch (e : Throwable) {
             e.printStackTrace()
             return BuildResult.Fail

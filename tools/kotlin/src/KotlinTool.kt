@@ -1,25 +1,23 @@
 package komplex.kotlin
 
 import komplex.*
-import org.jetbrains.jet.cli.jvm.K2JVMCompiler
-import org.jetbrains.jet.cli.common.arguments.K2JVMCompilerArguments
-import org.jetbrains.jet.cli.common.messages.MessageCollector
+import org.jetbrains.jet.cli.jvm.*
+import org.jetbrains.jet.cli.common.arguments.*
 import java.io.*
-import org.jetbrains.jet.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.jet.cli.common.messages.CompilerMessageLocation
-import org.jetbrains.jet.cli.common.ExitCode
+import org.jetbrains.jet.cli.common.messages.*
+import org.jetbrains.jet.cli.common.*
 
-val tools.kotlin : KotlinCompiler
-        get() = KotlinCompiler()
+val tools.kotlin: KotlinCompiler
+    get() = KotlinCompiler()
 
-class KotlinCompiler : Tool("Kotlin Compiler") {
+class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
     fun invoke(body: KotlinCompiler.() -> Unit): KotlinCompiler {
         body()
         return this
     }
 
-    override fun execute(process: BuildProcess, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
@@ -33,9 +31,18 @@ class KotlinCompiler : Tool("Kotlin Compiler") {
         }
 
         args.printArgs = true
-        args.verbose = true
-        args.tags = true
         args.src = from.getAllStreams().map { it.path } .makeString(File.pathSeparator)
+
+        val project = context.project
+        val repository = project.repository
+        val classPath = project.depends.libraries
+                .filter { it.config.matches(context.config) }
+                .map { repository.resolve(it.reference) }
+                .filterNotNull()
+                .map { it.classPath }
+                .makeString(File.pathSeparator)
+
+        args.classpath = classPath
 
         val folder = to.single()
         when (folder) {
