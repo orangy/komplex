@@ -9,6 +9,7 @@ fun main(args: Array<String>) = block {
 
     val test = config("test")
     val jar = config("jar")
+    val publish = config("publish")
 
     shared {
         val testLibs = libraries {
@@ -33,37 +34,31 @@ fun main(args: Array<String>) = block {
         project("spek-tests", "Tests") {
             val sources = files("spek-core/test/**")
             val binaries = folder("out/spek-core")
-            build(test) using tools.kotlin from sources to binaries
+
             depends on core // reference to project with variable
             depends on library("mockito-all", "1.9.5", "org.mockito") // inline library dependence
+
+            build(test) using tools.kotlin from sources to binaries
         }
 
         project("spek-samples", "Samples") {
             val sources = files("spek-samples/src/**")
             val binaries = folder("out/spek-samples")
-            build using tools.kotlin from sources to binaries
+
             depends on project("spek-core") // reference to project by name
+
+            build using tools.kotlin from sources to binaries
         }
 
-        // variable denoting project
         project("spek-core", "Core") {
             val sources = files("spek-core/src/**")
-            val binaries = folder("out/production/spek-core")
+            val binaries = folder("out/spek-core")
+            val jarFile = file("artifacts/spek-core.jar")
 
-            val process = build using(tools.kotlin) from sources to binaries
-            process.started {
-                println("Compiling core...")
-            }
-            process.finished {
-                println("Finished core.")
-            }
-
-            val jarFile = file("out/artifacts/spek-core.jar")
-            build(jar) {
-                using(tools.jar).from(binaries).to(jarFile)
-                using(tools.publish).from(jarFile)
-            }
+            build using(tools.kotlin) from sources to binaries
+            build(jar, publish) using tools.jar from binaries to jarFile
+            build(publish) using tools.publish from jarFile
         }
     }
 
-}.build("jar")
+}.build("publish")

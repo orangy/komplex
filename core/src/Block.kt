@@ -12,11 +12,11 @@ public fun block(body: Block.() -> Unit): Block {
 public class Block() : Project("<block>", null) {
 
     val projectReferences = HashMap<String, Project>()
-    val projectBuilt = HashSet<Project>()
+    val projectBuilt = HashMap<Project, BuildResult>()
 
     fun build(config: String = "") {
         applySharedSettings(listOf())
-        dump("")
+        //dump("")
 
         makeProjectSet(projects)
 
@@ -36,8 +36,10 @@ public class Block() : Project("<block>", null) {
         return projectReferences[reference.name]
     }
 
-    fun build(project: Project, config: String) {
-        if (project in projectBuilt) return
+    fun build(project: Project, config: String): BuildResult {
+        val existingResult = projectBuilt[project]
+        if (existingResult != null)
+            return existingResult
 
         // build dependencies
         for (dependency in project.depends.projects) {
@@ -46,27 +48,37 @@ public class Block() : Project("<block>", null) {
                 if (dependentProject == null) {
                     println("Invalid project reference ${dependency.reference}")
                 } else {
-                    build(dependentProject, config)
+                    val result = build(dependentProject, config)
+                    if (result.failed) return result
                 }
             }
         }
 
         // build nested projects
         for (nestedProject in project.projects) {
-            build(nestedProject, config)
+            val result = build(nestedProject, config)
+            if (result.failed) return result
         }
 
         project.building.fire(project)
+
+        val projectResult = MultipleBuildResult()
+
         // now execute own build processes
         for (buildConfig in project.build.configurations) {
             if (buildConfig.configurations.any { it.matches(config) }) {
                 for (process in buildConfig.processes) {
-                    process.execute()
+                    val result = process.execute(BuildContext(config, project, process))
+                    projectResult.append(result)
+                    if (projectResult.failed) break;
                 }
+                if (projectResult.failed) break;
             }
         }
 
-        projectBuilt.add(project)
+        projectBuilt.put(project, projectResult)
         project.built.fire(project)
+
+        return projectResult
     }
 }

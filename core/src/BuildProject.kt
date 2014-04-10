@@ -34,10 +34,16 @@ class BuildProcess(val buildConfiguration : BuildConfiguration, val tool: Tool) 
     val started = Event<BuildProcess>("Started")
     val finished = Event<BuildProcess>("Finished")
 
-    fun execute() {
+    fun execute(context : BuildContext) : BuildResult {
         started.fire(this)
-        tool.execute(sources, destinations)
-        finished.fire(this)
+        try {
+            return tool.execute(this, sources, destinations)
+        } catch (e : Throwable) {
+            e.printStackTrace()
+            return BuildResult.Fail
+        } finally {
+            finished.fire(this)
+        }
     }
 }
 

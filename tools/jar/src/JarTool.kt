@@ -27,7 +27,7 @@ class JarPackager : Tool("Jar Packager") {
     }
 
 
-    override fun execute(from: List<BuildEndPoint>, to: List<BuildEndPoint>) {
+    override fun execute(process: BuildProcess, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 
@@ -42,6 +42,7 @@ class JarPackager : Tool("Jar Packager") {
         for (stream in from.getAllStreams())
             add(stream, target)
         target.close()
+        return BuildResult.Success
     }
 }
 

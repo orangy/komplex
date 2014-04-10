@@ -6,7 +6,7 @@ import java.io.File
 
 val tools.publish = PublishTool()
 class PublishTool : Tool("Publish") {
-    override fun execute(from: List<BuildEndPoint>, to: List<BuildEndPoint>) {
+    override fun execute(process: BuildProcess, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         var repoFolder : File? = File("").getAbsoluteFile()
         while (repoFolder != null) {
             val current = repoFolder!!
@@ -21,7 +21,8 @@ class PublishTool : Tool("Publish") {
             throw IllegalStateException("None of parent folders contains .repository folder")
 
         for (source in from.getAllStreams()) {
-           Files.copy(source.inputStream, repo.resolve(source.path.getFileName()!!), StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(source.inputStream, repo.resolve(source.path.getFileName()!!), StandardCopyOption.REPLACE_EXISTING)
         }
+        return BuildResult.Success
     }
 }
