@@ -11,6 +11,7 @@
     <orderEntry type="module" module-name="core" />
     <orderEntry type="module" module-name="jar" />
     <orderEntry type="module" module-name="kotlin" />
+    <orderEntry type="module" module-name="system" />
   </component>
 </module>
 

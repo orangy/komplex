@@ -2,6 +2,7 @@ package komplex.sample
 
 import komplex.*
 import komplex.jar.*
+import komplex.system.*
 import komplex.kotlin.*
 
 fun main(args: Array<String>) = block {
@@ -49,7 +50,7 @@ fun main(args: Array<String>) = block {
             val sources = files("spek-core/src/**")
             val binaries = folder("out/production/spek-core")
 
-            val process = build using tools.kotlin from sources to binaries
+            val process = build using(tools.kotlin) from sources to binaries
             process.started {
                 println("Compiling core...")
             }
@@ -57,9 +58,12 @@ fun main(args: Array<String>) = block {
                 println("Finished core.")
             }
 
-            build(jar) using tools.jar from binaries to file("artifacts/spek-core.jar")
+            val jarFile = file("out/artifacts/spek-core.jar")
+            build(jar) {
+                using(tools.jar).from(binaries).to(jarFile)
+                using(tools.publish).from(jarFile)
+            }
         }
-
     }
 
 }.build("jar")
