@@ -10,7 +10,7 @@ class CopyTool : Tool("Copy") {
                 when (destination) {
                     // TODO: change to streams
                     is BuildStreamEndPoint -> Files.copy(source.inputStream, destination.path, StandardCopyOption.REPLACE_EXISTING)
-                    is BuildFolder -> Files.copy(source.inputStream, destination.path.resolve(source.path), StandardCopyOption.REPLACE_EXISTING)
+                    is FolderEndPoint -> Files.copy(source.inputStream, destination.path.resolve(source.path), StandardCopyOption.REPLACE_EXISTING)
                     else -> throw IllegalArgumentException("$destination is not supported in copy tool")
                 }
             }

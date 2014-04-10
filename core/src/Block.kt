@@ -8,7 +8,6 @@ public fun block(body: Block.() -> Unit): Block {
     return block
 }
 
-
 public class Block() : Project("<block>", null) {
 
     val projectReferences = HashMap<String, Project>()
@@ -62,13 +61,13 @@ public class Block() : Project("<block>", null) {
 
         project.building.fire(project)
 
-        val projectResult = MultipleBuildResult()
+        val projectResult = ProjectBuildResult()
 
         // now execute own build processes
         for (buildConfig in project.build.configurations) {
             if (buildConfig.configurations.any { it.matches(config) }) {
-                for (process in buildConfig.processes) {
-                    val result = process.execute(BuildContext(config, project, process))
+                for (step in buildConfig.steps) {
+                    val result = step.execute(BuildContext(config, project, step))
                     projectResult.append(result)
                     if (projectResult.failed) break;
                 }

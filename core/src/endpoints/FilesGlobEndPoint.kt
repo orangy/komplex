@@ -16,30 +16,8 @@ class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-fun folder(path: String) = BuildFolder(fileSystem.getPath(path))
-class BuildFolder(val path : Path) : BuildFileSetEndPoint {
-    override fun dump(indent: String) {
-        println("$indent Folder ${path}")
-    }
-
-    override fun findFiles(baseDir: Path?): List<BuildStreamEndPoint> {
-        val result = arrayListOf<BuildStreamEndPoint>()
-        class Finder : SimpleFileVisitor<Path?>() {
-            override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
-                if (file != null) {
-                    result.add(BuildFile(file))
-                }
-                return FileVisitResult.CONTINUE
-            }
-        }
-        val dir = (baseDir ?: fileSystem.getPath("")).resolve(path)
-        Files.walkFileTree(dir, Finder())
-        return result
-    }
-}
-
-fun files(glob: String) = BuildFileSet().let { it.include(glob); it }
-class BuildFileSet : BuildFileSetEndPoint {
+fun files(glob: String) = FilesGlobEndPoint().let { it.include(glob); it }
+class FilesGlobEndPoint : BuildFileSetEndPoint {
     val included = arrayListOf<String>()
     val excluded = arrayListOf<String>()
 
@@ -50,11 +28,11 @@ class BuildFileSet : BuildFileSetEndPoint {
             return "$included - $excluded"
     }
 
-    fun invoke(body: BuildFileSet.() -> Unit) {
+    fun invoke(body: FilesGlobEndPoint.() -> Unit) {
         this.body()
     }
 
-    fun append(files : BuildFileSet) {
+    fun append(files : FilesGlobEndPoint) {
         included.addAll(files.included)
         excluded.addAll(files.excluded)
     }
@@ -85,7 +63,7 @@ class BuildFileSet : BuildFileSetEndPoint {
         class Finder : SimpleFileVisitor<Path?>() {
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
                 if (file != null && includeFilter.any { it.matches(file)} && excludeFilter.none { it.matches(file) }) {
-                    result.add(BuildFile(file))
+                    result.add(FileEndPoint(file))
                 }
                 return FileVisitResult.CONTINUE
             }

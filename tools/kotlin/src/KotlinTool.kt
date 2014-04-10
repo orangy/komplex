@@ -22,6 +22,9 @@ class KotlinCompiler : CompilerTool("Kotlin Compiler") {
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
+                if (severity == CompilerMessageSeverity.OUTPUT)
+                    return
+
                 if (location == CompilerMessageLocation.NO_LOCATION) {
                     println("[$severity] $message")
                 } else {
@@ -35,19 +38,19 @@ class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
         val project = context.project
         val repository = project.repository
-        val classPath = project.depends.libraries
+        val libraries = project.depends.libraries
                 .filter { it.config.matches(context.config) }
                 .map { repository.resolve(it.reference) }
                 .filterNotNull()
                 .map { it.classPath }
                 .makeString(File.pathSeparator)
 
-        args.classpath = classPath
+        args.classpath = libraries
 
         val folder = to.single()
         when (folder) {
-            is BuildFolder -> args.outputDir = folder.path.toString()
-            else -> throw IllegalArgumentException("Compiler only supports folders as destinations")
+            is FolderEndPoint -> args.outputDir = folder.path.toString()
+            else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
         }
 
         val exitCode = compiler.exec(messageCollector, args)

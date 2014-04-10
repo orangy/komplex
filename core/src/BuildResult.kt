@@ -14,16 +14,16 @@ val BuildResult.succeeded : Boolean
 public trait BuildResult {
     val status : BuildStatus
     class object {
-        val Success = SingleBuildResult(BuildStatus.Succeeded)
-        val Fail = SingleBuildResult(BuildStatus.Failed)
+        val Success = StepBuildResult(BuildStatus.Succeeded)
+        val Fail = StepBuildResult(BuildStatus.Failed)
     }
 }
 
-public class SingleBuildResult(override val status : BuildStatus) : BuildResult {
+public class StepBuildResult(override val status : BuildStatus) : BuildResult {
 
 }
 
-public class MultipleBuildResult() : BuildResult {
+public class ProjectBuildResult() : BuildResult {
     override val status: BuildStatus
         get() = if (results.all { it.status == BuildStatus.Succeeded }) BuildStatus.Succeeded else BuildStatus.Failed
 
