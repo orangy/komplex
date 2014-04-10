@@ -26,24 +26,20 @@ class JarPackager : Tool("Jar Packager") {
         }
     }
 
-    fun MutableList<BuildStreamEndPoint>.addAll(endpoint : BuildEndPoint) {
-        when (endpoint) {
-            is BuildStreamEndPoint -> add(endpoint)
-            is BuildFileSetEndPoint -> addAll(endpoint.findFiles())
-            else -> throw IllegalArgumentException("Unknown endpoint: $endpoint")
-        }
-    }
 
     override fun execute(from: List<BuildEndPoint>, to: List<BuildEndPoint>) {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
-        val target = JarOutputStream(FileOutputStream("output.jar"), manifest)
 
-        val streams = arrayListOf<BuildStreamEndPoint>()
-        for (item in from)
-            streams.addAll(item)
+        val destination = to.single()
+        val target =
+        when (destination) {
+            is BuildStreamEndPoint -> JarOutputStream(destination.outputStream, manifest)
+            is BuildFolder -> JarOutputStream(FileOutputStream(destination.path.resolve("output.jar")!!.toFile()), manifest)
+            else -> throw IllegalArgumentException("$destination is not supported in copy tool")
+        }
 
-        for (stream in streams)
+        for (stream in from.getAllStreams())
             add(stream, target)
         target.close()
     }
