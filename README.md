@@ -7,7 +7,7 @@ Komplex is easy-to-use strongly-typed build system for kotlin. Well, sort of :)
 History
 =======
 
-This project began as a DSL demo for CodeFest presentation, but as I got into building something looking realistic,
+This project began as a DSL demo for a presentation, but as I got into building something looking realistic,
 I found that I really like it. So it is possible I can actually make a build system that doesn't make us cry :)
 
 What I want?
