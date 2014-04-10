@@ -67,6 +67,12 @@ class BuildProject(val project : Project) {
 
     fun using(tool: Tool): BuildProcess = invoke(Config("*")).using(tool)
 
+    fun invoke(vararg config: Config, body : BuildConfiguration.()->Unit): BuildConfiguration {
+        val buildConfiguration = invoke(*config)
+        buildConfiguration.body()
+        return buildConfiguration
+    }
+
     fun invoke(vararg config: Config): BuildConfiguration {
         val build = BuildConfiguration(this, config.toList())
         configurations.add(build)
