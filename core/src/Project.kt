@@ -14,7 +14,6 @@ public class Project() : Module("<block>", null) {
     val modulesBuilt = HashMap<Module, BuildResult>()
 
     fun build(config: String = "") {
-        applySharedSettings(listOf())
         //dump("")
 
         makeProjectSet(module.modules)
@@ -41,8 +40,8 @@ public class Project() : Module("<block>", null) {
             return existingResult
 
         // build dependencies
-        for (dependency in project.depends.modules) {
-            if (dependency.config.matches(config)) {
+        for (dependency in project.depends.dependencies) {
+            if (dependency.scenario.matches(config)) {
                 val dependentProject = resolve(dependency.reference)
                 if (dependentProject == null) {
                     println("Invalid project reference ${dependency.reference}")
@@ -59,14 +58,13 @@ public class Project() : Module("<block>", null) {
             if (result.failed) return result
         }
 
-        project.building.fire(project)
 
         val projectResult = ModuleBuildResult()
 
         // now execute own build processes
-        for (buildConfig in project.build.configurations) {
-            if (buildConfig.configurations.any { it.matches(config) }) {
-                for (step in buildConfig.steps) {
+        for (buildConfig in project.build.scenarios) {
+            if (buildConfig.scenarios.any { it.matches(config) }) {
+                for (step in buildConfig.rules) {
                     val result = step.execute(BuildContext(config, project, step))
                     projectResult.append(result)
                     if (projectResult.failed) break;
@@ -76,7 +74,6 @@ public class Project() : Module("<block>", null) {
         }
 
         modulesBuilt.put(project, projectResult)
-        project.built.fire(project)
 
         return projectResult
     }

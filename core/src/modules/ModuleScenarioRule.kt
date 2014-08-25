@@ -1,15 +1,15 @@
 package komplex
 
-public class BuildStep(val buildConfiguration : BuildConfiguration, val tool: Tool) {
+public class ModuleScenarioRule(val buildConfiguration: ModuleScenarioRules, val tool: Tool) {
     val sources = arrayListOf<BuildEndPoint>()
     val destinations = arrayListOf<BuildEndPoint>()
 
-    public fun from(vararg endpoints: BuildEndPoint): BuildStep {
+    public fun from(vararg endpoints: BuildEndPoint): ModuleScenarioRule {
         sources.addAll(endpoints)
         return this
     }
 
-    public fun to(vararg endpoints: BuildEndPoint): BuildStep {
+    public fun to(vararg endpoints: BuildEndPoint): ModuleScenarioRule {
         destinations.addAll(endpoints)
         return this
     }
@@ -25,18 +25,12 @@ public class BuildStep(val buildConfiguration : BuildConfiguration, val tool: To
             endpoint.dump(indent + "    ")
     }
 
-    public val started: Event<BuildStep> = Event<BuildStep>("Started")
-    public val finished: Event<BuildStep> = Event<BuildStep>("Finished")
-
-    public fun execute(context : BuildContext) : BuildResult {
-        started.fire(this)
+    public fun execute(context: BuildContext): BuildResult {
         try {
             return tool.execute(context, sources, destinations)
-        } catch (e : Throwable) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             return BuildResult.Fail
-        } finally {
-            finished.fire(this)
         }
     }
 }

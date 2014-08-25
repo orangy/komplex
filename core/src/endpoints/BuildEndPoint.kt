@@ -1,7 +1,7 @@
 package komplex
 
-trait BuildEndPoint {
-    fun dump(indent: String = "")
+public trait BuildEndPoint {
+    public fun dump(indent: String = "")
 }
 
 

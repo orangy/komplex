@@ -12,10 +12,10 @@ val BuildResult.succeeded : Boolean
     get() = status == BuildStatus.Succeeded
 
 public trait BuildResult {
-    val status : BuildStatus
+    public val status : BuildStatus
     class object {
-        val Success = StepBuildResult(BuildStatus.Succeeded)
-        val Fail = StepBuildResult(BuildStatus.Failed)
+        public val Success: StepBuildResult = StepBuildResult(BuildStatus.Succeeded)
+        public val Fail: StepBuildResult = StepBuildResult(BuildStatus.Failed)
     }
 }
 

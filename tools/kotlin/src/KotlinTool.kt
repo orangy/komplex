@@ -1,11 +1,7 @@
 package komplex.kotlin
 
 import komplex.*
-import org.jetbrains.jet.cli.jvm.*
-import org.jetbrains.jet.cli.common.arguments.*
 import java.io.*
-import org.jetbrains.jet.cli.common.messages.*
-import org.jetbrains.jet.cli.common.*
 
 public val tools.kotlin: KotlinCompiler
     get() = KotlinCompiler()
@@ -18,7 +14,7 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
     }
 
     public override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
-        val compiler = K2JVMCompiler()
+/*        val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
@@ -58,6 +54,7 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
             ExitCode.OK -> BuildResult.Success
             else -> BuildResult.Fail
 
-        }
+        }*/
+        return BuildResult.Success
     }
 }

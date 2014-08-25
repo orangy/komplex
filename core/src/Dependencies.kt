@@ -1,30 +1,29 @@
 package komplex
 
-data class ModuleDependency(val config: Config, val reference: ModuleReference)
+public data class ModuleDependency(val scenario: Scenario, val reference: ModuleReference)
 
+public fun Dependencies(): Dependencies = Dependencies(Scenario("*"), arrayListOf())
 
-fun Dependencies() = Dependencies(Config("*"), arrayListOf())
+public class Dependencies(val config: Scenario, val dependencies: MutableList<ModuleDependency>) {
 
-class Dependencies(val config: Config, val modules: MutableList<ModuleDependency>) {
-
-    public fun invoke(config: Config): Dependencies {
-        return Dependencies(config, modules)
+    public fun invoke(scenario: Scenario): Dependencies {
+        return Dependencies(scenario, dependencies)
     }
 
-    public fun on(dependencies: ModuleReferences): Unit {
-        modules.addAll(dependencies.map { ModuleDependency(config, it) })
+    public fun on(references: ModuleReferences): Unit {
+        dependencies.addAll(references.map { ModuleDependency(config, it) })
     }
 
     public fun on(reference: ModuleReference): Unit = on(ModuleReferences(reference))
-    public fun on(project: Module): Unit = on(ModuleReferences(project.moduleName))
+    public fun on(module: Module): Unit = on(ModuleReferences(module.moduleName))
 
     fun dump(indent: String = "") {
-        if (modules.size == 0)
+        if (dependencies.size == 0)
             return
 
         println("$indent Depends on")
-        for ((config, reference) in modules) {
-            println("$indent   Project: ${reference.name} (in ${config.pattern})")
+        for ((scenario, reference) in dependencies) {
+            println("$indent   Project: ${reference} (in ${scenario})")
         }
     }
 
