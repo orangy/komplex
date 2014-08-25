@@ -7,17 +7,17 @@ import java.io.*
 import org.jetbrains.jet.cli.common.messages.*
 import org.jetbrains.jet.cli.common.*
 
-val tools.kotlin: KotlinCompiler
+public val tools.kotlin: KotlinCompiler
     get() = KotlinCompiler()
 
-class KotlinCompiler : CompilerTool("Kotlin Compiler") {
+public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
-    fun invoke(body: KotlinCompiler.() -> Unit): KotlinCompiler {
+    public fun invoke(body: KotlinCompiler.() -> Unit): KotlinCompiler {
         body()
         return this
     }
 
-    override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    public override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
@@ -36,7 +36,7 @@ class KotlinCompiler : CompilerTool("Kotlin Compiler") {
         args.printArgs = true
         args.src = from.getAllStreams().map { it.path } .makeString(File.pathSeparator)
 
-        val project = context.project
+        val project = context.module
         val repository = project.repository
         val libraries = project.depends.libraries
                 .filter { it.config.matches(context.config) }

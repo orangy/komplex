@@ -6,9 +6,9 @@ import java.nio.file.Path
 class RepositoryResolveResult(val classPath: String) {
 }
 
-open public class Repository(val project: Project) {
+open public class Repository(val project: Module) {
 
-    fun resolve(reference: LibraryReference): RepositoryResolveResult? {
+    fun resolve(reference: ModuleReference): RepositoryResolveResult? {
         val result = resolveReference(reference)
         if (result != null)
             return result
@@ -19,7 +19,7 @@ open public class Repository(val project: Project) {
         return null
     }
 
-    fun resolveReference(reference: LibraryReference): RepositoryResolveResult? {
+    fun resolveReference(reference: ModuleReference): RepositoryResolveResult? {
         val repo = findRepository()
         val jarName = when {
             reference.version.isEmpty() -> reference.name + ".jar"

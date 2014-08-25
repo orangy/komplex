@@ -3,8 +3,8 @@ package komplex
 import java.nio.file.*
 import java.nio.file.attribute.*
 
-fun folder(path: String) = FolderEndPoint(fileSystem.getPath(path))
-class FolderEndPoint(val path: Path) : BuildFileSetEndPoint {
+public fun folder(path: String): FolderEndPoint = FolderEndPoint(fileSystem.getPath(path))
+public class FolderEndPoint(val path: Path) : BuildFileSetEndPoint {
     override fun dump(indent: String) {
         println("$indent Folder ${path}")
     }

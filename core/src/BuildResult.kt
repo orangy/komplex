@@ -23,7 +23,7 @@ public class StepBuildResult(override val status : BuildStatus) : BuildResult {
 
 }
 
-public class ProjectBuildResult() : BuildResult {
+public class ModuleBuildResult() : BuildResult {
     override val status: BuildStatus
         get() = if (results.all { it.status == BuildStatus.Succeeded }) BuildStatus.Succeeded else BuildStatus.Failed
 

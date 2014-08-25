@@ -6,9 +6,11 @@ import java.util.jar.*
 import java.nio.file.Files
 import java.nio.file.Path
 
-val tools.jar = JarPackager()
-class JarPackager : Tool("Jar Packager") {
-    private fun add(root : Path, source: BuildStreamEndPoint, target: JarOutputStream) {
+public val tools.jar: JarPackager
+    get() = JarPackager()
+
+public class JarPackager : Tool("Jar Packager") {
+    private fun add(root: Path, source: BuildStreamEndPoint, target: JarOutputStream) {
         val entry = JarEntry(root.relativize(source.path).toString())
         //entry.setTime(source.lastModified())
         target.putNextEntry(entry)
@@ -40,7 +42,7 @@ class JarPackager : Tool("Jar Packager") {
                     }
                     is FolderEndPoint -> {
                         Files.createDirectories(destination.path)
-                        JarOutputStream(FileOutputStream(destination.path.resolve("${context.project.projectName}.jar")!!.toFile()), manifest)
+                        JarOutputStream(FileOutputStream(destination.path.resolve("${context.module.moduleName}.jar")!!.toFile()), manifest)
                     }
                     else -> throw IllegalArgumentException("$destination is not supported in $title")
                 }

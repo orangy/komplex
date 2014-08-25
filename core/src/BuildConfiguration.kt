@@ -1,13 +1,13 @@
 package komplex
 
-class BuildConfiguration(val buildProject: BuildProject, val configurations : List<Config>) {
+public class BuildConfiguration(val buildModule: BuildModule, val configurations : List<Config>) {
     val steps = arrayListOf<BuildStep>()
 
-    fun invoke(body : BuildConfiguration.()->Unit) {
+    public fun invoke(body : BuildConfiguration.()->Unit) {
         body()
     }
 
-    fun using(tool: Tool): BuildStep {
+    public fun using(tool: Tool): BuildStep {
         val process = BuildStep(this, tool)
         steps.add(process)
         return process

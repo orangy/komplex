@@ -1,78 +1,83 @@
 package komplex
 
-open class Project(val projectName: String, val parent: Project?) {
-    val title: String
-        get() = if (description.isEmpty()) projectName else "$projectName ($description)"
+import java.util.*
 
-    val projects = arrayListOf<Project>()
-    val sharedSettings = arrayListOf<SharedSettings>()
+public fun project(body: Project.() -> Unit): Project {
+    val project = Project()
+    project.body()
+    return project
+}
 
-    val repository = Repository(this)
+public class Project() : Module("<block>", null) {
 
-    private var _version: String = ""
-    public val version: String
-        get() = _version
-    fun version(value: String) {
-        _version = value
+    val moduleReferences = HashMap<String, Module>()
+    val modulesBuilt = HashMap<Module, BuildResult>()
+
+    fun build(config: String = "") {
+        applySharedSettings(listOf())
+        //dump("")
+
+        makeProjectSet(module.modules)
+
+        println("========= BUILD =========")
+        for (project in module.modules)
+            build(project, config)
     }
 
-    private var _description: String = ""
-    public val description: String
-        get() = _description
-    fun description(value: String) {
-        _description = value
+    fun makeProjectSet(projects: List<Module>) {
+        for (project in projects) {
+            moduleReferences.put(project.moduleName, project)
+            makeProjectSet(project.module.modules)
+        }
     }
 
-    val depends = Dependencies()
-    val build = BuildProject(this)
-
-    val building = Event<Project>("building")
-    val built = Event<Project>("built", EventStyle.reversed)
-
-    fun shared(pattern: String = "*", body: Project.() -> Unit) {
-        val setting = SharedSettings(pattern, this, body)
-        sharedSettings.add(setting)
+    fun resolve(reference: ModuleReference): Module? {
+        return moduleReferences[reference.name]
     }
 
-    fun repository(body: Repository.() -> Unit) {
-        repository.body()
-    }
+    fun build(project: Module, config: String): BuildResult {
+        val existingResult = modulesBuilt[project]
+        if (existingResult != null)
+            return existingResult
 
-    fun applySharedSettings(settings: List<SharedSettings>) {
-        for (config in settings) {
-            if (config.matches(this)) {
-                val initializer = config.body
-                initializer()
+        // build dependencies
+        for (dependency in project.depends.modules) {
+            if (dependency.config.matches(config)) {
+                val dependentProject = resolve(dependency.reference)
+                if (dependentProject == null) {
+                    println("Invalid project reference ${dependency.reference}")
+                } else {
+                    val result = build(dependentProject, config)
+                    if (result.failed) return result
+                }
             }
         }
 
-        val nestedSettings = settings + sharedSettings
-        for (project in projects)
-            project.applySharedSettings(nestedSettings)
-    }
-
-    fun project(name: String): ProjectReference = ProjectReference(name)
-
-    fun project(name: String, description: String? = null, body: Project.() -> Unit): Project {
-        val project = Project(name, this)
-        if (description != null)
-            project.description(description)
-        project.body()
-        projects.add(project)
-        return project
-    }
-
-    fun dump(indent: String) {
-        println("$indent Version: $version")
-        depends.dump(indent)
-        build.dump(indent)
-
-        for (child in projects) {
-            println("$indent Project: ${child.title}")
-            child.dump(indent + "  ")
+        // build nested projects
+        for (nestedProject in project.module.modules) {
+            val result = build(nestedProject, config)
+            if (result.failed) return result
         }
 
-        repository.dump(indent + "  ")
+        project.building.fire(project)
+
+        val projectResult = ModuleBuildResult()
+
+        // now execute own build processes
+        for (buildConfig in project.build.configurations) {
+            if (buildConfig.configurations.any { it.matches(config) }) {
+                for (step in buildConfig.steps) {
+                    val result = step.execute(BuildContext(config, project, step))
+                    projectResult.append(result)
+                    if (projectResult.failed) break;
+                }
+                if (projectResult.failed) break;
+            }
+        }
+
+        modulesBuilt.put(project, projectResult)
+        project.built.fire(project)
+
+        return projectResult
     }
 }
-

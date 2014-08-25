@@ -1,36 +1,30 @@
 package komplex
 
-data class ProjectDependency(val config: Config, val reference: ProjectReference)
-data class LibraryDependency(val config: Config, val reference: LibraryReference)
+data class ModuleDependency(val config: Config, val reference: ModuleReference)
 
 
-fun Dependencies() = Dependencies(Config("*"), arrayListOf(), arrayListOf())
+fun Dependencies() = Dependencies(Config("*"), arrayListOf())
 
-class Dependencies(val config: Config,
-                   val projects: MutableList<ProjectDependency>,
-                   val libraries: MutableList<LibraryDependency>) {
+class Dependencies(val config: Config, val modules: MutableList<ModuleDependency>) {
 
-    fun invoke(config: Config): Dependencies {
-        return Dependencies(config, projects, libraries)
+    public fun invoke(config: Config): Dependencies {
+        return Dependencies(config, modules)
     }
 
-    fun on(dependencies: ProjectReferences) = projects.addAll(dependencies.map { ProjectDependency(config, it) })
-    fun on(dependencies: LibraryReferences) = libraries.addAll(dependencies.map { LibraryDependency(config, it) })
+    public fun on(dependencies: ModuleReferences): Unit {
+        modules.addAll(dependencies.map { ModuleDependency(config, it) })
+    }
 
-    fun on(reference: ProjectReference) = on(ProjectReferences(reference))
-    fun on(library: LibraryReference) = on(LibraryReferences(library))
-    fun on(project: Project) = on(ProjectReferences(project.projectName))
+    public fun on(reference: ModuleReference): Unit = on(ModuleReferences(reference))
+    public fun on(project: Module): Unit = on(ModuleReferences(project.moduleName))
 
     fun dump(indent: String = "") {
-        if (projects.size == 0 && libraries.size == 0)
+        if (modules.size == 0)
             return
 
         println("$indent Depends on")
-        for ((config, reference) in projects) {
+        for ((config, reference) in modules) {
             println("$indent   Project: ${reference.name} (in ${config.pattern})")
-        }
-        for ((config, reference) in libraries) {
-            println("$indent   Library: ${reference.name} (in ${config.pattern})")
         }
     }
 

@@ -3,8 +3,8 @@ package komplex
 import java.nio.file.Path
 import java.io.*
 
-fun file(path: String) = FileEndPoint(fileSystem.getPath(path))
-class FileEndPoint(override val path : Path) : BuildStreamEndPoint {
+public fun file(path: String): FileEndPoint = FileEndPoint(fileSystem.getPath(path))
+public class FileEndPoint(override val path : Path) : BuildStreamEndPoint {
 
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
