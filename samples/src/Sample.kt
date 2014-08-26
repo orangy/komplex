@@ -22,14 +22,23 @@ fun main(args: Array<String>) {
             val jarFile = file("artifacts/$moduleName.jar")
 
             build using(tools.kotlin) from sources to binaries
-            build(jar, test, publish) using tools.jar from binaries to jarFile
-            build(publish) using tools.publish from jarFile
+            build(jar, test) using tools.jar from binaries to jarFile
+
+            build(publish) {
+                using(tools.jar) {
+                    from(binaries)
+                    to(jarFile)
+
+                }
+                using(tools.publish) {
+                    from(jarFile)
+                }
+            }
 
             depends on module("junit") {
                 module("junit", "4.11") {}
                 module("hamcrest-core", "1.3") {}
             }
-
         }
 
         module("spek") {

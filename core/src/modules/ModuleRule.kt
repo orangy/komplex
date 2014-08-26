@@ -1,33 +1,22 @@
 package komplex
 
-public class ModuleRule(val parent: ModuleScenario, val tool: Tool) {
-    val sources = arrayListOf<BuildEndPoint>()
-    val destinations = arrayListOf<BuildEndPoint>()
+public abstract class ModuleRule(val parent: ModuleScenario) {
+    public abstract fun execute(context: BuildContext): BuildResult
 
-    public fun from(vararg endpoints: BuildEndPoint): ModuleRule {
-        sources.addAll(endpoints)
-        return this
+    open fun dump(indent: String = "") {
+
+    }
+}
+
+public class ModuleToolRule<TTool : Tool>(parent: ModuleScenario, val tool: TTool) : ModuleRule(parent) {
+    override fun dump(indent: String) {
+        println("$indent Rule ${tool.title}")
+        tool.dump(indent)
     }
 
-    public fun to(vararg endpoints: BuildEndPoint): ModuleRule {
-        destinations.addAll(endpoints)
-        return this
-    }
-
-    fun dump(indent: String = "") {
-        println("$indent ${tool.title}")
-
-        println("$indent   From: ")
-        for (endpoint in sources)
-            endpoint.dump(indent + "    ")
-        println("$indent   To: ")
-        for (endpoint in destinations)
-            endpoint.dump(indent + "    ")
-    }
-
-    public fun execute(context: BuildContext): BuildResult {
+    public override fun execute(context: BuildContext): BuildResult {
         try {
-            return tool.execute(context, sources, destinations)
+            return tool.execute(context)
         } catch (e: Throwable) {
             e.printStackTrace()
             return BuildResult.Fail

@@ -5,8 +5,8 @@ import java.nio.file.*
 public val tools.publish: PublishTool
     get() = PublishTool()
 
-public class PublishTool : Tool("Publish") {
-    public override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+public class PublishTool : ProcessingTool("Publish") {
+    public override fun execute(context: BuildContext, from: List<BuildEndPoint>): BuildResult {
 /*
         val repo = context.module.repository.findRepository()
 

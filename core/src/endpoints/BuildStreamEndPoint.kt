@@ -3,13 +3,13 @@ package komplex
 import java.io.*
 import java.nio.file.Path
 
-trait BuildStreamEndPoint : BuildEndPoint {
-    val path: Path
-    val inputStream: InputStream
-    val outputStream: OutputStream
+public trait BuildStreamEndPoint : BuildEndPoint {
+    public val path: Path
+    public val inputStream: InputStream
+    public val outputStream: OutputStream
 }
 
-fun MutableList<BuildStreamEndPoint>.addAll(endpoint: BuildEndPoint) {
+public fun MutableList<BuildStreamEndPoint>.addAll(endpoint: BuildEndPoint) {
     when (endpoint) {
         is BuildStreamEndPoint -> add(endpoint)
         is BuildFileSetEndPoint -> addAll(endpoint.findFiles())
@@ -17,7 +17,7 @@ fun MutableList<BuildStreamEndPoint>.addAll(endpoint: BuildEndPoint) {
     }
 }
 
-fun List<BuildEndPoint>.getAllStreams(): List<BuildStreamEndPoint> {
+public fun List<BuildEndPoint>.getAllStreams(): List<BuildStreamEndPoint> {
     val streams = arrayListOf<BuildStreamEndPoint>()
     for (item in this)
         streams.addAll(item)

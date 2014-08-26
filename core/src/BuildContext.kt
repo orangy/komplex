@@ -1,7 +1,7 @@
 package komplex
 
-public data class BuildContext(val scenario: Scenario,
-                               val module: Module,
-                               val step: ModuleRule) {
+public data class BuildContext(public val scenario: Scenario,
+                               public val module: Module,
+                               public val step: ModuleRule) {
 
 }

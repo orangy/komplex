@@ -39,7 +39,8 @@ public open class Module(public val moduleName: String, public val parent: Modul
         build.dump(indent)
 
         for (child in module.modules) {
-            println("$indent Project: ${child.title}")
+            println()
+            println("$indent Module: ${child.title}")
             child.dump(indent + "  ")
         }
     }

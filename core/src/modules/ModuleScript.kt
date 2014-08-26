@@ -3,7 +3,7 @@ package komplex
 public class ModuleScript(val module: Module) {
     val scenarios = arrayListOf<ModuleScenario>()
 
-    public fun using(tool: Tool): ModuleRule = invoke(ScenarioSelector("*")).using(tool)
+    public fun using<TTool : Tool>(tool: TTool): TTool = invoke(ScenarioSelector("*")).using(tool)
 
     public fun invoke(vararg scenario: ScenarioSelector, body: ModuleScenario.() -> Unit): ModuleScenario {
         val buildScenario = invoke(*scenario)

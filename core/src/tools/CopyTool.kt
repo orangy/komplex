@@ -5,7 +5,7 @@ import java.nio.file.*
 public val tools.copy: CopyTool
     get() = CopyTool()
 
-public class CopyTool : Tool("Copy") {
+public class CopyTool : ConvertingTool("Copy") {
     override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         for (destination in to) {
             for (source in from.getAllStreams()) {

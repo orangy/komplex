@@ -4,7 +4,7 @@ import java.nio.file.*
 import java.nio.file.attribute.*
 
 public fun folder(path: String): FolderEndPoint = FolderEndPoint(fileSystem.getPath(path))
-public class FolderEndPoint(val path: Path) : BuildFileSetEndPoint {
+public class FolderEndPoint(public val path: Path) : BuildFileSetEndPoint {
     override fun dump(indent: String) {
         println("$indent Folder ${path}")
     }
