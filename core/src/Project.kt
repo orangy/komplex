@@ -8,7 +8,7 @@ public fun project(body: Project.() -> Unit): Project {
     return project
 }
 
-public class Project() : Module("<block>", null) {
+public class Project() : ModuleCollection() {
 
     val moduleReferences = HashMap<String, Module>()
     val modulesBuilt = HashMap<Module, BuildResult>()
@@ -17,17 +17,17 @@ public class Project() : Module("<block>", null) {
         //dump("")
 
         val scenario = Scenario(config)
-        makeProjectSet(module.modules)
+        makeModuleSet(modules)
 
         println("========= BUILD =========")
-        for (project in module.modules)
-            build(project, scenario)
+        for (module in modules)
+            build(module, scenario)
     }
 
-    fun makeProjectSet(projects: List<Module>) {
-        for (project in projects) {
-            moduleReferences.put(project.moduleName, project)
-            makeProjectSet(project.module.modules)
+    fun makeModuleSet(modules: List<Module>) {
+        for (module in modules) {
+            moduleReferences.put(module.moduleName, module)
+            makeModuleSet(module.modules)
         }
     }
 
@@ -35,48 +35,48 @@ public class Project() : Module("<block>", null) {
         return moduleReferences[reference.name]
     }
 
-    fun build(project: Module, scenario: Scenario): BuildResult {
-        val existingResult = modulesBuilt[project]
+    fun build(module: Module, scenario: Scenario): BuildResult {
+        val existingResult = modulesBuilt[module]
         if (existingResult != null)
             return existingResult
 
         // build dependencies
-        for (dependency in project.depends.dependencies) {
+        for (dependency in module.depends.dependencies) {
             if (dependency.scenario.matches(scenario)) {
-                val dependentProject = resolve(dependency.reference)
-                if (dependentProject == null) {
-                    println("Invalid project reference ${dependency.reference}")
+                val dependentModule = resolve(dependency.reference)
+                if (dependentModule == null) {
+                    println("Invalid module reference ${dependency.reference}")
                 } else {
-                    val result = build(dependentProject, scenario)
+                    val result = build(dependentModule, scenario)
                     if (result.failed) return result
                 }
             }
         }
 
-        // build nested projects
-        for (nestedProject in project.module.modules) {
-            val result = build(nestedProject, scenario)
+        // build nested modules
+        for (nestedModule in module.modules) {
+            val result = build(nestedModule, scenario)
             if (result.failed) return result
         }
 
 
-        val projectResult = ModuleBuildResult()
+        val moduleResult = ModuleBuildResult()
 
         // now execute own build processes
-        for (buildConfig in project.build.scenarios) {
+        for (buildConfig in module.build.scenarios) {
             if (buildConfig.scenarios.any { it.matches(scenario) }) {
                 for (step in buildConfig.rules) {
-                    val context = BuildContext(scenario, project, step)
+                    val context = BuildContext(scenario, module, step)
                     val result = step.execute(context)
-                    projectResult.append(result)
-                    if (projectResult.failed) break;
+                    moduleResult.append(result)
+                    if (moduleResult.failed) break;
                 }
-                if (projectResult.failed) break;
+                if (moduleResult.failed) break;
             }
         }
 
-        modulesBuilt.put(project, projectResult)
+        modulesBuilt.put(module, moduleResult)
 
-        return projectResult
+        return moduleResult
     }
 }

@@ -13,6 +13,8 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
         return this
     }
 
+    public var enableInline: Boolean = true
+
     public override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
 /*        val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()

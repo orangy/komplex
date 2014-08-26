@@ -1,4 +1,4 @@
 package komplex
 
-public abstract class CompilerTool(title : String) : ProcessingTool(title) {
+public abstract class CompilerTool(title : String) : ConvertingTool(title) {
 }

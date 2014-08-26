@@ -1,16 +1,9 @@
 package komplex
 
-import komplex.Event
-import komplex.ModuleScript
-import komplex.SharedSettings
-import komplex.Dependencies
-import komplex.ModuleReference
-import komplex.EventStyle
-
 /**
  *
  */
-public open class Module(public val moduleName: String, public val parent: Module?) {
+public open class Module(public val moduleName: String) : ModuleCollection() {
     public val title: String
         get() = if (description.isEmpty()) moduleName else "$moduleName ($description)"
 
@@ -31,18 +24,11 @@ public open class Module(public val moduleName: String, public val parent: Modul
     public val depends: Dependencies = Dependencies()
     public val build: ModuleScript = ModuleScript(this)
 
-    public val module: ModuleCollection = ModuleCollection(this)
-
-    public fun dump(indent: String) {
+    public override fun dump(indent: String) {
         println("$indent Version: $version")
         depends.dump(indent)
         build.dump(indent)
-
-        for (child in module.modules) {
-            println()
-            println("$indent Module: ${child.title}")
-            child.dump(indent + "  ")
-        }
+        super.dump(indent)
     }
 }
 

@@ -10,6 +10,8 @@ public val tools.jar: JarPackager
     get() = JarPackager()
 
 public class JarPackager : ConvertingTool("Jar Packager") {
+    public var compression : Int = 3
+
     private fun add(root: Path, source: BuildStreamEndPoint, target: JarOutputStream) {
         val entry = JarEntry(root.relativize(source.path).toString())
         //entry.setTime(source.lastModified())

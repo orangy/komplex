@@ -21,14 +21,17 @@ fun main(args: Array<String>) {
             val binaries = folder("out/$moduleName")
             val jarFile = file("artifacts/$moduleName.jar")
 
-            build using(tools.kotlin) from sources to binaries
-            build(jar, test) using tools.jar from binaries to jarFile
+            build using(tools.kotlin) from sources into binaries with {
+                enableInline = true
+            }
+
+            build(jar, test) using tools.jar from binaries into jarFile
 
             build(publish) {
                 using(tools.jar) {
                     from(binaries)
-                    to(jarFile)
-
+                    into(jarFile)
+                    compression = 2
                 }
                 using(tools.publish) {
                     from(jarFile)
