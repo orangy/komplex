@@ -6,8 +6,6 @@ package komplex
 public open class ModuleCollection() {
     val modules = arrayListOf<Module>()
 
-    public fun invoke(name: String, description: String? = null, body: Module.() -> Unit): Module = module(name, description, body)
-
     public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {
         val project = Module(name)
         if (description != null)

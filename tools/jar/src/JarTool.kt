@@ -9,7 +9,7 @@ import java.nio.file.Path
 public val tools.jar: JarPackager
     get() = JarPackager()
 
-public class JarPackager : ConvertingTool("Jar Packager") {
+public class JarPackager : Converter("Jar Packager") {
     public var compression : Int = 3
 
     private fun add(root: Path, source: BuildStreamEndPoint, target: JarOutputStream) {
@@ -31,7 +31,7 @@ public class JarPackager : ConvertingTool("Jar Packager") {
         }
     }
 
-    override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    override fun convert(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 
