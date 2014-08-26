@@ -3,7 +3,7 @@ package komplex
 /**
  * Provides DSL for building hierarchy of modules
  */
-public open class Modules(val parent: Module) {
+public open class ModuleCollection(val parent: Module) {
     val modules = arrayListOf<Module>()
 
     public fun invoke(name: String, description: String? = null, body: Module.() -> Unit): Module {

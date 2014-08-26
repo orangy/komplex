@@ -1,17 +1,17 @@
 package komplex
 
-public data class ModuleDependency(val scenario: Scenario, val reference: ModuleReference)
+public data class ModuleDependency(val scenario: ScenarioSelector, val reference: ModuleReference)
 
-public fun Dependencies(): Dependencies = Dependencies(Scenario("*"), arrayListOf())
+public fun Dependencies(): Dependencies = Dependencies(ScenarioSelector("*"), arrayListOf())
 
-public class Dependencies(val config: Scenario, val dependencies: MutableList<ModuleDependency>) {
+public class Dependencies(val scenario: ScenarioSelector, val dependencies: MutableList<ModuleDependency>) {
 
-    public fun invoke(scenario: Scenario): Dependencies {
+    public fun invoke(scenario: ScenarioSelector): Dependencies {
         return Dependencies(scenario, dependencies)
     }
 
     public fun on(references: ModuleReferences): Unit {
-        dependencies.addAll(references.map { ModuleDependency(config, it) })
+        dependencies.addAll(references.map { ModuleDependency(scenario, it) })
     }
 
     public fun on(reference: ModuleReference): Unit = on(ModuleReferences(reference))

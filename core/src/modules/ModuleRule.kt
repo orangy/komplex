@@ -1,15 +1,15 @@
 package komplex
 
-public class ModuleScenarioRule(val buildConfiguration: ModuleScenarioRules, val tool: Tool) {
+public class ModuleRule(val parent: ModuleScenario, val tool: Tool) {
     val sources = arrayListOf<BuildEndPoint>()
     val destinations = arrayListOf<BuildEndPoint>()
 
-    public fun from(vararg endpoints: BuildEndPoint): ModuleScenarioRule {
+    public fun from(vararg endpoints: BuildEndPoint): ModuleRule {
         sources.addAll(endpoints)
         return this
     }
 
-    public fun to(vararg endpoints: BuildEndPoint): ModuleScenarioRule {
+    public fun to(vararg endpoints: BuildEndPoint): ModuleRule {
         destinations.addAll(endpoints)
         return this
     }

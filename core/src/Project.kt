@@ -16,11 +16,12 @@ public class Project() : Module("<block>", null) {
     fun build(config: String = "") {
         //dump("")
 
+        val scenario = Scenario(config)
         makeProjectSet(module.modules)
 
         println("========= BUILD =========")
         for (project in module.modules)
-            build(project, config)
+            build(project, scenario)
     }
 
     fun makeProjectSet(projects: List<Module>) {
@@ -34,19 +35,19 @@ public class Project() : Module("<block>", null) {
         return moduleReferences[reference.name]
     }
 
-    fun build(project: Module, config: String): BuildResult {
+    fun build(project: Module, scenario: Scenario): BuildResult {
         val existingResult = modulesBuilt[project]
         if (existingResult != null)
             return existingResult
 
         // build dependencies
         for (dependency in project.depends.dependencies) {
-            if (dependency.scenario.matches(config)) {
+            if (dependency.scenario.matches(scenario)) {
                 val dependentProject = resolve(dependency.reference)
                 if (dependentProject == null) {
                     println("Invalid project reference ${dependency.reference}")
                 } else {
-                    val result = build(dependentProject, config)
+                    val result = build(dependentProject, scenario)
                     if (result.failed) return result
                 }
             }
@@ -54,7 +55,7 @@ public class Project() : Module("<block>", null) {
 
         // build nested projects
         for (nestedProject in project.module.modules) {
-            val result = build(nestedProject, config)
+            val result = build(nestedProject, scenario)
             if (result.failed) return result
         }
 
@@ -63,9 +64,10 @@ public class Project() : Module("<block>", null) {
 
         // now execute own build processes
         for (buildConfig in project.build.scenarios) {
-            if (buildConfig.scenarios.any { it.matches(config) }) {
+            if (buildConfig.scenarios.any { it.matches(scenario) }) {
                 for (step in buildConfig.rules) {
-                    val result = step.execute(BuildContext(config, project, step))
+                    val context = BuildContext(scenario, project, step)
+                    val result = step.execute(context)
                     projectResult.append(result)
                     if (projectResult.failed) break;
                 }

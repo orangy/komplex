@@ -34,13 +34,16 @@ fun main(args: Array<String>) {
 
         module("spek") {
             val core = module("spek-core", "Spek Core") {
+                shared()
             }
 
             module("spek-samples", "Spek Samples") {
+                shared()
                 depends on core // reference to project by name
             }
 
             module("spek-tests", "Spek Tests") {
+                shared()
                 depends on core // reference to project with variable
             }
         }
