@@ -1,9 +1,9 @@
 package komplex
 
-public fun config(name: String, body: ScenarioSelector.() -> Unit = {}): ScenarioSelector {
-    val configuration = ScenarioSelector(name)
-    configuration.body()
-    return configuration
+public fun scenario(name: String, body: ScenarioSelector.() -> Unit = {}): ScenarioSelector {
+    val scenario = ScenarioSelector(name)
+    scenario.body()
+    return scenario
 }
 
 public class Scenario(val name: String) {

@@ -16,15 +16,4 @@ public class Dependencies(val scenario: ScenarioSelector, val dependencies: Muta
 
     public fun on(reference: ModuleReference): Unit = on(ModuleReferences(reference))
     public fun on(module: Module): Unit = on(ModuleReferences(module.moduleName))
-
-    fun dump(indent: String = "") {
-        if (dependencies.size == 0)
-            return
-
-        println("$indent Depends on")
-        for ((scenario, reference) in dependencies) {
-            println("$indent   Project: ${reference} (in ${scenario})")
-        }
-    }
-
 }

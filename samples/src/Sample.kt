@@ -7,19 +7,19 @@ import komplex.kotlin.*
 fun main(args: Array<String>) {
     val project = project {
         /// BUILD SCRIPT
-        val test = config("test")
-        val jar = config("jar")
-        val publish = config("publish")
-        val srcDep = config("src")
-        val binDep = config("bin")
+        val test = scenario("test")
+        val jar = scenario("jar")
+        val publish = scenario("publish")
+        val srcDep = scenario("src")
+        val binDep = scenario("bin")
 
         fun Module.shared() {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects
-            val sources = files("$moduleName/src/**")
-            val binaries = folder("out/$moduleName")
-            val jarFile = file("artifacts/$moduleName.jar")
+            val sources = files("$moduleName/src/**", artifacts.sources)
+            val binaries = folder("out/$moduleName", artifacts.binaries)
+            val jarFile = file("artifacts/$moduleName.jar", artifacts.jar)
 
             build using(tools.kotlin) from sources into binaries with {
                 enableInline = true
@@ -63,6 +63,6 @@ fun main(args: Array<String>) {
     }
 
     // kbuild script.build -t publish -t src
-    project.dump("")
+    project.print("")
 
 }

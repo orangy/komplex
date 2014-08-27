@@ -1,7 +1,7 @@
 package komplex
 
 /**
- * Provides DSL for building hierarchy of modules
+ * Collection of modules
  */
 public open class ModuleCollection() {
     val modules = arrayListOf<Module>()
@@ -13,13 +13,5 @@ public open class ModuleCollection() {
         project.body()
         modules.add(project)
         return project
-    }
-
-    public open fun dump(indent: String) {
-        for (child in modules) {
-            println()
-            println("$indent Module: ${child.title}")
-            child.dump(indent + "  ")
-        }
     }
 }

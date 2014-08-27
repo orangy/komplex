@@ -5,8 +5,8 @@ import java.nio.file.attribute.*
 
 public val fileSystem: FileSystem = FileSystems.getDefault()!!
 
-public trait BuildFileSetEndPoint : BuildEndPoint {
-    public fun findFiles(baseDir: Path? = null): List<BuildStreamEndPoint>
+public trait FileSetArtifact : Artifact {
+    public fun findFiles(baseDir: Path? = null): List<StreamArtifact>
 }
 
 public class GlobCollection(val collection: MutableList<String>) {
@@ -15,23 +15,16 @@ public class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-public fun files(glob: String): BuildFileSetEndPoint = FilesGlobEndPoint().let { it.include(glob); it }
-class FilesGlobEndPoint : BuildFileSetEndPoint {
+public fun files(glob: String, `type`: ArtifactType): FileSetArtifact = FileGlobArtifact(`type`).let { it.include(glob); it }
+class FileGlobArtifact(override val `type`: ArtifactType) : FileSetArtifact {
     val included = arrayListOf<String>()
     val excluded = arrayListOf<String>()
 
-    public override fun toString(): String {
-        if (excluded.isEmpty())
-            return "$included"
-        else
-            return "$included - $excluded"
-    }
-
-    public fun invoke(body: FilesGlobEndPoint.() -> Unit) {
+    public fun invoke(body: FileGlobArtifact.() -> Unit) {
         this.body()
     }
 
-    public fun append(files: FilesGlobEndPoint) {
+    public fun append(files: FileGlobArtifact) {
         included.addAll(files.included)
         excluded.addAll(files.excluded)
     }
@@ -54,15 +47,15 @@ class FilesGlobEndPoint : BuildFileSetEndPoint {
         collection.body()
     }
 
-    public override fun findFiles(baseDir: Path?): List<BuildStreamEndPoint> {
+    public override fun findFiles(baseDir: Path?): List<StreamArtifact> {
         val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
         val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
-        val result = arrayListOf<BuildStreamEndPoint>()
+        val result = arrayListOf<StreamArtifact>()
 
         class Finder : SimpleFileVisitor<Path?>() {
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
                 if (file != null && includeFilter.any { it.matches(file) } && excludeFilter.none { it.matches(file) }) {
-                    result.add(FileEndPoint(file))
+                    result.add(FileArtifact(file, `type`))
                 }
                 return FileVisitResult.CONTINUE
             }
@@ -71,20 +64,5 @@ class FilesGlobEndPoint : BuildFileSetEndPoint {
         return result
     }
 
-    override fun dump(indent: String) {
-        if (included.isNotEmpty()) {
-            for (child in included) {
-                println("$indent ${child}")
-            }
-        }
-        if (excluded.isNotEmpty()) {
-            println("$indent Excluded:")
-            for (child in excluded) {
-                println("$indent   ${child}")
-            }
-        }
-        for (child in findFiles()) {
-            println("$indent   File: ${child}")
-        }
-    }
+    override fun toString(): String = "$`type` glob +$included -$excluded"
 }

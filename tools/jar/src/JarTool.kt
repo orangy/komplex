@@ -12,7 +12,7 @@ public val tools.jar: JarPackager
 public class JarPackager : Converter("Jar Packager") {
     public var compression : Int = 3
 
-    private fun add(root: Path, source: BuildStreamEndPoint, target: JarOutputStream) {
+    private fun add(root: Path, source: StreamArtifact, target: JarOutputStream) {
         val entry = JarEntry(root.relativize(source.path).toString())
         //entry.setTime(source.lastModified())
         target.putNextEntry(entry)
@@ -31,18 +31,18 @@ public class JarPackager : Converter("Jar Packager") {
         }
     }
 
-    override fun convert(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 
         val destination = to.single()
         val target =
                 when (destination) {
-                    is BuildStreamEndPoint -> {
+                    is StreamArtifact -> {
                         destination.path.getParent()?.let { Files.createDirectories(it) }
                         JarOutputStream(destination.outputStream, manifest)
                     }
-                    is FolderEndPoint -> {
+                    is FolderArtifact -> {
                         Files.createDirectories(destination.path)
                         JarOutputStream(FileOutputStream(destination.path.resolve("${context.module.moduleName}.jar")!!.toFile()), manifest)
                     }
@@ -51,7 +51,7 @@ public class JarPackager : Converter("Jar Packager") {
 
         for (source in from) {
             when (source) {
-                is FolderEndPoint -> {
+                is FolderArtifact -> {
                     for (item in source.findFiles())
                         add(source.path, item, target)
                 }

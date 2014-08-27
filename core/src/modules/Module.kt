@@ -23,12 +23,5 @@ public open class Module(public val moduleName: String) : ModuleCollection() {
 
     public val depends: Dependencies = Dependencies()
     public val build: ModuleScript = ModuleScript(this)
-
-    public override fun dump(indent: String) {
-        println("$indent Version: $version")
-        depends.dump(indent)
-        build.dump(indent)
-        super.dump(indent)
-    }
 }
 

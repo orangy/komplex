@@ -3,18 +3,16 @@ package komplex
 import java.nio.file.*
 import java.nio.file.attribute.*
 
-public fun folder(path: String): FolderEndPoint = FolderEndPoint(fileSystem.getPath(path))
-public class FolderEndPoint(public val path: Path) : BuildFileSetEndPoint {
-    override fun dump(indent: String) {
-        println("$indent Folder ${path}")
-    }
+public fun folder(path: String, `type`: ArtifactType): FolderArtifact = FolderArtifact(fileSystem.getPath(path), `type`)
+public class FolderArtifact(public val path: Path, override val `type`: ArtifactType) : FileSetArtifact {
+    override fun toString(): String = "$`type` folder ${path}"
 
-    override fun findFiles(baseDir: Path?): List<BuildStreamEndPoint> {
-        val result = arrayListOf<BuildStreamEndPoint>()
+    override fun findFiles(baseDir: Path?): List<StreamArtifact> {
+        val result = arrayListOf<StreamArtifact>()
         class Finder : SimpleFileVisitor<Path?>() {
             override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
                 if (file != null) {
-                    result.add(FileEndPoint(file))
+                    result.add(FileArtifact(file, `type`))
                 }
                 return FileVisitResult.CONTINUE
             }

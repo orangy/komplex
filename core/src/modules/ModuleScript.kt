@@ -1,5 +1,8 @@
 package komplex
 
+/**
+ * Collection of (scenarios)[Scenario] for the [module]
+ */
 public class ModuleScript(val module: Module) {
     val scenarios = arrayListOf<ModuleScenario>()
 
@@ -15,11 +18,5 @@ public class ModuleScript(val module: Module) {
         val build = ModuleScenario(this, config.toList())
         scenarios.add(build)
         return build
-    }
-
-    fun dump(indent: String = "") {
-        for (builds in scenarios) {
-            builds.dump(indent)
-        }
     }
 }

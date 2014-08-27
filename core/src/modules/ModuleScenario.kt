@@ -19,12 +19,5 @@ public class ModuleScenario(val parent: ModuleScript, val scenarios: List<Scenar
         rules.add(rule)
         return tool
     }
-
-    fun dump(indent: String = "") {
-        println("$indent Scenario $scenarios")
-        for (rule in rules) {
-            rule.dump(indent + "  ")
-        }
-    }
 }
 

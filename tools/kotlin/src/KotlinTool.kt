@@ -15,7 +15,7 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
     public var enableInline: Boolean = true
 
-    public override fun convert(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    public override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
 /*        val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
