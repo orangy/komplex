@@ -4,14 +4,13 @@ fun String.shift(): String = this + "  "
 
 public fun ModuleCollection.print(indent: String) {
     for (child in modules) {
-        println()
-        println("$indent Module: ${child.title}")
         child.print(indent.shift())
     }
 }
 
 public fun Module.print(indent: String) {
-    println("$indent Version: $version")
+    println()
+    println("$indent Module: $title ($version)")
     depends.print(indent)
     build.print(indent)
     (this : ModuleCollection).print(indent)
@@ -35,9 +34,13 @@ public fun Dependencies.print(indent: String) {
         return
 
     println("$indent Depends on")
-    for ((scenario, reference) in dependencies) {
-        println("$indent Module: ${reference} (in ${scenario})")
+    for (dependency in dependencies) {
+        dependency.print(indent.shift())
     }
+}
+
+public fun ModuleDependency.print(indent: String) {
+    println("${indent} Module: ${reference} (in ${scenario})")
 }
 
 public fun ModuleRule.print(indent: String) {
