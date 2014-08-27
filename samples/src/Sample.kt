@@ -5,13 +5,11 @@ import komplex.jar.*
 import komplex.kotlin.*
 
 fun main(args: Array<String>) {
-    val project = project {
+    val script = script {
         /// BUILD SCRIPT
         val test = scenario("test")
         val jar = scenario("jar")
         val publish = scenario("publish")
-        val srcDep = scenario("src")
-        val binDep = scenario("bin")
 
         fun Module.shared() {
             version("SNAPSHOT-0.1")
@@ -63,6 +61,5 @@ fun main(args: Array<String>) {
     }
 
     // kbuild script.build -t publish -t src
-    project.print("")
-
+    script.print("")
 }

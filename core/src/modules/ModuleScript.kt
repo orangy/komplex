@@ -4,11 +4,11 @@ package komplex
  * Collection of (scenarios)[Scenario] for the [module]
  */
 public class ModuleScript(val module: Module) {
-    val scenarios = arrayListOf<ModuleScenario>()
+    public val scenarios: MutableList<ModuleScenario> = arrayListOf()
 
     public fun using<TTool : Tool>(tool: TTool): TTool = invoke(ScenarioSelector("*")).using(tool)
 
-    public fun invoke(vararg scenario: ScenarioSelector, body: ModuleScenario.() -> Unit): ModuleScenario {
+    inline public fun invoke(vararg scenario: ScenarioSelector, body: ModuleScenario.() -> Unit): ModuleScenario {
         val buildScenario = invoke(*scenario)
         buildScenario.body()
         return buildScenario

@@ -17,7 +17,7 @@ public open class Module(public val moduleName: String) : ModuleCollection() {
     private var _description: String = ""
     public val description: String
         get() = _description
-    fun description(value: String) {
+    public fun description(value: String) {
         _description = value
     }
 

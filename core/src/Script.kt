@@ -2,13 +2,13 @@ package komplex
 
 import java.util.*
 
-public fun project(body: Project.() -> Unit): Project {
-    val project = Project()
-    project.body()
-    return project
+public fun script(body: Script.() -> Unit): Script {
+    val script = Script()
+    script.body()
+    return script
 }
 
-public class Project() : ModuleCollection() {
+public class Script() : ModuleCollection() {
 
     val moduleReferences = HashMap<String, Module>()
     val modulesBuilt = HashMap<Module, BuildResult>()
