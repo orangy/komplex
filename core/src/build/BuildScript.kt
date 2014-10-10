@@ -42,7 +42,7 @@ public class BuildScript() : ModuleCollection() {
 
         // build dependencies
         for (dependency in module.depends.dependencies) {
-            if (dependency.scenario.matches(scenario)) {
+            if (dependency.scenario.matches(scenario) && dependency.reference is ModuleReference) {
                 val dependentModule = resolve(dependency.reference)
                 if (dependentModule == null) {
                     println("Invalid module reference ${dependency.reference}")

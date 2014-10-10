@@ -2,14 +2,27 @@ package komplex
 
 import java.util.ArrayList
 
-public data class ModuleReference(val name: String, val version : String = "") {
-    override fun toString(): String = "$name ($version)"
+public trait Reference {
+    public val name: String
+    public override fun toString(): String = name
 }
 
-public class ModuleReferences() : MutableList<ModuleReference> by ArrayList<ModuleReference>()
+public class LibraryReference(public override val name: String, public val version: String? = null) : Reference {
+    public fun baseName(): String = if (version == null) name else "$name-$version"
+    public override fun toString(): String = baseName()
+}
 
-public fun module(name: String): ModuleReference = ModuleReference(name)
-public fun ModuleReferences(name : String): ModuleReferences = ModuleReferences().let { it.add(ModuleReference(name)); it }
-public fun ModuleReferences(reference : ModuleReference): ModuleReferences = ModuleReferences().let { it.add(reference); it }
+public fun library(name: String, version: String? = null): LibraryReference = LibraryReference(name, version)
+
+public class ModuleReference(public val module: Module) : Reference {
+    override val name: String = module.moduleName
+}
+
+public class References() : MutableList<Reference> by ArrayList<Reference>() {
+    public fun library(name: String, version: String? = null): Unit { add(LibraryReference(name, version)) }
+    public fun module(module: Module): Unit { add(ModuleReference(module)) }
+}
+
+public fun References(reference : Reference): References = References().let { it.add(reference); it }
 
 

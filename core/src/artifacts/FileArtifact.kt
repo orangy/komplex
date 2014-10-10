@@ -5,7 +5,7 @@ import java.io.*
 
 public fun file(path: String, `type`: ArtifactType): FileArtifact = FileArtifact(fileSystem.getPath(path), `type`)
 
-public class FileArtifact(override val path: Path, override val `type`: ArtifactType) : StreamArtifact {
+public class FileArtifact(public override val path: Path, override val `type`: ArtifactType) : StreamArtifact {
 
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))

@@ -19,7 +19,7 @@ public trait BuildResult {
     }
 }
 
-public class StepBuildResult(override val status : BuildStatus) : BuildResult {
+public class StepBuildResult(override public val status : BuildStatus) : BuildResult {
 
 }
 
