@@ -6,9 +6,13 @@ import java.util.jar.*
 import java.nio.file.Files
 import java.nio.file.Path
 
-val tools.jar = JarPackager()
-class JarPackager : Tool("Jar Packager") {
-    private fun add(root : Path, source: BuildStreamEndPoint, target: JarOutputStream) {
+public val tools.jar: JarPackager
+    get() = JarPackager()
+
+public class JarPackager : Converter("Jar Packager") {
+    public var compression : Int = 3
+
+    private fun add(root: Path, source: StreamArtifact, target: JarOutputStream) {
         val entry = JarEntry(root.relativize(source.path).toString())
         //entry.setTime(source.lastModified())
         target.putNextEntry(entry)
@@ -27,27 +31,27 @@ class JarPackager : Tool("Jar Packager") {
         }
     }
 
-    override fun execute(context: BuildContext, from: List<BuildEndPoint>, to: List<BuildEndPoint>): BuildResult {
+    override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 
         val destination = to.single()
         val target =
                 when (destination) {
-                    is BuildStreamEndPoint -> {
+                    is StreamArtifact -> {
                         destination.path.getParent()?.let { Files.createDirectories(it) }
                         JarOutputStream(destination.outputStream, manifest)
                     }
-                    is FolderEndPoint -> {
+                    is FolderArtifact -> {
                         Files.createDirectories(destination.path)
-                        JarOutputStream(FileOutputStream(destination.path.resolve("${context.project.projectName}.jar")!!.toFile()), manifest)
+                        JarOutputStream(FileOutputStream(destination.path.resolve("${context.module.moduleName}.jar")!!.toFile()), manifest)
                     }
                     else -> throw IllegalArgumentException("$destination is not supported in $title")
                 }
 
         for (source in from) {
             when (source) {
-                is FolderEndPoint -> {
+                is FolderArtifact -> {
                     for (item in source.findFiles())
                         add(source.path, item, target)
                 }

@@ -7,10 +7,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="kotlin" level="project" />
     <orderEntry type="module" module-name="core" />
     <orderEntry type="module" module-name="jar" />
     <orderEntry type="module" module-name="kotlin" />
+    <orderEntry type="library" name="kotlin" level="project" />
   </component>
 </module>
 

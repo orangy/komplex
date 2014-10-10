@@ -3,45 +3,82 @@ package komplex.sample
 import komplex.*
 import komplex.jar.*
 import komplex.kotlin.*
+import komplex.dependencies.repository
 
-fun main(args: Array<String>) = block {
-    val test = config("test")
-    val jar = config("jar")
-    val publish = config("publish")
+fun main(args: Array<String>) {
+    val script = script {
+        /// BUILD SCRIPT
+        val test = scenario("test")
+        val jar = scenario("jar")
+        val publish = scenario("publish")
 
-    shared {
-        version("SNAPSHOT-0.1")
+        fun Module.shared() {
+            version("SNAPSHOT-0.1")
 
-        // shared settings for all projects
-        val sources = files("$projectName/src/**")
-        val binaries = folder("out/$projectName")
-        val jarFile = file("artifacts/$projectName.jar")
+            repository("lib") // dependencies should be placed here manually for now
 
-        build using(tools.kotlin) from sources to binaries
-        build(jar, publish) using tools.jar from binaries to jarFile
-        build(publish) using tools.publish from jarFile
+            // shared settings for all projects
+            val sources = files("$moduleName/src/**.kt", artifacts.sources)
+            val binaries = folder("/out/sample/$moduleName", artifacts.binaries)
+            val jarFile = file("/artifacts/sample/$moduleName.jar", artifacts.jar)
 
-        depends on libraries {
-            // collection of libraries
-            library("junit", "4.11")
-            library("hamcrest-core", "1.3")
+            build using(tools.kotlin) from sources into binaries with {
+                enableInline = true
+            }
+
+            build(jar, test) using tools.jar from binaries into jarFile
+
+            build(publish) {
+                using(tools.jar) {
+                    from(binaries)
+                    into(jarFile)
+                    compression = 2
+                }
+                using(tools.publish) {
+                    from(jarFile)
+                }
+            }
         }
 
-        building { println("Building $title...") }
-        built { println("Done building $title.") }
+        module("komplex") {
+            val core = module("core", "Komplex Core") {
+                shared()
+            }
+
+            val toolsJar = module("tools/jar", "Komplex jar tool") {
+                shared()
+                depends on core
+            }
+            val toolsKotlin = module("tools/kotlin", "Komplex Kotlin Compiler tool") {
+                shared()
+                depends on core
+                depends on {
+                    library("kotlin-compiler", null) // something wrong with dispatching, \todo check with kotlin team
+                    library("kotlin-runtime")
+                }
+            }
+
+            module("samples", "Komplex Samples") {
+                shared()
+                depends on core // reference to project by name
+                depends on toolsJar
+                depends on toolsKotlin
+            }
+/*
+            module("tests", "Komplex Tests") {
+                shared()
+                depends on core // reference to project with variable
+                depends on {
+                    library("junit", "4.11")
+                    library("hamcrest-core", "1.3")
+                }
+            }
+*/
+        }
+        /// BUILD SCRIPT
     }
 
-    project("spek") {
-        val core = project("spek-core", "Spek Core") {
-        }
-
-        project("spek-samples", "Spek Samples") {
-            depends on core // reference to project by name
-        }
-
-        project("spek-tests", "Spek Tests") {
-            depends on core // reference to project with variable
-            depends on library("mockito-all", "1.9.5", "org.mockito") // inline library dependence
-        }
-    }
-}.build()
+    // kbuild script.build -t publish -t src
+    script.print("")
+    script.build("")
+}

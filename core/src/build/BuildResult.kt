@@ -12,18 +12,18 @@ val BuildResult.succeeded : Boolean
     get() = status == BuildStatus.Succeeded
 
 public trait BuildResult {
-    val status : BuildStatus
+    public val status : BuildStatus
     class object {
-        val Success = StepBuildResult(BuildStatus.Succeeded)
-        val Fail = StepBuildResult(BuildStatus.Failed)
+        public val Success: StepBuildResult = StepBuildResult(BuildStatus.Succeeded)
+        public val Fail: StepBuildResult = StepBuildResult(BuildStatus.Failed)
     }
 }
 
-public class StepBuildResult(override val status : BuildStatus) : BuildResult {
+public class StepBuildResult(override public val status : BuildStatus) : BuildResult {
 
 }
 
-public class ProjectBuildResult() : BuildResult {
+public class ModuleBuildResult() : BuildResult {
     override val status: BuildStatus
         get() = if (results.all { it.status == BuildStatus.Succeeded }) BuildStatus.Succeeded else BuildStatus.Failed
 

@@ -2,4 +2,7 @@ package spek.build
 
 import komplex.*
 
-Script2(ar)
+val x = Script2(ar)
+x.prj()
+
+
