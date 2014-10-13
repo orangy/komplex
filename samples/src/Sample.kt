@@ -19,8 +19,8 @@ fun main(args: Array<String>) {
 
             // shared settings for all projects
             val sources = files("$moduleName/src/**.kt", artifacts.sources)
-            val binaries = folder("/out/sample/$moduleName", artifacts.binaries)
-            val jarFile = file("/artifacts/sample/$moduleName.jar", artifacts.jar)
+            val binaries = folder("./out/sample/$moduleName", artifacts.binaries)
+            val jarFile = file("./artifacts/sample/$moduleName.jar", artifacts.jar)
 
             build using(tools.kotlin) from sources into binaries with {
                 enableInline = true
@@ -80,5 +80,5 @@ fun main(args: Array<String>) {
 
     // kbuild script.build -t publish -t src
     script.print("")
-    script.build("")
+    script.build("publish")
 }
