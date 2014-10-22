@@ -79,6 +79,11 @@ fun main(args: Array<String>) {
     }
 
     // kbuild script.build -t publish -t src
+/*
+    script.prepare()
+    val plan = script.plan(script.findModule("spek-tests")!!, Scenario("publish"))
+    plan.print("")
+*/
     script.print("")
     script.build("publish")
 }

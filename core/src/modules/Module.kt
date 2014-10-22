@@ -23,5 +23,8 @@ public open class Module(public val moduleName: String) : ModuleCollection() {
 
     public val depends: Dependencies = Dependencies()
     public val build: ModuleScript = ModuleScript(this)
+
+
+    override fun toString(): String = "$title"
 }
 

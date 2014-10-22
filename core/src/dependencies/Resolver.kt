@@ -15,9 +15,9 @@ public object resolver {
 
     fun resolveModule(reference: ModuleReference, scenario: Scenario): List<Path> {
         var res = arrayListOf<Path>()
-        for (buildConfig in reference.module.build.scenarios)
-            if (buildConfig.scenarios.any { it.matches(scenario) })
-                for (rule in buildConfig.rules)
+        for (ruleSet in reference.module.build.ruleSets)
+            if (ruleSet.selectors.any { it.matches(scenario) })
+                for (rule in ruleSet.rules)
                     for (dest in rule.targets())
                         if (dest is FolderArtifact && Files.exists(dest.path)) res.add(dest.path)
                         else if (dest is FileArtifact && Files.exists(dest.path)) res.add(dest.path)

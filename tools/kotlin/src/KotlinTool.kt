@@ -9,6 +9,7 @@ import org.jetbrains.jet.cli.common.ExitCode
 import org.jetbrains.jet.cli.jvm.K2JVMCompiler
 import org.jetbrains.jet.cli.common.arguments.K2JVMCompilerArguments
 import komplex.dependencies.resolver
+import org.jetbrains.jet.config.Services
 
 public val tools.kotlin: KotlinCompiler
     get() = KotlinCompiler()
@@ -22,7 +23,7 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
     public var enableInline: Boolean = true
 
-    public override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
+    public override fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult {
         val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
@@ -44,8 +45,7 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
                 "compiling module ${project.moduleName} from $from to $to",
                 CompilerMessageLocation.NO_LOCATION)
 
-        args.printArgs = true
-        args.src = from.getAllStreams().map { it.path } .joinToString(File.pathSeparator)
+        args.freeArgs = from.getAllStreams().map { it.path.toString() }
 
         val libraries = project.depends.dependencies
                 .filter { it.scenario.matches(context.scenario) }
@@ -61,11 +61,11 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
 
         val folder = to.single()
         when (folder) {
-            is FolderArtifact -> args.outputDir = folder.path.toString()
+            is FolderArtifact -> args.destination = folder.path.toString()
             else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
         }
 
-        val exitCode = compiler.exec(messageCollector, args)
+        val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
         return when (exitCode) {
             ExitCode.OK -> BuildResult.Success
             else -> BuildResult.Fail

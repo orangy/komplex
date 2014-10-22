@@ -2,10 +2,10 @@ package komplex
 
 import java.util.ArrayList
 
-public class ModuleScenario(val parent: ModuleScript, val scenarios: List<ScenarioSelector>) {
-    public val rules: MutableList<ModuleRule> = arrayListOf<ModuleRule>()
+public class ModuleRuleSet(val parent: ModuleScript, val selectors: List<ScenarioSelector>) {
+    public val rules: MutableList<ModuleRule> = arrayListOf()
 
-    public fun invoke(body: ModuleScenario.() -> Unit) {
+    public fun invoke(body: ModuleRuleSet.() -> Unit) {
         body()
     }
 

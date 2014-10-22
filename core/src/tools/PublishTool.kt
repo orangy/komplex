@@ -6,7 +6,7 @@ public val tools.publish: PublishTool
     get() = PublishTool()
 
 public class PublishTool : Consumer("Publish") {
-    public override fun consume(context: BuildContext, from: List<Artifact>): BuildResult {
+    public override fun consume(context: BuildStep, from: List<Artifact>): BuildResult {
 /*
         val repo = context.module.repository.findRepository()
 

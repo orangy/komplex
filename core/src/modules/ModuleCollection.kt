@@ -6,7 +6,7 @@ package komplex
 public open class ModuleCollection() {
     public val modules: MutableList<Module> = arrayListOf()
 
-    /*inline*/ public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {
+    public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {
         val module = Module(name)
         if (description != null)
             module.description(description)

@@ -31,7 +31,7 @@ public class JarPackager : Converter("Jar Packager") {
         }
     }
 
-    public override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
+    public override fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult {
         val manifest = Manifest()
         manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
 

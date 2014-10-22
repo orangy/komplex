@@ -4,8 +4,8 @@ public trait ConsumingTool : Tool {
     public val sources: List<Artifact>
     public fun addSources(vararg endpoints: Artifact)
 
-    public override fun execute(context: BuildContext): BuildResult = consume(context, sources)
-    protected fun consume(context: BuildContext, from: List<Artifact>): BuildResult
+    public override fun execute(context: BuildStep): BuildResult = consume(context, sources)
+    protected fun consume(context: BuildStep, from: List<Artifact>): BuildResult
 }
 
 public abstract class Consumer(public override val title: String) : ConsumingTool {

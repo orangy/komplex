@@ -1,12 +1,12 @@
 package komplex
 
-public abstract class ModuleRule(val parent: ModuleScenario) {
-    public abstract fun execute(context: BuildContext): BuildResult
+public abstract class ModuleRule(val parent: ModuleRuleSet) {
+    public abstract fun execute(context: BuildStep): BuildResult
     public abstract fun targets(): List<Artifact>
 }
 
-public class ModuleToolRule<TTool : Tool>(parent: ModuleScenario, val tool: TTool) : ModuleRule(parent) {
-    public override fun execute(context: BuildContext): BuildResult {
+public class ModuleToolRule<TTool : Tool>(parent: ModuleRuleSet, val tool: TTool) : ModuleRule(parent) {
+    public override fun execute(context: BuildStep): BuildResult {
         try {
             return tool.execute(context)
         } catch (e: Throwable) {
@@ -19,4 +19,6 @@ public class ModuleToolRule<TTool : Tool>(parent: ModuleScenario, val tool: TToo
         if (tool is ProducingTool) res.addAll(tool.destinations)
         return res
     }
+
+    override fun toString(): String = "with ${tool.title}"
 }

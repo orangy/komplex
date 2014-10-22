@@ -16,15 +16,15 @@ public fun Module.print(indent: String) {
     (this : ModuleCollection).print(indent)
 }
 
-public fun ModuleScenario.print(indent: String) {
-    println("$indent Scenario $scenarios")
+public fun ModuleRuleSet.print(indent: String) {
+    println("$indent Scenario $selectors")
     for (rule in rules) {
         rule.print(indent.shift())
     }
 }
 
 public fun ModuleScript.print(indent: String) {
-    for (scenario in scenarios) {
+    for (scenario in ruleSets) {
         scenario.print(indent)
     }
 }

@@ -63,10 +63,10 @@ public class BuildScript() : ModuleCollection() {
         val moduleResult = ModuleBuildResult()
 
         // now execute own build processes
-        for (buildConfig in module.build.scenarios) {
-            if (buildConfig.scenarios.any { it.matches(scenario) }) {
-                for (step in buildConfig.rules) {
-                    val context = BuildContext(scenario, module, step)
+        for (ruleSet in module.build.ruleSets) {
+            if (ruleSet.selectors.any { it.matches(scenario) }) {
+                for (step in ruleSet.rules) {
+                    val context = BuildStep(scenario, module, step)
                     val result = step.execute(context)
                     moduleResult.append(result)
                     if (moduleResult.failed) break;

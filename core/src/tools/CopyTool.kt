@@ -6,7 +6,7 @@ public val tools.copy: CopyTool
     get() = CopyTool()
 
 public class CopyTool : Converter("Copy") {
-    override fun convert(context: BuildContext, from: List<Artifact>, to: List<Artifact>): BuildResult {
+    override fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult {
         for (destination in to) {
             for (source in from.getAllStreams()) {
                 when (destination) {
