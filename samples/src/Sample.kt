@@ -3,6 +3,7 @@ package komplex.sample
 import komplex.*
 import komplex.jar.*
 import komplex.kotlin.*
+import komplex.maven.*
 import komplex.dependencies.repository
 
 fun main(args: Array<String>) {
@@ -15,7 +16,8 @@ fun main(args: Array<String>) {
         fun Module.shared() {
             version("SNAPSHOT-0.1")
 
-            repository("lib") // dependencies should be placed here manually for now
+            // repository("lib") // directory
+            mavenCentralRepository("lib")
 
             // shared settings for all projects
             val sources = files("$moduleName/src/**.kt", artifacts.sources)
@@ -53,8 +55,15 @@ fun main(args: Array<String>) {
                 shared()
                 depends on core
                 depends on {
-                    library("kotlin-compiler", null) // something wrong with dispatching, \todo check with kotlin team
-                    library("kotlin-runtime")
+                    library("org.jetbrains.kotlin:kotlin-compiler:0.9.206")
+                    library("org.jetbrains.kotlin:kotlin-runtime:0.9.206")
+                }
+            }
+            val repoMaven = module("repositories/maven", "Komplex Maven repository resolver") {
+                shared()
+                depends on core
+                depends on {
+                    library("com.jcabi:jcabi-aether:0.10.1")
                 }
             }
 

@@ -12,7 +12,7 @@ public class LibraryReference(public override val name: String, public val versi
     public override fun toString(): String = baseName()
 }
 
-public fun library(name: String, version: String? = null): LibraryReference = LibraryReference(name, version)
+public fun library(name: String, version: String? = null): Reference = LibraryReference(name, version)
 
 public class ModuleReference(public val module: Module) : Reference {
     override val name: String = module.moduleName
