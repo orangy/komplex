@@ -64,6 +64,7 @@ fun main(args: Array<String>) {
                 depends on core
                 depends on {
                     library("com.jcabi:jcabi-aether:0.10.1")
+                    library("org.apache.maven:maven-core:3.2.3")
                 }
             }
 
@@ -72,6 +73,7 @@ fun main(args: Array<String>) {
                 depends on core // reference to project by name
                 depends on toolsJar
                 depends on toolsKotlin
+                depends on repoMaven
             }
 /*
             module("tests", "Komplex Tests") {
