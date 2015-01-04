@@ -2,11 +2,11 @@ package komplex
 
 import java.nio.file.*
 
-public val tools.copy: CopyTool
-    get() = CopyTool()
+public val tools.copy: Converter.Rule
+    get() = Converter.Rule(CopyTool())
 
 public class CopyTool : Converter("Copy") {
-    override fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult {
+    override fun convert(context: BuildStepContext, from: Iterable<Artifact>, to: Iterable<Artifact>): BuildResult {
         for (destination in to) {
             for (source in from.getAllStreams()) {
                 when (destination) {

@@ -30,49 +30,42 @@ public fun ModuleScript.print(indent: String) {
 }
 
 public fun Dependencies.print(indent: String) {
-    if (dependencies.size == 0)
+    if (groups.size() == 0)
         return
 
-    println("$indent Depends on")
-    for (dependency in dependencies) {
-        dependency.print(indent.shift())
-    }
+    // \todo scenario-specific deps
+    println("$indent Depends on modules:")
+    groups.flatMap { it.moduleDeps }.forEach { println("${indent.shift()} ${it.moduleName}") }
+    println("$indent Depends on libs:")
+    groups.flatMap { it.artifactDeps }.forEach { it.print(indent.shift()) }
 }
 
-public fun ModuleDependency.print(indent: String) {
-    println("${indent} Module: ${reference} (in ${scenario})")
-}
-
-public fun ModuleRule.print(indent: String) {
-    when (this) {
-        is ModuleToolRule<*> -> print(indent)
-        else -> println("$indent Rule: $this")
-    }
-}
-
-public fun ModuleToolRule<*>.print(indent: String) {
-    println("$indent Rule \"${tool.title}\"")
-    tool.print(indent.shift())
-}
-
-public fun Tool.print(indent: String) {
-    if (this is ConsumingTool) print(indent)
-    if (this is ProducingTool) print(indent)
+public fun Tool.Rule.print(indent: String) {
+    println("$indent ${tool.title}")
+    (this as? ConsumingTool.Rule)?.print(indent.shift())
+    (this as? ProducingTool.Rule)?.print(indent.shift())
 }
 
 public fun Artifact.print(indent: String) {
-    println("$indent ${toString()}")
+    when (this) {
+        is LibraryReferenceArtifact -> println("$indent ${mavenId().toString()}")
+        is LibraryWithDependenciesArtifact -> {
+            println("$indent [$id]")
+            resolvedPaths.forEach { println("${indent.shift()} $it") }
+        }
+        else -> println("$indent ${toString()}")
+    }
 }
 
-public fun ConsumingTool.print(indent: String) {
-    println("$indent From: ")
-    for (artifact in sources)
+public fun ConsumingTool.Rule.print(indent: String) {
+    println("$indent from: ")
+    for (artifact in sources(Scenario("*")))
         artifact.print(indent.shift())
 }
 
-public fun ProducingTool.print(indent: String) {
-    println("$indent To: ")
-    for (artifact in destinations)
+public fun ProducingTool.Rule.print(indent: String) {
+    println("$indent to: ")
+    for (artifact in targets(Scenario("*")))
         artifact.print(indent.shift())
 }
 

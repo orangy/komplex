@@ -3,23 +3,20 @@ package komplex
 import java.util.ArrayList
 
 public class ModuleRuleSet(val parent: ModuleScript, val selectors: List<ScenarioSelector>) {
-    public val rules: MutableList<ModuleRule> = arrayListOf()
+    public val rules: MutableList<Tool.Rule> = arrayListOf()
 
     public fun invoke(body: ModuleRuleSet.() -> Unit) {
         body()
     }
 
-    public fun using<TTool : Tool>(tool: TTool): TTool {
-        val rule = ModuleToolRule(this, tool)
+    public fun using<TR : Tool.Rule>(rule: TR): TR {
         rules.add(rule)
-        return tool
+        return rule
     }
 
-    public fun using<TTool : Tool>(tool: TTool, body: TTool.() -> Unit): TTool {
-        tool.body()
-        val rule = ModuleToolRule(this, tool)
+    public fun using<TR : Tool.Rule>(rule: TR, body: TR.() -> Unit): TR {
+        rule.body() // \todo find out how to write it
         rules.add(rule)
-        return tool
+        return rule
     }
 }
-

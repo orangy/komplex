@@ -5,6 +5,6 @@ public fun BuildPlan.print(indent: String) {
         step.print(indent)
 }
 
-public fun BuildStep.print(indent: String) {
-    println("$indent ${scenario.name} $module $rule")
+public fun BuildStepContext.print(indent: String) {
+    println("$indent ${scenario.name} $module")
 }

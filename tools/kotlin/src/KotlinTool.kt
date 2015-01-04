@@ -8,22 +8,37 @@ import org.jetbrains.jet.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.jet.cli.common.ExitCode
 import org.jetbrains.jet.cli.jvm.K2JVMCompiler
 import org.jetbrains.jet.cli.common.arguments.K2JVMCompilerArguments
-import komplex.dependencies.resolver
 import org.jetbrains.jet.config.Services
+import java.lang
+import kotlin.properties.Delegates
+import java.nio.file.Paths
+import java.nio.file.Path
 
-public val tools.kotlin: KotlinCompiler
-    get() = KotlinCompiler()
 
-public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
+public val tools.kotlin: KotlinCompilerRule
+    get() = KotlinCompilerRule()
 
-    public fun invoke(body: KotlinCompiler.() -> Unit): KotlinCompiler {
+
+// separate class for separate class loading
+// \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
+public class KotlinCompilerRule(override val local: Boolean = false) : komplex.Compiler.BaseRule(local) {
+    override val tool by Delegates.lazy { KotlinCompiler() }
+    override fun execute(context: BuildStepContext): BuildResult
+            = tool.compileKotlin(context, selectSources.get(context.scenario), selectTargets.get(context.scenario), selectLibs.get(context.scenario), this)
+
+    public fun invoke(body: KotlinCompilerRule.() -> Unit): KotlinCompilerRule {
         body()
         return this
     }
-
     public var enableInline: Boolean = true
+}
 
-    public override fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult {
+
+public class KotlinCompiler : komplex.Compiler("Kotlin Compiler") {
+
+    override fun compile(context: BuildStepContext, from: Iterable<Artifact>, to: Iterable<Artifact>, useLibs: Iterable<Artifact>): BuildResult = null!!
+
+    internal fun compileKotlin(context: BuildStepContext, from: Iterable<Artifact>, to: Iterable<Artifact>, useLibs: Iterable<Artifact>, rule: KotlinCompilerRule): BuildResult {
         val compiler = K2JVMCompiler()
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
@@ -40,18 +55,28 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
         }
         val project = context.module
 
+        args.freeArgs = from.getAllStreams().map { it.path.toString() }
+        if (args.freeArgs.size() == 0) {
+            messageCollector.report(
+                    CompilerMessageSeverity.ERROR,
+                    "No souurces to compile in module ${project.moduleName}: $from",
+                    CompilerMessageLocation.NO_LOCATION)
+            return BuildResult.Fail
+        }
+
         messageCollector.report(
                 CompilerMessageSeverity.INFO,
                 "compiling module ${project.moduleName} from $from to $to",
                 CompilerMessageLocation.NO_LOCATION)
 
-        args.freeArgs = from.getAllStreams().map { it.path.toString() }
-
-        val libraries = project.depends.dependencies
-                .filter { it.scenario.matches(context.scenario) }
-                .flatMap { resolver.resolve(it.reference, context.scenario) }
-                .filterNotNull()
-                .map { it.toString() }
+        val libraries = useLibs
+                .flatMap { when (it) {
+                        is komplex.FileArtifact -> listOf(it.path)
+                        is komplex.LibraryWithDependenciesArtifact -> it.resolvedPaths
+                        else -> throw Exception("unsupported lib type: $it")
+                } }
+                .map { it.toAbsolutePath().toString() }
+                .toSortedSet()
                 .joinToString(File.pathSeparator)
 
         //log.debug("classpath: {}", libraries)
@@ -66,6 +91,12 @@ public class KotlinCompiler : CompilerTool("Kotlin Compiler") {
         }
 
         val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
+
+        messageCollector.report(
+                CompilerMessageSeverity.INFO,
+                "compiling result: $exitCode for module ${project.moduleName}",
+                CompilerMessageLocation.NO_LOCATION)
+
         return when (exitCode) {
             ExitCode.OK -> BuildResult.Success
             else -> BuildResult.Fail

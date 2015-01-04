@@ -3,7 +3,7 @@ package komplex
 /**
  *
  */
-public open class Module(public val moduleName: String) : ModuleCollection() {
+public open class Module(parent1: Module?, public val moduleName: String) : ModuleCollection(parent1) {
     public val title: String
         get() = if (description.isEmpty()) moduleName else "$moduleName ($description)"
 
@@ -24,6 +24,11 @@ public open class Module(public val moduleName: String) : ModuleCollection() {
     public val depends: Dependencies = Dependencies()
     public val build: ModuleScript = ModuleScript(this)
 
+    public fun targets(scenario: Scenario): Iterable<Artifact> = // \todo add caching
+        build.ruleSets.filter { it.selectors.any { it.matches(scenario) }}
+                      .flatMap { it.rules }
+                      .filter { !it.local }
+                      .flatMap { it.targets(scenario) }
 
     override fun toString(): String = "$title"
 }

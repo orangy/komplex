@@ -6,7 +6,7 @@ package komplex
 public class ModuleScript(val module: Module) {
     public val ruleSets: MutableList<ModuleRuleSet> = arrayListOf()
 
-    public fun using<TTool : Tool>(tool: TTool): TTool = invoke(ScenarioSelector("*")).using(tool)
+    public fun using<TR : Tool.Rule>(rule: TR): TR = invoke(ScenarioSelector("*")).using(rule)
 
     inline public fun invoke(vararg scenario: ScenarioSelector, body: ModuleRuleSet.() -> Unit): ModuleRuleSet {
         val ruleSet = invoke(*scenario)

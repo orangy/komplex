@@ -1,24 +1,23 @@
 package komplex
 
 public trait ConvertingTool : ProducingTool, ConsumingTool {
-    override fun execute(context: BuildStep): BuildResult = convert(context, sources, destinations)
-    override fun produce(context: BuildStep, to: List<Artifact>): BuildResult = convert(context, sources, to)
-    override fun consume(context: BuildStep, from: List<Artifact>): BuildResult = convert(context, from, destinations)
-    protected fun convert(context: BuildStep, from: List<Artifact>, to: List<Artifact>): BuildResult
+
+    public trait Rule : ProducingTool.Rule, ConsumingTool.Rule {
+        override val tool: ConvertingTool
+        override fun execute(context: BuildStepContext): BuildResult
+                = tool.convert(context, sources(context.scenario), targets(context.scenario))
+    }
+
+    override fun execute(context: BuildStepContext, rule: Tool.Rule): BuildResult = null!!
+    override fun produce(context: BuildStepContext, to: Iterable<Artifact>): BuildResult = null!!
+    override fun consume(context: BuildStepContext, from: Iterable<Artifact>): BuildResult = null!!
+    protected fun convert(context: BuildStepContext, from: Iterable<Artifact>, to: Iterable<Artifact>): BuildResult
 }
 
 public abstract class Converter(public override val title : String) : ConvertingTool {
-    public override val sources = arrayListOf<Artifact>()
-    public override val destinations = arrayListOf<Artifact>()
-
-    public override fun addSources(vararg endpoints: Artifact) {
-        sources.addAll(endpoints)
+    public abstract class BaseRule(override val local: Boolean = false) : ConvertingTool.Rule {
+        override val selectSources = SelectArtifactsList()
+        override val selectTargets = SelectArtifactsList()
     }
-
-    public override fun addDestinations(vararg endpoints: Artifact) {
-        destinations.addAll(endpoints)
-    }
+    public class Rule(override val tool: ConvertingTool, override val local: Boolean = false) : BaseRule(local) {}
 }
-
-
-

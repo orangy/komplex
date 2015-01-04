@@ -17,7 +17,7 @@ public fun MutableList<StreamArtifact>.addAll(endpoint: Artifact) {
     }
 }
 
-public fun List<Artifact>.getAllStreams(): List<StreamArtifact> {
+public fun Iterable<Artifact>.getAllStreams(): List<StreamArtifact> {
     val streams = arrayListOf<StreamArtifact>()
     for (item in this)
         streams.addAll(item)

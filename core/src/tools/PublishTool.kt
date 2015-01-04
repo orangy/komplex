@@ -2,11 +2,11 @@ package komplex
 
 import java.nio.file.*
 
-public val tools.publish: PublishTool
-    get() = PublishTool()
+public val tools.publish: Consumer.Rule
+    get() = Consumer.Rule(PublishTool())
 
 public class PublishTool : Consumer("Publish") {
-    public override fun consume(context: BuildStep, from: List<Artifact>): BuildResult {
+    public override fun consume(context: BuildStepContext, from: Iterable<Artifact>): BuildResult {
 /*
         val repo = context.module.repository.findRepository()
 

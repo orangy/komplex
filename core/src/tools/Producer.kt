@@ -1,24 +1,37 @@
 package komplex
 
 public trait ProducingTool : Tool {
-    public val destinations : List<Artifact>
-    public override fun execute(context: BuildStep): BuildResult = produce(context, destinations)
-    protected fun produce(context: BuildStep, to: List<Artifact>): BuildResult
-    public fun addDestinations(vararg endpoints: Artifact)
+
+    public trait Rule : Tool.Rule {
+        override val tool: ProducingTool
+        val selectTargets: SelectArtifactsListTrait
+        override fun targets(scenario: Scenario): Iterable<Artifact> = selectTargets.get(scenario)
+        override fun execute(context: BuildStepContext): BuildResult = tool.produce(context, targets(context.scenario))
+    }
+    override fun execute(context: BuildStepContext, rule: Tool.Rule): BuildResult = produce(context, rule.sources(context.scenario))
+    protected fun produce(context: BuildStepContext, to: Iterable<Artifact>): BuildResult
 }
 
-public abstract class Producer(public override val title : String) : ProducingTool {
-    public override val destinations = arrayListOf<Artifact>()
 
-    override fun execute(context: BuildStep): BuildResult = execute(context, destinations)
-    public abstract fun execute(context: BuildStep, to: List<Artifact>): BuildResult
-
-    public override fun addDestinations(vararg endpoints: Artifact) {
-        destinations.addAll(endpoints)
+public abstract class Producer(override val title: String) : ProducingTool {
+    public class Rule(override val tool: ProducingTool, override val local: Boolean = false) : ProducingTool.Rule {
+        override val selectTargets = SelectArtifactsList()
     }
 }
 
-public fun <T : ProducingTool> T.into(vararg endpoints: Artifact): T {
-    addDestinations(*endpoints)
+
+public fun <T : ProducingTool.Rule> T.into(vararg selectArtifacts: (scenario: Scenario) -> Iterable<Artifact>): T {
+    selectTargets.add(*selectArtifacts)
     return this
 }
+/*
+public fun <T : ProducingTool.Rule> T.into(vararg artifacts: Iterable<Artifact>): T {
+    selectTargets.add(*artifacts)
+    return this
+}
+*/
+public fun <T : ProducingTool.Rule> T.into(vararg artifacts: Artifact): T {
+    selectTargets.add(*artifacts)
+    return this
+}
+

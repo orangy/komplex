@@ -1,6 +1,7 @@
 package komplex
 
 import java.util.*
+import komplex.BuildGraph
 
 public fun script(body: BuildScript.() -> Unit): BuildScript {
     val script = BuildScript()
@@ -31,26 +32,15 @@ public class BuildScript() : ModuleCollection() {
         }
     }
 
-    fun resolve(reference: ModuleReference): Module? {
-        return moduleReferences[reference.name]
-    }
-
     fun build(module: Module, scenario: Scenario): BuildResult {
         val existingResult = modulesBuilt[module]
         if (existingResult != null)
             return existingResult
 
         // build dependencies
-        for (dependency in module.depends.dependencies) {
-            if (dependency.scenario.matches(scenario) && dependency.reference is ModuleReference) {
-                val dependentModule = resolve(dependency.reference)
-                if (dependentModule == null) {
-                    println("Invalid module reference ${dependency.reference}")
-                } else {
-                    val result = build(dependentModule, scenario)
-                    if (result.failed) return result
-                }
-            }
+        for (it in module.depends.modules(scenario)) {
+            val result = build(it, scenario)
+            if (result.failed) return result
         }
 
         // build nested modules
@@ -59,14 +49,13 @@ public class BuildScript() : ModuleCollection() {
             if (result.failed) return result
         }
 
-
         val moduleResult = ModuleBuildResult()
 
         // now execute own build processes
         for (ruleSet in module.build.ruleSets) {
             if (ruleSet.selectors.any { it.matches(scenario) }) {
                 for (step in ruleSet.rules) {
-                    val context = BuildStep(scenario, module, step)
+                    val context = BuildStepContext(scenario, module)
                     val result = step.execute(context)
                     moduleResult.append(result)
                     if (moduleResult.failed) break;
