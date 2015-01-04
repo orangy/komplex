@@ -103,5 +103,7 @@ fun main(args: Array<String>) {
 */
     script.print("")
     script.build("publish")
+    val graph = script.buildGraph("publish")
+    println("done.")
 //    script.print("")
 }

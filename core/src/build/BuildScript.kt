@@ -25,6 +25,8 @@ public class BuildScript() : ModuleCollection() {
             build(module, scenario)
     }
 
+    fun buildGraph(config: String = ""): BuildGraph = buildGraph(modules, Scenario(config))
+
     fun makeModuleSet(modules: List<Module>) {
         for (module in modules) {
             moduleReferences.put(module.moduleName, module)
