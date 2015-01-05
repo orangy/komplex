@@ -34,8 +34,8 @@ public class BuildGraph(): Graph<BuildGraphEdge> {
         else outgoingLinks[edge.source].add(edge)
     }
 
-    public override fun incoming(edge: BuildGraphEdge): Iterable<BuildGraphEdge>? = if (edge.source != null) incomingLinks[edge.source] else null
-    public override fun outgoing(edge: BuildGraphEdge): Iterable<BuildGraphEdge>? = if (edge.target != null) outgoingLinks[edge.target] else null
+    public override fun incoming(edge: BuildGraphEdge): Iterable<BuildGraphEdge> = if (edge.source != null) incomingLinks[edge.source] else listOf()
+    public override fun outgoing(edge: BuildGraphEdge): Iterable<BuildGraphEdge> = if (edge.target != null) outgoingLinks[edge.target] else listOf()
 }
 
 
@@ -87,26 +87,30 @@ public fun targets(module: Module, graph: BuildGraph): Iterable<Artifact> {
 
 // examples?
 public fun BuildGraph.forwardBFS(start: Artifact,
-                                 func: (edge: BuildGraphEdge) -> Boolean,
+                                 preorderPred: (edge: BuildGraphEdge) -> Boolean,
+                                 postorderPred: (edge: BuildGraphEdge) -> Boolean,
                                  checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphBFS(BuildGraphEdge(target = start), func, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
+    graphBFS(listOf(BuildGraphEdge(target = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
 }
 
 public fun BuildGraph.backwardBFS(start: Artifact,
-                                  func: (edge: BuildGraphEdge) -> Boolean,
+                                  preorderPred: (edge: BuildGraphEdge) -> Boolean,
+                                  postorderPred: (edge: BuildGraphEdge) -> Boolean,
                                   checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphBFS(BuildGraphEdge(source = start), func, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
+    graphBFS(listOf(BuildGraphEdge(source = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
 }
 
 public fun BuildGraph.forwardDFS(start: Artifact,
-                                 func: (edge: BuildGraphEdge) -> Boolean,
+                                 preorderPred: (edge: BuildGraphEdge) -> Boolean,
+                                 postorderPred: (edge: BuildGraphEdge) -> Boolean,
                                  checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphDFS(BuildGraphEdge(target = start), func, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
+    graphDFS(listOf(BuildGraphEdge(target = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
 }
 public fun BuildGraph.backwardDFS(start: Artifact,
-                                  func: (edge: BuildGraphEdge) -> Boolean,
+                                  preorderPred: (edge: BuildGraphEdge) -> Boolean,
+                                  postorderPred: (edge: BuildGraphEdge) -> Boolean,
                                   checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphDFS(BuildGraphEdge(source = start), func, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
+    graphDFS(listOf(BuildGraphEdge(source = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
 }
 
 public fun BuildGraph.print(start: Artifact) {

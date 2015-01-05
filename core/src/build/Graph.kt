@@ -31,46 +31,86 @@ public fun makeDagAsserter<Edge: DagEdge>(): (Edge) -> Boolean {
         checker.checkAdd(e) }
 }
 
+// generic preorder BFS
+// \todo check if keeping separate preorder version makes sense e.g. performance-wise
+public fun graphPreorderBFS<Edge>(from: Iterable<Edge>,
+                                  preorderPred: (Edge) -> Boolean,
+                                  nextEdges: (Edge) -> Iterable<Edge>,
+                                  checkTraversal: (Edge) -> Boolean = makeVisitedTraversalChecker()
+                                 ): Boolean {
 
-// generic BFS
-public fun graphBFS<Edge>(start: Edge,
-                          func: (Edge) -> Boolean,
-                          nextEdges: (Edge) -> Iterable<Edge>?,
-                          checkTraversal: (Edge) -> Boolean = makeVisitedTraversalChecker() ) {
+    val queue: java.util.Queue<Edge> = linkedListOf() // \todo check/optimize collection
+    var currentQueue = from;
 
-    if (!checkTraversal(start)) return;
-
-    val queue: java.util.Queue<Edge> = java.util.LinkedList()
-    var edge: Edge = start
-
-    while (!func(edge) /* found */) {
-        nextEdges(edge)?.forEach { (e) -> if (checkTraversal(e)) queue.add(e) }
-        edge = queue.poll() ?: break
+    while (true) {
+        // checking which edges to add from currentQueue
+        for (e in currentQueue) {
+            if (checkTraversal(e)) {
+                if (preorderPred(e)) return true // found, stop traversing
+                queue.add(e)
+            }
+        }
+        if (queue.isEmpty()) break
+        currentQueue = nextEdges(queue.poll())
     }
+    return false
+}
+
+// generic pre+postorder BFS
+public fun graphBFS<Edge>(from: Iterable<Edge>,
+                                   preorderPred: (Edge) -> Boolean,
+                                   postorderPred: (Edge) -> Boolean,
+                                   nextEdges: (Edge) -> Iterable<Edge>,
+                                   checkTraversal: (Edge) -> Boolean = makeVisitedTraversalChecker()
+                                  ): Boolean {
+
+    // note: this is not nice, but fail-fast iterators do not allow nice implementation based on standard containers
+    val stack = arrayListOf<Edge>()
+    var currentQueue = from
+    var pos = 0
+    while (true) {
+        // checking which edges to add from currentQueue
+        for (e in currentQueue) {
+            if (checkTraversal(e)) {
+                if (preorderPred(e)) return true // found, stop collecting
+                stack.add(e)
+            }
+        }
+        // finding next non-empty list of edges from added ones
+        if (pos >= stack.size()) break
+        currentQueue = nextEdges(stack.get(pos++))
+    }
+    // process collected edges
+    for (i in (stack.size()-1)..0) {
+        if (postorderPred(stack.get(i))) return true // found on postorder
+        // \todo optimization: remove processed edge here?
+    }
+    return false
 }
 
 
 // generic DFS, recursive impl \todo: make non-recursive impl
-public fun graphDFS<Edge>(start: Edge,
-                          func: (e: Edge) -> Boolean,
-                          nextEdges: (e: Edge) -> Iterable<Edge>?,
-                          checkTraversal: (Edge) -> Boolean = makeVisitedTraversalChecker()) {
+public fun graphDFS<Edge>(from: Iterable<Edge>,
+                          preorderPred: (e: Edge) -> Boolean,
+                          postorderPred: (Edge) -> Boolean,
+                          nextEdges: (e: Edge) -> Iterable<Edge>,
+                          checkTraversal: (Edge) -> Boolean = makeVisitedTraversalChecker()
+                         ): Boolean {
 
-    if (!checkTraversal(start)) return;
-
-    fun impl(edge: Edge) {
-        if (func(edge)) return // found
-        nextEdges(edge)?.forEach { (e) -> if (checkTraversal(e)) impl(e) }
-    }
-
-    impl(start)
+    for (e in from)
+        if (checkTraversal(e)) {
+            if (preorderPred(e)) return true // found, stop traversing
+            if (graphDFS(nextEdges(e), preorderPred, postorderPred, nextEdges, checkTraversal)) return true // found in subgraph
+            if (postorderPred(e)) return true // found on postorder
+        }
+    return false
 }
 
 
 // generic graph
 public trait Graph<Edge> {
     public fun add(edge: Edge)
-    public fun incoming(edge: Edge): Iterable<BuildGraphEdge>?
-    public fun outgoing(edge: Edge): Iterable<BuildGraphEdge>?
+    public fun incoming(edge: Edge): Iterable<BuildGraphEdge>
+    public fun outgoing(edge: Edge): Iterable<BuildGraphEdge>
 }
 
