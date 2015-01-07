@@ -1,5 +1,8 @@
 package komplex
 
+// \todo implement generic set of funs with the signatures:
+// fun T.nicePrint(delimiter = "\n  ", nextDelimiter = { shift(it) }, depth = -1): String
+
 fun String.shift(): String = this + "  "
 
 public fun ModuleCollection.print(indent: String) {

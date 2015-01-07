@@ -102,8 +102,12 @@ fun main(args: Array<String>) {
     plan.print("")
 */
     script.print("")
-    script.build("publish")
+//    script.build("publish")
     val graph = script.buildGraph("publish")
+    println("graph targets:")
+//    graph.targets().forEach { it.print("    ") }
+    println("graph:")
+    graph.print()
     println("done.")
 //    script.print("")
 }

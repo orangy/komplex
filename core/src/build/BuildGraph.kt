@@ -7,114 +7,140 @@ import java.util.HashMap
 import java.util.HashSet
 import komplex.Tool.Rule
 
-// komplex build graph edge and graph implementations
-public class BuildGraphEdge(public val module: Module? = null,
-                            public val target: Artifact? = null,
-                            public val source: Artifact? = null,
-                            public val step: Rule? = null) : DagEdge {
-    override fun makeInverse(): BuildGraphEdge = BuildGraphEdge(module, source, target, step)
-    override fun equals(other: Any?): Boolean = when (other) {
-        is BuildGraphEdge -> target == other.target && source == other.source
-        else -> false
-    }
-    override fun hashCode(): Int = (target?.hashCode() ?: 1) * (source?.hashCode() ?: 1)
-}
+// komplex build graph and graph node implementations
+public data class BuildGraphNode(public val module: Module, public val step: Rule) {}
 
-public class BuildGraph(): Graph<BuildGraphEdge> {
+public class BuildGraph(public val scenario: Scenario): Graph<BuildGraphNode> {
 
     val modules: HashSet<Module> = hashSetOf()
-    val incomingLinks = hashMapOf<Artifact, HashSet<BuildGraphEdge>>()
-    val outgoingLinks = hashMapOf<Artifact, HashSet<BuildGraphEdge>>()
+    val nodes: HashSet<BuildGraphNode> = hashSetOf()
+    val incomingLinks = hashMapOf<Artifact, BuildGraphNode>()
+    val outgoingLinks = hashMapOf<Artifact, BuildGraphNode>()
 
-    public override fun add(edge: BuildGraphEdge) {
-        modules.add(edge.module)
-        if (!incomingLinks.containsKey(edge.target)) incomingLinks.put(edge.target, hashSetOf(edge))
-        else incomingLinks[edge.target].add(edge)
-        if (!outgoingLinks.containsKey(edge.source)) outgoingLinks.put(edge.source, hashSetOf(edge))
-        else outgoingLinks[edge.source].add(edge)
+    public override fun add(node: BuildGraphNode) {
+        modules.add(node.module)
+        nodes.add(node)
+        incomingLinks.putAll( node.step.sources(scenario).map { Pair(it, node) })
+        outgoingLinks.putAll( node.step.targets(scenario).map { Pair(it, node) })
     }
 
-    public override fun incoming(edge: BuildGraphEdge): Iterable<BuildGraphEdge> = if (edge.source != null) incomingLinks[edge.source] else listOf()
-    public override fun outgoing(edge: BuildGraphEdge): Iterable<BuildGraphEdge> = if (edge.target != null) outgoingLinks[edge.target] else listOf()
+    // filtered inputs
+    public fun sources(node: BuildGraphNode): Iterable<Artifact> =
+            node.step.sources(scenario).filter { incomingLinks.contains(it) }
+
+    // filtered outputs
+    public fun targets(node: BuildGraphNode): Iterable<Artifact> =
+            node.step.targets(scenario).filter { outgoingLinks.contains(it) }
+
+    public fun prev(node: BuildGraphNode): Iterable<BuildGraphNode> =
+            node.step.sources(scenario).filter { incomingLinks.contains(it) }.map { incomingLinks.get(it) }.distinct()
+
+    public fun next(node: BuildGraphNode): Iterable<BuildGraphNode> =
+            node.step.targets(scenario).filter { outgoingLinks.contains(it) }.map { outgoingLinks.get(it) }.distinct()
 }
 
 
-fun BuildGraph.add(module: Module, scenario: Scenario): BuildGraph {
+fun BuildGraph.add(module: Module): BuildGraph {
 
     // processing dependency modules
-    module.depends.modules(scenario).forEach { add(it, scenario) }
+    module.depends.modules(scenario).forEach { add(it) }
 
     // processing nested modules; nested modules are visible outside the module, so results are added to the outgoingTargets
-    module.modules.forEach { add(it, scenario) }
+    module.modules.forEach { add(it) }
 
     // processing own build steps
-    for (ruleSet in module.build.ruleSets) {
-        if (ruleSet.selectors.any { it.matches(scenario) }) {
-            for (step in ruleSet.rules) {
-                val context = BuildStepContext(scenario, module)
-                val targets = step.targets(context.scenario);
-                when (targets.count()) {
-                    0 -> step.sources(context.scenario).map {(s) -> add(BuildGraphEdge(module = module, source = s, step = step)) }
-                    else -> step.targets(context.scenario).map {(t) -> step.sources(context.scenario).map {(s) -> add(BuildGraphEdge(module = module, target = t, source = s, step = step)) } }
-                }
-            }
-        }
-    }
+    module.build.ruleSets
+            .filter { it.selectors.any { it.matches(scenario) }}
+            .flatMap { it.rules }
+            .forEach { step -> add(BuildGraphNode(module, step))}
     return this
 }
 
 
-public fun buildGraph(modules: Iterable<Module>, scenario: Scenario): BuildGraph {
+public fun BuildGraph(modules: Iterable<Module>, scenario: Scenario): BuildGraph {
 
-    val graph = BuildGraph()
-    modules.forEach { graph.add(it, scenario) }
+    val graph = BuildGraph(scenario)
+    modules.forEach { graph.add(it) }
     return graph
 }
 
 
 // returns target artifacts
 // \todo targets from submodules?
-public fun targets(module: Module, graph: BuildGraph): Iterable<Artifact> {
+public fun BuildGraph.targets(): Iterable<Artifact> {
 
-    return if (graph.modules.contains(module))
-                graph.outgoingLinks
-                .flatMap { it.getValue() }
-                .filter { it.module == module && it.step != null && it.step!!.local }
-                .map { it.target }
-                .filterNotNull()
-            else listOf()
+    return nodes.filter { !it.step.local }
+                .flatMap { it.step.targets(scenario) }
 }
 
-// examples?
-public fun BuildGraph.forwardBFS(start: Artifact,
-                                 preorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                 postorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                 checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphBFS(listOf(BuildGraphEdge(target = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
+// returns target artifacts
+// \todo targets from submodules?
+public fun BuildGraph.targets(modules: Iterable<Module>): Iterable<Artifact> {
+
+    val modulesSet = modules.toHashSet()
+    return nodes.filter { !it.step.local && modulesSet.contains(it.module) }
+            .flatMap { it.step.targets(scenario) }
 }
 
-public fun BuildGraph.backwardBFS(start: Artifact,
-                                  preorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                  postorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                  checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphBFS(listOf(BuildGraphEdge(source = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
+
+// these are more examples rather than a good set of wrappers
+public fun BuildGraph.forwardBFS(from: Iterable<Artifact>,
+                                 preorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                 postorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                 checkTraversal: (edge: BuildGraphNode) -> Boolean = makeVisitedTraversalChecker<BuildGraphNode>() ) {
+    // note: incoming artifacts set could be a superset of graph's inputs
+    graphBFS( from.map { if (incomingLinks.contains(it)) incomingLinks.get(it) else null }.filterNotNull().distinct(),
+              preorderPred,
+              postorderPred,
+              {(n: BuildGraphNode) -> this.next(n) },
+              checkTraversal)
 }
 
-public fun BuildGraph.forwardDFS(start: Artifact,
-                                 preorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                 postorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                 checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphDFS(listOf(BuildGraphEdge(target = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.outgoing(e)}, checkTraversal)
-}
-public fun BuildGraph.backwardDFS(start: Artifact,
-                                  preorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                  postorderPred: (edge: BuildGraphEdge) -> Boolean,
-                                  checkTraversal: (edge: BuildGraphEdge) -> Boolean = makeDagAsserter<BuildGraphEdge>() ) {
-    graphDFS(listOf(BuildGraphEdge(source = start)), preorderPred, postorderPred, {(e: BuildGraphEdge) -> this.incoming(e)}, checkTraversal)
-}
-
-public fun BuildGraph.print(start: Artifact) {
-    forwardBFS(start, { (e) -> print("$e -> ${e.target}"); false }, makeVisitedTraversalChecker<BuildGraphEdge>())
+public fun BuildGraph.backwardBFS(from: Iterable<Artifact>,
+                                  preorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                  postorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                  checkTraversal: (edge: BuildGraphNode) -> Boolean = makeVisitedTraversalChecker<BuildGraphNode>() ) {
+    // note: here all outputs should be strictly in the graph
+    graphBFS( from.map { outgoingLinks.get(it) }.distinct(),
+              preorderPred,
+              postorderPred,
+              {(n: BuildGraphNode) -> this.prev(n)},
+              checkTraversal)
 }
 
+public fun BuildGraph.forwardDFS(from: Iterable<Artifact>,
+                                 preorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                 postorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                 checkTraversal: (edge: BuildGraphNode) -> Boolean = makeVisitedTraversalChecker<BuildGraphNode>() ) {
+    // note: incoming artifacts set could be a superset of graph's inputs
+    graphDFS( from.map { if (incomingLinks.contains(it)) incomingLinks.get(it) else null }.filterNotNull().distinct(),
+              preorderPred,
+              postorderPred,
+              {(n: BuildGraphNode) -> this.next(n)},
+              checkTraversal)
+}
+public fun BuildGraph.backwardDFS(from: Iterable<Artifact>,
+                                  preorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                  postorderPred: (edge: BuildGraphNode) -> Boolean = { true },
+                                  checkTraversal: (edge: BuildGraphNode) -> Boolean = makeVisitedTraversalChecker<BuildGraphNode>() ) {
+    // note: here all outputs should be strictly in the graph
+    graphDFS( from.map { outgoingLinks.get(it) }.distinct(),
+              preorderPred,
+              postorderPred,
+              {(n: BuildGraphNode) -> this.prev(n)},
+              checkTraversal)
+}
+
+public fun BuildGraph.print() {
+    backwardBFS( this.targets(),
+                 preorderPred = { (e) -> e.print(this); false })
+}
+
+public fun BuildGraphNode.print(graph: BuildGraph) {
+    println("${step.tool.title}(${module.title})")
+    println("  from:")
+    graph.sources(this).forEach { it.print("    ") }
+    println("  to:")
+    graph.targets(this).forEach { it.print("    ") }
+}
 

@@ -25,7 +25,7 @@ public class BuildScript() : ModuleCollection() {
             build(module, scenario)
     }
 
-    fun buildGraph(config: String = ""): BuildGraph = buildGraph(modules, Scenario(config))
+    fun buildGraph(config: String = ""): BuildGraph = BuildGraph(modules, Scenario(config))
 
     fun makeModuleSet(modules: List<Module>) {
         for (module in modules) {
