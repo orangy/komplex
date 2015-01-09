@@ -21,7 +21,7 @@ public trait CompilerTool : ConvertingTool {
 
 
 public abstract class Compiler(public override val title : String) : CompilerTool {
-    public abstract class BaseRule(override val local: Boolean = false) : CompilerTool.Rule {
+    public abstract class BaseRule(override val export: Boolean = false) : CompilerTool.Rule {
         override val selectSources = SelectArtifactsList()
         override val selectTargets = SelectArtifactsList()
         override val selectLibs = SelectArtifactsList()

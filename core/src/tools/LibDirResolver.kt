@@ -12,7 +12,7 @@ public val tools.libDir: LibDirResolver.Rule
 
 public class LibDirResolver : Resolver("localDirResolver") {
 
-    public class Rule(public var dir: String = "./lib", override val local: Boolean = false) : Resolver.BaseRule(local) {
+    public class Rule(public var dir: String = "./lib", override val export: Boolean = false) : Resolver.BaseRule(export) {
         override val tool: LibDirResolver = LibDirResolver()
         override fun dryResolve(scenario: Scenario, source: Artifact): Artifact =
             when (source) {

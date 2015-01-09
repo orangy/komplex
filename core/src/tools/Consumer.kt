@@ -15,7 +15,7 @@ public trait ConsumingTool : Tool {
 
 
 public abstract class Consumer(override val title: String) : ConsumingTool {
-    public class Rule(override val tool: ConsumingTool, override val local: Boolean = false) : ConsumingTool.Rule {
+    public class Rule(override val tool: ConsumingTool, override val export: Boolean = false) : ConsumingTool.Rule {
         override val selectSources = SelectArtifactsList()
     }
 }

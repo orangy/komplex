@@ -2,6 +2,7 @@
 package komplex
 
 import java.util.HashSet
+import java.util.ArrayDeque
 
 // generic traverse checker with generators
 public class TraversedChecker<Node>() {
@@ -89,6 +90,30 @@ public fun graphDFS<Node>(from: Iterable<Node>,
             if (postorderPred(e)) return true // found on postorder
         }
     return false
+}
+
+
+public fun subgraphDFS<Node>(from: Iterable<Node>,
+                             to: Set<Node>,
+                             preorderPred: (e: Node) -> Boolean,
+                             postorderPred: (Node) -> Boolean,
+                             nextNodes: (n: Node) -> Iterable<Node>,
+                             checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
+                            ): Boolean {
+
+    val subgraphNodes = hashSetOf<Node>()
+    val roots = hashSetOf<Node>()
+    val stack = ArrayDeque<Node>()
+    val sharedCheckTraversal = makeVisitedTraversalChecker<Node>()
+    // first phase - calculating reachability graph and finding it's roots
+    for (r in from)
+        graphDFS(nextNodes(r),
+                 { stack.offer(it); if (to.contains(it)) { subgraphNodes.addAll(stack); subgraphNodes.add(r); roots.add(r) }; false },
+                 { stack.pop(); false},
+                 { val nn = nextNodes(it); roots.removeAll(nn); nn },
+                 sharedCheckTraversal)
+    // second phase - apply dfs to subgraph
+    return graphDFS(roots, preorderPred, postorderPred, { nextNodes(it).filter { subgraphNodes.contains(it) } }, checkTraversal)
 }
 
 

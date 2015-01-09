@@ -14,7 +14,7 @@ public trait ProducingTool : Tool {
 
 
 public abstract class Producer(override val title: String) : ProducingTool {
-    public class Rule(override val tool: ProducingTool, override val local: Boolean = false) : ProducingTool.Rule {
+    public class Rule(override val tool: ProducingTool, override val export: Boolean = false) : ProducingTool.Rule {
         override val selectTargets = SelectArtifactsList()
     }
 }

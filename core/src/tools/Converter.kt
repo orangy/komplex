@@ -15,9 +15,9 @@ public trait ConvertingTool : ProducingTool, ConsumingTool {
 }
 
 public abstract class Converter(public override val title : String) : ConvertingTool {
-    public abstract class BaseRule(override val local: Boolean = false) : ConvertingTool.Rule {
+    public abstract class BaseRule(override val export: Boolean = false) : ConvertingTool.Rule {
         override val selectSources = SelectArtifactsList()
         override val selectTargets = SelectArtifactsList()
     }
-    public class Rule(override val tool: ConvertingTool, override val local: Boolean = false) : BaseRule(local) {}
+    public class Rule(override val tool: ConvertingTool, override val export: Boolean = false) : BaseRule(export) {}
 }

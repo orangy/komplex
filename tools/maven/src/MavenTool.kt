@@ -26,7 +26,7 @@ public val tools.maven: MavenResolverRule
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class MavenResolverRule(override val local: Boolean = false) : komplex.Resolver.BaseRule(local) {
+public class MavenResolverRule(override val export: Boolean = false) : komplex.Resolver.BaseRule(export) {
 
     override val tool by Delegates.lazy { MavenTool() }
 

@@ -27,7 +27,7 @@ public open class Module(parent1: Module?, public val moduleName: String) : Modu
     public fun targets(scenario: Scenario): Iterable<Artifact> = // \todo add caching
         build.ruleSets.filter { it.selectors.any { it.matches(scenario) }}
                       .flatMap { it.rules }
-                      .filter { !it.local }
+                      //.filter { it.export } // \todo find a way to filter all exports as in graph
                       .flatMap { it.targets(scenario) }
 
     override fun toString(): String = "$title"

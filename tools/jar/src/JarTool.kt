@@ -12,7 +12,7 @@ public val tools.jar: JarPackagerRule
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class JarPackagerRule(override val local: Boolean = false) : Converter.BaseRule(local) {
+public class JarPackagerRule(override val export: Boolean = false) : Converter.BaseRule(export) {
     override val tool: JarPackager by Delegates.lazy { JarPackager() }
     // configuration params
     public var compression : Int = 3

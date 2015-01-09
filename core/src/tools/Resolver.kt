@@ -28,7 +28,7 @@ public trait ResolveTool : ConsumingTool {
 
 
 public abstract class Resolver(public override val title: String) : ResolveTool {
-    public abstract class BaseRule(override val local: Boolean): ResolveTool.Rule {
+    public abstract class BaseRule(override val export: Boolean): ResolveTool.Rule {
         override val selectSources = SelectArtifactsList()
         override val source2target = hashMapOf<Artifact, Artifact>()
     }

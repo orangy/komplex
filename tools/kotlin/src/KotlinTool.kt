@@ -21,7 +21,7 @@ public val tools.kotlin: KotlinCompilerRule
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class KotlinCompilerRule(override val local: Boolean = false) : komplex.Compiler.BaseRule(local) {
+public class KotlinCompilerRule(override val export: Boolean = false) : komplex.Compiler.BaseRule(export) {
     override val tool by Delegates.lazy { KotlinCompiler() }
     override fun execute(context: BuildStepContext): BuildResult
             = tool.compileKotlin(context, selectSources.get(context.scenario), selectTargets.get(context.scenario), selectLibs.get(context.scenario), this)

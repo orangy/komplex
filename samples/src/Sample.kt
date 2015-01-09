@@ -104,10 +104,15 @@ fun main(args: Array<String>) {
     script.print("")
 //    script.build("publish")
     val graph = script.buildGraph("publish")
-    println("graph targets:")
+//    println("graph targets:")
 //    graph.targets().forEach { it.print("    ") }
+    println()
     println("graph:")
     graph.print()
+    println()
+    println("plan:")
+    graph.printBuildPlan()
+    println()
     println("done.")
 //    script.print("")
 }

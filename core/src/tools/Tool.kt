@@ -7,7 +7,7 @@ public trait Tool {
     // represents tool rule configuration
     public trait Rule {
         val tool: Tool
-        val local: Boolean // defines if step targets are local or exported from the module
+        val export: Boolean // defines if step targets are local or exported from the module
         public fun sources(scenario: Scenario): Iterable<Artifact> = listOf()
         public fun targets(scenario: Scenario): Iterable<Artifact> = listOf()
         public fun valid(scenario: Scenario): Boolean = true
