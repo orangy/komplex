@@ -168,3 +168,10 @@ public fun BuildGraph.buildAllApply(buildFun: (node: BuildGraphNode) -> Boolean)
 public fun BuildGraph.printBuildPlan() {
     buildAllApply({ (n) -> n.print(this); false })
 }
+
+public fun BuildGraph.build() {
+    buildAllApply({ (n) ->
+        val context = BuildStepContext(scenario, n.module)
+        val result = n.step.execute(context)
+        result != BuildResult.Success })
+}
