@@ -156,6 +156,17 @@ public fun BuildGraphNode.print(graph: BuildGraph) {
     graph.targets(this).forEach { it.print("    ") }
 }
 
+public fun BuildGraph.buildPartialApply( buildFun: (BuildGraphNode) -> Boolean,
+                                         sources: Set<BuildGraphNode> = this.roots().toHashSet(),
+                                         targets: Iterable<BuildGraphNode> = this.leafs()) {
+    subgraphDFS( targets,
+                 sources,
+                 { false },
+                 buildFun,
+                 {(n: BuildGraphNode) -> this.prev(n)},
+                 makeVisitedTraversalChecker<BuildGraphNode>())
+}
+
 public fun BuildGraph.buildAllApply(buildFun: (node: BuildGraphNode) -> Boolean) {
     //backwardBFS(to, postorderPred = buildFun)
     graphDFS( leafs(),
@@ -167,6 +178,11 @@ public fun BuildGraph.buildAllApply(buildFun: (node: BuildGraphNode) -> Boolean)
 
 public fun BuildGraph.printBuildPlan() {
     buildAllApply({ (n) -> n.print(this); false })
+}
+
+public fun BuildGraph.printPartialBuildPlan(sources: Set<BuildGraphNode> = this.roots().toHashSet(),
+                                            targets: Iterable<BuildGraphNode> = this.leafs()) {
+    buildPartialApply({ (n) -> n.print(this); false }, sources, targets)
 }
 
 public fun BuildGraph.build() {

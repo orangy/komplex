@@ -16,6 +16,8 @@ public fun makeVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
     return { (n: Node) -> checker.checkAdd(n) }
 }
 
+// \todo invert predicates meaning - instead of "cancel?" use "continue?"
+
 // generic preorder BFS
 // \todo check if keeping separate preorder version makes sense e.g. performance-wise
 public fun graphPreorderBFS<Node>(from: Iterable<Node>,
