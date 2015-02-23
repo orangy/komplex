@@ -41,7 +41,7 @@ class ScriptingHost {
         configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
         configuration.put(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, listOf(JetScriptDefinition(".kts")))
 
-        val environment = JetCoreEnvironment.createForProduction(rootDisposable, configuration)
+        val environment = JetCoreEnvironment.createForProduction(rootDisposable, configuration, arrayListOf("."))
         val scriptClass = KotlinToJVMBytecodeCompiler.compileScript(paths, environment)
         if (scriptClass == null)
             return

@@ -10,36 +10,24 @@ import org.sonatype.aether.util.artifact.DefaultArtifact
 import org.sonatype.aether.repository.RemoteRepository
 import org.sonatype.aether.util.artifact.JavaScopes
 import org.apache.maven.project.MavenProject
-import komplex.ResolveTool
 import komplex.tools
 import kotlin.properties.Delegates
-import komplex.BuildStepContext
-import komplex.BuildResult
-import komplex.Scenario
-import komplex.LibraryReferenceArtifact
-import komplex.LibraryWithDependenciesArtifact
-import komplex.print
+import komplex.dsl.tools
+import komplex.model.BuildContext
+import komplex.model.ArtifactDesc
+import komplex.model.ArtifactData
+import komplex.model.BuildResult
+import komplex.model.Scenarios
+import komplex.utils.BuildDiagnostic
+import komplex.data.openFileSetI
 
 public val tools.maven: MavenResolverRule
-    get() = MavenResolverRule()
+    get() = MavenResolverRule(komplex.model.LazyTool<MavenResolverRule, MavenResolver>("maven", { MavenResolver()} ))
 
 
 // separate class for separate class loading
-// \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class MavenResolverRule(override val export: Boolean = false) : komplex.Resolver.BaseRule(export) {
-
-    override val tool by Delegates.lazy { MavenTool() }
-
-    override fun execute(context: BuildStepContext): BuildResult
-            = tool.resolveMaven(context, selectSources.get(context.scenario), this)
-    override fun dryResolve(scenario: Scenario, source: komplex.Artifact): komplex.Artifact {
-        if (source is LibraryReferenceArtifact) {
-            val id = source.mavenId()
-            return LibraryWithDependenciesArtifact("${id.groupId}:${id.artifactId}:${id.version}")
-        }
-        // \todo design proper error reporting
-        else throw Exception("unknown reference artifact type")
-    }
+// \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that side-by-side class will work as well
+public class MavenResolverRule(mavenResolver: komplex.model.Tool<MavenResolverRule>) : komplex.dsl.BasicToolRule<MavenResolverRule, komplex.model.Tool<MavenResolverRule>>(mavenResolver) {
 
     internal var repositoryName: String = "maven-central"
     internal var repositoryUrl: String = "http://repo1.maven.org/maven2/"
@@ -57,35 +45,33 @@ public class MavenResolverRule(override val export: Boolean = false) : komplex.R
     }
 }
 
+// resolves all sources into (FileSet) destinations, ignores targets, sources are used as a key to destinations
+public open class MavenResolver() : komplex.model.Tool<MavenResolverRule> {
+    override val name: String = "maven"
 
-public open class MavenTool() : komplex.Resolver("maven") {
-
-    override fun resolve(context: BuildStepContext, sources: Iterable<komplex.Artifact>, rule: ResolveTool.Rule): BuildResult = null!!
-
-    internal fun resolveMaven(context: BuildStepContext, sources: Iterable<komplex.Artifact>, rule: MavenResolverRule): BuildResult {
-        fun resput(scenario: Scenario, source: komplex.Artifact): komplex.Artifact {
-            val res = rule.dryResolve(scenario, source)
-            rule.source2target.put(source, res)
-            return res
-        }
-
-        val remoteRepos: MutableList<RemoteRepository> = Arrays.asList(RemoteRepository(rule.repositoryName, "default", rule.repositoryUrl))
-        val localRepo: File = File(rule.dir)
+    override fun execute(context: BuildContext, cfg: MavenResolverRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
+//    internal fun resolveMaven(context: BuildStepContext, sources: Iterable<komplex.Artifact>, rule: MavenResolverRule): BuildResult {
+        val result = arrayListOf<Pair<ArtifactDesc, ArtifactData>>()
+        val remoteRepos: MutableList<RemoteRepository> = Arrays.asList(RemoteRepository(cfg.repositoryName, "default", cfg.repositoryUrl))
+        val localRepo: File = File(cfg.dir)
         // \todo error handling
-        for (it in sources) {
+        for (sourcePair in src) {
             // \todo switch to regular logging
-            if (it !is LibraryReferenceArtifact)
-                return BuildResult.Fail
-            val id = it.mavenId()
-            println("[INFO] resolving [${it.id}]")
-            val target = (rule.source2target.get(it) ?: resput(context.scenario, it)) as LibraryWithDependenciesArtifact
+            val sourceDesc = sourcePair.first
+            if (sourceDesc !is MavenLibraryArtifact)
+                return BuildResult(BuildDiagnostic.Fail)
+            val id = sourceDesc.id
+            println("[INFO] resolving [$id]")
             val deps = Aether(remoteRepos, localRepo).resolve(
                     DefaultArtifact("${id.groupId}:${id.artifactId}:${id.version}"),
                     JavaScopes.RUNTIME)
-            target.resolvedPaths = deps?.map { Paths.get(it.getFile().path) } ?: listOf()
+            if (deps == null) {
+                println("[ERROR] resolving [$id] failed")
+                return BuildResult(BuildDiagnostic.Fail)
+            }
             println("[INFO] resolved successfuly:")
-            target.print("    ")
+            result.add(Pair(sourceDesc, openFileSetI(deps.map { Paths.get(it.getFile().path) })))
         }
-        return BuildResult.Success
+        return BuildResult( BuildDiagnostic.Success, result)
     }
 }

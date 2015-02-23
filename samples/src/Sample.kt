@@ -1,10 +1,15 @@
 package komplex.sample
 
-import komplex.*
-import komplex.jar.*
+import komplex.dsl.*
+import komplex.tools.jar.*
 import komplex.kotlin.*
 import komplex.maven.*
-import kotlin.modules.module
+import komplex.tools.use
+import komplex.utils
+import komplex.model.nicePrint
+import komplex.model.roots
+import komplex.model.leafs
+import komplex.model.Scenarios
 
 fun main(args: Array<String>) {
     val script = script {
@@ -13,28 +18,30 @@ fun main(args: Array<String>) {
         val jar = scenario("jar")
         val publish = scenario("publish")
 
+        val libraries = folder("out/sample/libs", artifacts.binaries)
+
+        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default): Module {
+            val libModule = komplex.maven.mavenLibrary(id, version, target = libraries)
+            libModule.build using tools.maven
+            return libModule
+        }
+
         fun Module.shared() {
             version("SNAPSHOT-0.1")
-            // \todo export/local steps
 
             // shared settings for all projects
             val sources = files("$moduleName/src/**.kt", artifacts.sources)
             val binaries = folder("out/sample/$moduleName", artifacts.binaries)
             val jarFile = file("out/artifacts/sample/$moduleName.jar", artifacts.jar)
 
-            // invent syntax for "local/export" property passing
-            val extLibs = build using(tools.maven) from depends.artifacts with {
-                dir = "lib"
-            }
+            depends on children
 
             build using(tools.kotlin) from sources into binaries with {
-                useLibs(extLibs)
-                useLibs(modules.map { {(scenario: Scenario) -> it.targets(scenario).filter { it.type == artifacts.jar }}})
-                useLibs({(scenario: Scenario) -> depends.modules(scenario).flatMap { it.targets(scenario).filter { it.type == artifacts.jar }}})
+                use(depends.modules)
                 enableInline = true
             }
 
-            build(jar, test) using tools.jar from binaries into jarFile
+            build(jar, test) using tools.jar from binaries export jarFile
 
             build(publish) {
                 using(tools.jar) {
@@ -42,10 +49,14 @@ fun main(args: Array<String>) {
                     into(jarFile)
                     compression = 2
                 }
+                /*
                 using(tools.publish) {
                     from(jarFile)
                 }
+                */
             }
+
+            default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
         module("komplex") {
@@ -58,20 +69,20 @@ fun main(args: Array<String>) {
                 shared()
             }
             val toolsKotlin = module("tools/kotlin", "Komplex Kotlin Compiler tool") {
-                depends on core
-                depends on {
-                    library("org.jetbrains.kotlin:kotlin-compiler:0.10.195")
+                depends.on(
+                    core,
+                    library("org.jetbrains.kotlin:kotlin-compiler:0.10.195"),
                     library("org.jetbrains.kotlin:kotlin-runtime:0.10.195")
-                }
+                )
                 shared()
             }
             val repoMaven = module("tools/maven", "Komplex Maven Resolver tool") {
                 shared()
                 depends on core
-                depends on {
-                    library("com.jcabi:jcabi-aether:0.10.1")
+                depends.on(
+                    library("com.jcabi:jcabi-aether:0.10.1"),
                     library("org.apache.maven:maven-core:3.2.5")
-                }
+                )
             }
 
             module("samples", "Komplex Samples") {
@@ -102,21 +113,21 @@ fun main(args: Array<String>) {
     plan.print("")
 */
     println("\n--- script ------------------------------")
-    script.print("")
+    println(script.nicePrint(utils.TwoSpaceIndentLn()))
 //    script.build("publish")
-    val graph = script.buildGraph("publish")
+    val graph = script.buildGraph()
 //    println("graph targets:")
 //    graph.targets().forEach { it.print("    ") }
 //    println()
 //    println("graph:")
 //    graph.print()
     println("\n--- plan --------------------------------")
-    graph.printBuildPlan()
-    println("\n--- build -------------------------------")
-    graph.build()
+    println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
+//    println("\n--- build -------------------------------")
+//    graph.build()
     println("\n--- min rebuild plan --------------------")
-    graph.printPartialBuildPlan(sources = hashSetOf(graph.roots().first()))
+//    graph.printPartialBuildPlan(sources = hashSetOf(graph.roots().first()))
     println("\n--- target build plan -------------------")
-    graph.printPartialBuildPlan(targets = listOf(graph.leafs().first()))
+//    graph.printPartialBuildPlan(targets = listOf(graph.leafs().first()))
     println("\n-- done. --------------------------------")
 }

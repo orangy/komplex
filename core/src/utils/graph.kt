@@ -1,5 +1,5 @@
 
-package komplex
+package komplex.utils
 
 import java.util.HashSet
 import java.util.ArrayDeque
@@ -84,7 +84,6 @@ public fun graphDFS<Node>(from: Iterable<Node>,
                           nextNodes: (e: Node) -> Iterable<Node>,
                           checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
                          ): Boolean {
-
     for (e in from)
         if (checkTraversal(e)) {
             if (preorderPred(e)) return true // found, stop traversing
@@ -109,17 +108,20 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
     val sharedCheckTraversal = makeVisitedTraversalChecker<Node>()
     // first phase - calculating reachability graph and finding it's roots
     for (r in from)
-        graphDFS(nextNodes(r),
-                 { stack.offer(it); if (to.contains(it)) { subgraphNodes.addAll(stack); subgraphNodes.add(r); roots.add(r) }; false },
-                 { stack.pop(); false},
-                 { val nn = nextNodes(it); roots.removeAll(nn); nn },
-                 sharedCheckTraversal)
+        graphDFS(from = nextNodes(r),
+                 preorderPred = {
+                     stack.offer(it)
+                     if (to.contains(it)) {
+                         subgraphNodes.addAll(stack)
+                         subgraphNodes.add(r)
+                         roots.add(r)
+                     }
+                     false },
+                 postorderPred = { stack.pop(); false},
+                 nextNodes = { val nn = nextNodes(it); roots.removeAll(nn); nn },
+                 checkTraversal = sharedCheckTraversal)
     // second phase - apply dfs to subgraph
     return graphDFS(roots, preorderPred, postorderPred, { nextNodes(it).filter { subgraphNodes.contains(it) } }, checkTraversal)
 }
 
 
-// generic graph
-public trait Graph<Node> {
-    public fun add(node: Node)
-}
