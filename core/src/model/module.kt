@@ -24,14 +24,14 @@ public trait Module : ModuleCollection, Named {
                 .filter { scenarios.matches(it.selector) }
                 .flatMap { modDep -> modDep.module.targets(
                         when (modDep.scenarios) {
-                            Scenarios.Default -> Scenarios.Default
+                            Scenarios.Default_ -> Scenarios.Default_
                             Scenarios.Same -> scenarios
                             else -> modDep.scenarios
                 })} +
         steps.filter { scenarios.matches(it.selector) }.flatMap { it.sources }
 
     public fun targets(scenarios: Scenarios): Iterable<ArtifactDesc> =
-        children.flatMap { it.targets( if (scenarios == Scenarios.Default) defaultScenario else scenarios) } +
+        children.flatMap { it.targets( if (scenarios == Scenarios.Default_) defaultScenario else scenarios) } +
         steps.filter { scenarios.matches(it.selector) && it.export }.flatMap { it.targets }
 }
 

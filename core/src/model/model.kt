@@ -13,14 +13,14 @@ public trait Scenario {}
 
 public open class Scenarios(public val items: Collection<Scenario>) {
     public fun combine(other: Scenarios): Scenarios = when {
-        this == All || other == None || other == Same || other == Default -> this
-        this == None || this == Same || this == Default|| other == All -> other
+        this == All || other == None || other == Same || other == Default_ -> this
+        this == None || this == Same || this == Default_ || other == All -> other
         else -> Scenarios((items + other.items).distinct())
     }
     class object {
         val All = Scenarios(listOf<Scenario>())
         val Same = Scenarios(listOf<Scenario>())
-        val Default = Scenarios(listOf<Scenario>())
+        val Default_ = Scenarios(listOf<Scenario>())
         val None = Scenarios(listOf<Scenario>())
     }
 }
@@ -38,7 +38,7 @@ public fun<T: Scenarios> T.matches(selector: ScenarioSelector): Boolean =
         selector == ScenarioSelector.Any -> true
         selector == ScenarioSelector.None -> false
         this == Scenarios.All -> true
-        this == Scenarios.Same || this == Scenarios.Default -> throw Exception("Unresolved scenario: $this")
+        this == Scenarios.Same || this == Scenarios.Default_ -> throw Exception("Unresolved scenario: $this")
         else -> this.items.any { selector.scenarios.items.contains(it) }
     }
 
@@ -57,7 +57,7 @@ public fun Scenarios.resolve(current: Scenarios, default: Scenarios = Scenarios.
     when {
         this == Scenarios.All -> this
         this == Scenarios.Same -> current
-        this == Scenarios.Default -> default
+        this == Scenarios.Default_ -> default
         else -> this
     }
 

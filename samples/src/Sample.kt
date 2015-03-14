@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
 
         val libraries = folder("out/sample/libs", artifacts.binaries)
 
-        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default): Module {
+        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
             val libModule = komplex.maven.mavenLibrary(id, version, target = libraries)
             libModule.build using tools.maven
             return libModule

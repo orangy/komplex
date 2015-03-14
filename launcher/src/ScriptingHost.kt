@@ -1,21 +1,19 @@
 package komplex.launcher
 
 
-import org.jetbrains.jet.cli.jvm.compiler.*
-import org.jetbrains.jet.config.*
+import org.jetbrains.kotlin.cli.jvm.compiler.*
+import org.jetbrains.kotlin.config.*
 import com.intellij.openapi.util.*
-import org.jetbrains.jet.utils.*
-import org.jetbrains.jet.cli.jvm.*
-import org.jetbrains.jet.cli.common.messages.*
-import org.jetbrains.jet.cli.common.*
-import org.jetbrains.jet.cli.common.arguments.*
+import org.jetbrains.kotlin.utils.*
+import org.jetbrains.kotlin.cli.jvm.*
+import org.jetbrains.kotlin.cli.common.messages.*
+import org.jetbrains.kotlin.cli.common.*
+import org.jetbrains.kotlin.cli.common.arguments.*
 import java.io.File
 import com.sampullara.cli.Args
-import org.jetbrains.jet.lang.parsing.*
-import org.jetbrains.jet.codegen.*
+import org.jetbrains.kotlin.codegen.*
+import org.jetbrains.kotlin.parsing.JetScriptDefinition
 import java.net.*
-import org.jetbrains.jet.lang.resolve.*
-import org.jetbrains.jet.lang.psi.JetFile
 
 class ScriptingHost {
     fun run(args: Array<String>) {
@@ -42,7 +40,7 @@ class ScriptingHost {
         configuration.put(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, listOf(JetScriptDefinition(".kts")))
 
         val environment = JetCoreEnvironment.createForProduction(rootDisposable, configuration, arrayListOf("."))
-        val scriptClass = KotlinToJVMBytecodeCompiler.compileScript(paths, environment)
+        val scriptClass = KotlinToJVMBytecodeCompiler.compileScript(configuration, paths, environment)
         if (scriptClass == null)
             return
         val instance = scriptClass.getConstructor(javaClass<Array<String>>()).newInstance(arguments.freeArgs?.copyToArray())

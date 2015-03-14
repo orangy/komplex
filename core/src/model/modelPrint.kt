@@ -23,7 +23,7 @@ public fun Scenario.nicePrint(indent: IndentLn): String = "$indent$this"
 public fun Scenarios.nicePrint(indent: IndentLn): String = "$indent" + when (this) {
     Scenarios.All -> "All"
     Scenarios.None -> "None"
-    Scenarios.Default -> "Default"
+    Scenarios.Default_ -> "Default"
     Scenarios.Same -> "Same"
     else -> this.items.map { it.nicePrint(indent) }
 }
