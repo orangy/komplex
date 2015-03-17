@@ -9,7 +9,9 @@ public class ModuleDependency(
         override val module: Module,
         override var scenarios: komplex.model.Scenarios,
         override var selector: ScenarioSelector
-) : komplex.model.ModuleDependency {}
+) : komplex.model.ModuleDependency {
+    override fun toString(): String = "${module.name} (${selector.scenarios})"
+}
 
 
 public open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {
@@ -46,7 +48,7 @@ public class Dependencies(vararg scenarios: ScenarioSelector = array(ScenarioSel
         return group
     }
 
-    public val modules: Iterable<ModuleDependency>
+    public val modules: Iterable<komplex.model.ModuleDependency>
         get() = groups.flatMap { it.items }
 
 }

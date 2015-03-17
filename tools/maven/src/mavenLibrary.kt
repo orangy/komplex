@@ -6,6 +6,7 @@ import komplex.dsl.ArtifactType
 import kotlin.properties.Delegates
 import komplex.dsl.from
 import komplex.dsl.FolderArtifact
+import komplex.dsl.into
 
 public class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
     override val type = dsl.artifacts.jar
@@ -24,7 +25,8 @@ public class MavenLibraryModule(public val library: MavenLibraryArtifact, public
 : komplex.dsl.Module(null, "library ${library.name}") {
     override val steps by Delegates.lazy {
         val step = dsl.tools.maven
-        step from library to target
+        step from library into target
+        step.export = true
         listOf(step)
     }
 }

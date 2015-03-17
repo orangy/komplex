@@ -11,17 +11,20 @@ public trait ArtifactData {}
 
 public trait Scenario {}
 
-public open class Scenarios(public val items: Collection<Scenario>) {
+public open class Scenarios(public val items: Collection<Scenario> = listOf(), override val name: String = "" ) : Named {
     public fun combine(other: Scenarios): Scenarios = when {
         this == All || other == None || other == Same || other == Default_ -> this
         this == None || this == Same || this == Default_ || other == All -> other
         else -> Scenarios((items + other.items).distinct())
     }
+
+    override fun toString(): String = if (name.isEmpty()) items.joinToString(",","[","]") else name
+
     class object {
-        val All = Scenarios(listOf<Scenario>())
-        val Same = Scenarios(listOf<Scenario>())
-        val Default_ = Scenarios(listOf<Scenario>())
-        val None = Scenarios(listOf<Scenario>())
+        val All = Scenarios(name="All")
+        val Same = Scenarios(name="Some")
+        val Default_ = Scenarios(name="Default")
+        val None = Scenarios(name="None")
     }
 }
 

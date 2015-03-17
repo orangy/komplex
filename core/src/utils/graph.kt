@@ -101,25 +101,26 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
                              nextNodes: (n: Node) -> Iterable<Node>,
                              checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
                             ): Boolean {
-
     val subgraphNodes = hashSetOf<Node>()
     val roots = hashSetOf<Node>()
     val stack = ArrayDeque<Node>()
     val sharedCheckTraversal = makeVisitedTraversalChecker<Node>()
     // first phase - calculating reachability graph and finding it's roots
-    for (r in from)
+    for (r in from) {
         graphDFS(from = nextNodes(r),
-                 preorderPred = {
-                     stack.offer(it)
-                     if (to.contains(it)) {
-                         subgraphNodes.addAll(stack)
-                         subgraphNodes.add(r)
-                         roots.add(r)
-                     }
-                     false },
-                 postorderPred = { stack.pop(); false},
-                 nextNodes = { val nn = nextNodes(it); roots.removeAll(nn); nn },
-                 checkTraversal = sharedCheckTraversal)
+                preorderPred = {
+                    stack.offer(it)
+                    if (to.contains(it)) {
+                        subgraphNodes.addAll(stack)
+                        subgraphNodes.add(r)
+                        roots.add(r)
+                    }
+                    false
+                },
+                postorderPred = { stack.peek(); stack.pop(); false },
+                nextNodes = { val nn = nextNodes(it); roots.removeAll(nn); nn },
+                checkTraversal = sharedCheckTraversal)
+    }
     // second phase - apply dfs to subgraph
     return graphDFS(roots, preorderPred, postorderPred, { nextNodes(it).filter { subgraphNodes.contains(it) } }, checkTraversal)
 }

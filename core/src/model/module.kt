@@ -32,7 +32,8 @@ public trait Module : ModuleCollection, Named {
 
     public fun targets(scenarios: Scenarios): Iterable<ArtifactDesc> =
         children.flatMap { it.targets( if (scenarios == Scenarios.Default_) defaultScenario else scenarios) } +
-        steps.filter { scenarios.matches(it.selector) && it.export }.flatMap { it.targets }
+        steps.filter { scenarios.matches(it.selector) && it.export }.flatMap {
+            it.targets }
 }
 
 

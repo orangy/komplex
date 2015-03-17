@@ -29,7 +29,7 @@ public open class Module(parent1: Module?, override val name: String) : ModuleCo
     }
 
     override val metadata: Metadata = Metadata()
-    override val dependencies: MutableList<ModuleDependency> = arrayListOf()
+    override val dependencies: Iterable<komplex.model.ModuleDependency> get() = depends.modules
 
     override val steps: Iterable<Step>
         get() = ruleSets.flatMap { it.rules }

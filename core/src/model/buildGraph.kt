@@ -1,13 +1,9 @@
 
 package komplex.model
 
+import komplex.utils.*
 import java.util.HashSet
 import java.util.HashMap
-import komplex.utils.subgraphDFS
-import komplex.utils.makeVisitedTraversalChecker
-import komplex.utils.graphDFS
-import komplex.utils.IndentLn
-import komplex.utils.BuildDiagnostic
 import java.util.ArrayList
 
 public data class ModuleFlavor(public val module: Module,
@@ -32,8 +28,8 @@ public class BuildGraph() {
         // skip steps without inputs and outputs
         if (!srcs.isEmpty() || !tgts.isEmpty()) {
             nodes.add(node)
-            producers.putAll(srcs.map { Pair(it, node) })
-            for (it in tgts) {
+            producers.putAll(tgts.map { Pair(it, node) })
+            for (it in srcs) {
                 val lst = consumers.get(it)
                 if (lst != null) lst.add(node)
                 else consumers.put(it, arrayListOf(node))
@@ -66,24 +62,25 @@ public class BuildGraph() {
             && scenarios.matches(producingNode.step.selector)
 
     private fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
-        val producingNode = producers.get(it) ?: throw Exception("incosistent graph: missing producer for $it")
-        return if (isSelected(producingNode, scenarios)) producingNode else null
+        val producingNode = producers.get(it)// ?: throw Exception("incosistent graph: missing producer for $it")
+        return if (producingNode != null && isSelected(producingNode, scenarios)) producingNode else null
     }
 
     private fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
-        consumers.get(it).filter { isSelected(it, scenarios) }
+        consumers.get(it)?.filter { isSelected(it, scenarios) } ?: listOf()
 
     // filtered inputs
     public fun sources(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
             if (scenarios.matches(node.step.selector))
-                node.step.sources.filter { getProducingNode(it, scenarios) != null }
+                // all node sources are required
+                node.step.sources
             else listOf()
 
     // filtered outputs
     public fun targets(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
             if (scenarios.matches(node.step.selector))
             // assuming that not all step's targets are consumed, so selecting only those that are
-                node.step.targets.filter { !getConsumingNodes(it, scenarios).none() }
+                node.step.targets.filter { getConsumingNodes(it, scenarios).any() }
             else listOf()
 
     public fun prev(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =

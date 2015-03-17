@@ -6,15 +6,13 @@ import komplex.utils.Named
 import komplex.dsl.Artifact
 import komplex.utils.SpaceIndent
 
-public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null, scenario: Scenarios? = null): String =
+public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null, scenario: Scenarios = Scenarios.All): String =
         if (graph == null)
             step.nicePrint(indent)
         else
             step.nicePrint(indent, false) +
-            "${indent.inc()}from:" +
-            graph.sources(this, scenario!!).map { it.nicePrint(indent.inc(2)) }.joinToString() +
-            "${indent.inc()}to:" +
-            graph.targets(this, scenario).map { it.nicePrint(indent.inc(2)) }.joinToString()
+            nicePrintPins(indent, graph.sources(this, scenario), "from:") +
+            nicePrintPins(indent, graph.targets(this, scenario), "to:")
 
 public fun ArtifactDesc.nicePrint(indent: IndentLn): String = "$indent$name"
 
@@ -37,19 +35,22 @@ public fun ScenarioSelector.nicePrint(indent: IndentLn): String = "$indent" + wh
 public fun Step.nicePrint(indent: IndentLn, printInsOuts: Boolean = true): String =
         "$indent$name (${selector.nicePrint(SpaceIndent())})" +
         if (printInsOuts)
-            (if (sources.none()) ""
-             else "${indent.inc()}from:" + sources.map { it.nicePrint(indent.inc(2)) }.joinToString()) +
-            (if (targets.none()) ""
-             else "${indent.inc()}to:" + targets.map { it.nicePrint(indent.inc(2)) }.joinToString())
+            nicePrintPins(indent, sources, "from:") + nicePrintPins(indent, targets, "to:")
         else ""
+
+private fun nicePrintPins(indent: IndentLn, pins: Iterable<ArtifactDesc>, prefix: String): String {
+    return (if (pins.none()) ""
+    else "${indent.inc()}$prefix" + pins.map { it.nicePrint(indent.inc(2)) }.joinToString())
+}
 
 public fun Module.nicePrint(indent: IndentLn): String =
         "$indent$name" +
         (if (steps.none()) ""
          else "${indent.inc()}steps:" + steps.map { it.nicePrint(indent.inc(2)) }.joinToString()) +
         (if (children.none()) ""
-         else "${indent.inc()}modules:" +
-        children.map { it.nicePrint(indent.inc(2)) }.joinToString())
+         else "${indent.inc()}modules:" + children.map { it.nicePrint(indent.inc(2)) }.joinToString()) +
+        (if (dependencies.none()) ""
+         else "${indent.inc()}depends on: " + dependencies.map { it.module.name }.joinToString(", "))
 
 public fun ModuleCollection.nicePrint(indent: IndentLn): String =
         children.map { it.nicePrint(indent.inc()) }.joinToString()
