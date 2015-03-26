@@ -17,6 +17,8 @@ import komplex.model
 import komplex.dsl
 import komplex.tools
 import komplex.data
+import komplex.model.Tool
+import komplex.model.ToolStep
 import komplex.utils
 
 
@@ -26,8 +28,9 @@ public val dsl.tools.kotlin: KotlinCompilerRule
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class KotlinCompilerRule(kotlinCompiler: komplex.model.Tool<KotlinCompilerRule>) : komplex.tools.CompilerRule() {
+public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : komplex.tools.CompilerRule<KotlinCompilerRule, Tool<KotlinCompilerRule>>() {
     override val name: String = "Kotlin compiler"
+    override val config: KotlinCompilerRule = this
 
     public fun invoke(body: KotlinCompilerRule.() -> Unit): KotlinCompilerRule {
         body()
@@ -70,7 +73,7 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
         if (args.freeArgs.size() == 0) {
             messageCollector.report(
                     CompilerMessageSeverity.ERROR,
-                    "No souurces to compile in module ${project.name}: ${src.map { it.first }}",
+                    "No sources to compile in module ${project.name}: ${src.map { it.first }}",
                     CompilerMessageLocation.NO_LOCATION)
             return model.BuildResult(utils.BuildDiagnostic.Fail)
         }
@@ -100,6 +103,8 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
             is dsl.FolderArtifact -> args.destination = folder.path.toString()
             else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
         }
+
+        println("[INFO] kotlin: $args")
 
         val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
         // \todo extract actually compiled class files

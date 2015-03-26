@@ -8,11 +8,13 @@ import komplex.model.ArtifactDesc
 import komplex.dsl.Rule
 import komplex.dsl.Module
 import komplex.dsl.ModuleDependency
+import komplex.model.Tool
+import komplex.model.ToolStep
 import java.util.concurrent.CopyOnWriteArrayList
 
 // \todo validate each use on addition
 
-public abstract class CompilerRule : RuleImpl() {
+public abstract class CompilerRule<Config: CompilerRule<Config, T>, T: Tool<Config>> : RuleImpl(), ToolStep<Config, T> {
     override val sources: Iterable<ArtifactDesc> get() {
         usedSources.forEach { use(it) }
         usedSources.clear()
@@ -28,27 +30,27 @@ public abstract class CompilerRule : RuleImpl() {
 
 }
 
-public fun CompilerRule.use(vararg artifacts: ArtifactDesc): CompilerRule {
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg artifacts: ArtifactDesc): CompilerRule<Config, T> {
     artifacts.forEach { usedLibs.add(it) }
     return this
 }
 
-public fun CompilerRule.use(vararg rules: Rule): CompilerRule {
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg rules: Rule): CompilerRule<Config, T> {
     rules.forEach { usedRules.add(it) }
     return this
 }
 
-public fun CompilerRule.use(vararg modules: Module): CompilerRule {
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg modules: Module): CompilerRule<Config, T> {
     modules.forEach { usedModules.add(it) }
     return this
 }
 
-public fun CompilerRule.use(vararg moduleDeps: ModuleDependency): CompilerRule {
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg moduleDeps: ModuleDependency): CompilerRule<Config, T> {
     moduleDeps.forEach { explicitDependencies.add(it) }
     return this
 }
 
-public fun CompilerRule.use(vararg deps: Iterable<*>): CompilerRule {
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg deps: Iterable<*>): CompilerRule<Config, T> {
     for (dep in deps) {
         var sample = dep.firstOrNull()
         when (sample) {

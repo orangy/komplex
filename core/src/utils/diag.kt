@@ -16,14 +16,21 @@ public trait BuildDiagnostic {
         Failed
     }
     public val status : Status
+    public val message : String get() = ""
     class object {
-        public val Success: StepBuildDiagnostic = StepBuildDiagnostic(Status.Succeeded)
-        public val Fail: StepBuildDiagnostic = StepBuildDiagnostic(Status.Failed)
+        public val Success: BuildDiagnostic = object : BuildDiagnostic {
+            override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Succeeded
+        }
+        public fun Fail(msg: String): BuildDiagnostic = FailBuildDiagnostic(msg)
+        public val Fail : BuildDiagnostic = FailBuildDiagnostic("")
     }
 }
 
 
-public class StepBuildDiagnostic(override public val status : BuildDiagnostic.Status) : BuildDiagnostic {}
+public class FailBuildDiagnostic(override val message : String) : BuildDiagnostic {
+    override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Succeeded
+}
+
 
 
 public object spyConfig {

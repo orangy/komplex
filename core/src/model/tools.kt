@@ -23,7 +23,7 @@ public trait LambdaStep : Step {
         }
         catch (e: Exception) {
             // \todo add exception to the build result
-            return BuildResult(BuildDiagnostic.Fail)
+            return BuildResult(BuildDiagnostic.Fail(e.toString()))
         }
     }
 }
@@ -39,16 +39,15 @@ public trait Tool<Config> : Named {
 
 
 public trait ToolStep<Config, T: Tool<Config>> : Step {
-    protected val tool: T
-    protected val config: Config
+    public val tool: T
+    public val config: Config
 
     public override fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?>) : BuildResult {
         try {
             return tool.execute(context, config, sources.map { Pair(it, artifacts.get(it)) }, targets)
         }
         catch (e: Exception) {
-            // \todo add exception to the build result
-            return BuildResult(BuildDiagnostic.Fail)
+            return BuildResult(BuildDiagnostic.Fail(e.toString()))
         }
     }
 }
