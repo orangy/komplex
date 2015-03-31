@@ -39,15 +39,24 @@ public fun openFileSet(artifact: FileData): DataSet<FileData> = DataSet(hashSetO
 public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>): DataCollection<FileData> {
     val snd = pair.second
     return when (snd) {
-        is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData) openFileSet(pair.first) else adaptToDataCollection(snd as FileData)
+        is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData) openFileSet(pair.first)
+                         else adaptToDataCollection(snd as DataCollection<FileData>)
         is FileData -> adaptToDataCollection(snd)
         else -> openFileSet(pair.first)
     }
 }
 
-public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc): DataSet<FileData> {
-    throw UnsupportedOperationException("cannot open $artifacts as FileSet")
-}
+public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc): DataSet<FileData> =
+    // emulating dynamic dispatching with extension methods
+    // \todo find more elegant solution
+    when (artifacts.firstOrNull()) {
+        is komplex.dsl.FileArtifact -> openFileSet(*artifacts.map { it as komplex.dsl.FileArtifact }.copyToArray())
+        is komplex.dsl.FolderArtifact -> openFileSet(*(artifacts.map { it as komplex.dsl.FolderArtifact }.copyToArray()))
+        is komplex.dsl.FileGlobArtifact -> openFileSet(*artifacts.map { it as komplex.dsl.FileGlobArtifact }.copyToArray())
+        is Path -> openFileSet(*(artifacts.map { it as Path }.copyToArray()))
+        else -> throw UnsupportedOperationException("cannot open ${artifacts.firstOrNull()?.name ?: "[]"}... as FileSet")
+    }
+
 
 public fun openFileSetI(paths: Iterable<Path>): DataSet<FileData> =
         DataSet<FileData>( paths.map { SimpleFileData(it) }.toHashSet())

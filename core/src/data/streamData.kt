@@ -36,10 +36,20 @@ public open class FileOutputStreamData(val path: Path) : OutputStreamData {
 
 public fun openInputStream(artifact: FileArtifact): InputStreamData = FileInputStreamData(artifact.path)
 public fun openInputStream(data: FileData): InputStreamData = FileInputStreamData(data.path)
-// \todo check kotlin dispatching rules
-public fun openInputStream(unknown: ArtifactData): InputStreamData { throw UnsupportedOperationException("Cannot open input strream from '$unknown'") }
+public fun openInputStream(data: ArtifactData): InputStreamData =
+        when (data) {
+            is FileArtifact -> openInputStream(data as FileArtifact)
+            is FileData -> openInputStream(data as FileData)
+            else -> throw UnsupportedOperationException("Cannot open input strream from '$data'")
+        }
 
 public fun openOutputStream(data: FileData): OutputStreamData = FileOutputStreamData(data.path)
 public fun openOutputStream(artifact: FileArtifact): OutputStreamData = FileOutputStreamData(artifact.path)
 // \todo check kotlin dispatching rules
-public fun openOutputStream(unknown: ArtifactData): OutputStreamData { throw UnsupportedOperationException("Cannot open output strream from '$unknown'") }
+public fun openOutputStream(data: ArtifactData): OutputStreamData =
+        when (data) {
+            is FileArtifact -> openOutputStream(data as FileArtifact)
+            is FileData -> openOutputStream(data as FileData)
+            else -> throw UnsupportedOperationException("Cannot open output strream from '$data'")
+        }
+
