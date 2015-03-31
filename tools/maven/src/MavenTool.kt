@@ -51,7 +51,7 @@ public open class MavenResolver() : komplex.model.Tool<MavenResolverRule> {
 
     override fun execute(context: BuildContext, cfg: MavenResolverRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
 //    internal fun resolveMaven(context: BuildStepContext, sources: Iterable<komplex.Artifact>, rule: MavenResolverRule): BuildResult {
-        val result = arrayListOf<Pair<ArtifactDesc, ArtifactData>>()
+        val result = arrayListOf<Pair<ArtifactDesc, ArtifactData?>>()
         val remoteRepos: MutableList<RemoteRepository> = Arrays.asList(RemoteRepository(cfg.repositoryName, "default", cfg.repositoryUrl))
         val localRepo: File = File(cfg.dir)
         // \todo error handling
