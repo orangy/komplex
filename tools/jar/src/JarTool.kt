@@ -79,8 +79,8 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
             val sourceDesc = sourcePair.first
             when (sourceDesc) {
                 is FileArtifact -> add(sourceDesc.path.getParent(), sourceDesc.path, openInputStream(sourcePair.second!!), jarStream, cfg.compression)
-                is FolderArtifact -> findFilesInPath(sourceDesc.path).map { add(sourceDesc.path, it, openInputStream(sourcePair.second!!), jarStream, cfg.compression) }
-                is FileGlobArtifact -> findGlobFiles(sourceDesc.included, sourceDesc.excluded).map { add(sourceDesc.path, it, openInputStream(sourcePair.second!!), jarStream, cfg.compression) }
+                is FolderArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.compression) }
+                is FileGlobArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.compression) }
                 else -> throw IllegalArgumentException("$sourceDesc is not supported in $name")
             }
         }
