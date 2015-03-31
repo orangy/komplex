@@ -1,15 +1,13 @@
 package komplex.sample
 
 import komplex.dsl.*
+import komplex.dsl.Module
 import komplex.tools.jar.*
 import komplex.kotlin.*
 import komplex.maven.*
+import komplex.model.*
 import komplex.tools.use
 import komplex.utils
-import komplex.model.nicePrint
-import komplex.model.roots
-import komplex.model.leafs
-import komplex.model.Scenarios
 
 fun main(args: Array<String>) {
     val script = script {
@@ -77,20 +75,20 @@ fun main(args: Array<String>) {
                 shared()
             }
             val repoMaven = module("tools/maven", "Komplex Maven Resolver tool") {
-                shared()
                 depends on core
                 depends.on(
                     library("com.jcabi:jcabi-aether:0.10.1"),
                     library("org.apache.maven:maven-core:3.2.5")
                 )
+                shared()
             }
 
             module("samples", "Komplex Samples") {
-                shared()
                 depends on core // reference to project by name
                 depends on toolsJar
                 depends on toolsKotlin
                 depends on repoMaven
+                shared()
             }
 /*
             module("tests", "Komplex Tests") {
@@ -123,11 +121,11 @@ fun main(args: Array<String>) {
 //    graph.print()
     println("\n--- plan --------------------------------")
     println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
-//    println("\n--- build -------------------------------")
-//    graph.build()
-    println("\n--- min rebuild plan --------------------")
+    println("\n--- build -------------------------------")
+    graph.build(Scenarios.All)
+//    println("\n--- min rebuild plan --------------------")
 //    graph.printPartialBuildPlan(sources = hashSetOf(graph.roots().first()))
-    println("\n--- target build plan -------------------")
+//    println("\n--- target build plan -------------------")
 //    graph.printPartialBuildPlan(targets = listOf(graph.leafs().first()))
     println("\n-- done. --------------------------------")
 }
