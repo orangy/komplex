@@ -69,8 +69,8 @@ fun main(args: Array<String>) {
             val toolsKotlin = module("tools/kotlin", "Komplex Kotlin Compiler tool") {
                 depends.on(
                     core,
-                    library("org.jetbrains.kotlin:kotlin-compiler:0.10.195"),
-                    library("org.jetbrains.kotlin:kotlin-runtime:0.10.195")
+                    library("org.jetbrains.kotlin:kotlin-compiler:0.11.91"),
+                    library("org.jetbrains.kotlin:kotlin-runtime:0.11.91")
                 )
                 shared()
             }
