@@ -7,7 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/komplex.iml" filepath="$PROJECT_DIR$/komplex.iml" />
       <module fileurl="file://$PROJECT_DIR$/tools/kotlin/kotlin.iml" filepath="$PROJECT_DIR$/tools/kotlin/kotlin.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/launcher/launcher.iml" filepath="$PROJECT_DIR$/launcher/launcher.iml" />
-      <module fileurl="file://$PROJECT_DIR$/tools/maven/maven.iml" filepath="$PROJECT_DIR$/tools/maven/maven.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tools/maven/maven.iml" filepath="$PROJECT_DIR$/tools/maven/maven.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/samples/samples.iml" filepath="$PROJECT_DIR$/samples/samples.iml" />
     </modules>
   </component>

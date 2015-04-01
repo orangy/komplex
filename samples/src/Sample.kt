@@ -1,10 +1,11 @@
 package komplex.sample
 
 import komplex.dsl.*
+import komplex.dsl.tools
 import komplex.dsl.Module
-import komplex.tools.jar.*
-import komplex.kotlin.*
-import komplex.maven.*
+import komplex.tools.jar.jar
+import komplex.tools.kotlin.kotlin
+import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.use
 import komplex.utils
@@ -19,7 +20,7 @@ fun main(args: Array<String>) {
         val libraries = folder("out/sample/libs", artifacts.binaries)
 
         fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
-            val libModule = komplex.maven.mavenLibrary(id, version, target = libraries)
+            val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
             libModule.build using tools.maven
             return libModule
         }
@@ -59,35 +60,47 @@ fun main(args: Array<String>) {
 
         module("komplex") {
             val core = module("core", "Komplex Core") {
+                depends.on(
+                    library("org.slf4j:slf4j-api:1.7.9")
+                )
                 shared()
             }
 
             val toolsJar = module("tools/jar", "Komplex jar tool") {
-                depends on core
+                depends.on(
+                    core, // reference to project by name
+                    library("org.slf4j:slf4j-api:1.7.9")
+                )
                 shared()
             }
             val toolsKotlin = module("tools/kotlin", "Komplex Kotlin Compiler tool") {
                 depends.on(
                     core,
                     library("org.jetbrains.kotlin:kotlin-compiler:0.11.91"),
-                    library("org.jetbrains.kotlin:kotlin-runtime:0.11.91")
+                    library("org.jetbrains.kotlin:kotlin-runtime:0.11.91"),
+                    library("org.slf4j:slf4j-api:1.7.9")
                 )
                 shared()
             }
             val repoMaven = module("tools/maven", "Komplex Maven Resolver tool") {
-                depends on core
                 depends.on(
+                    core,
                     library("com.jcabi:jcabi-aether:0.10.1"),
-                    library("org.apache.maven:maven-core:3.2.5")
+                    library("org.apache.maven:maven-core:3.2.5"),
+                    library("org.slf4j:slf4j-api:1.7.9")
                 )
                 shared()
             }
 
             module("samples", "Komplex Samples") {
-                depends on core // reference to project by name
-                depends on toolsJar
-                depends on toolsKotlin
-                depends on repoMaven
+                depends.on(
+                    core,
+                    toolsJar,
+                    toolsKotlin,
+                    repoMaven,
+                    library("org.slf4j:slf4j-api:1.7.9"),
+                    library("org.slf4j:slf4j-simple:1.7.9")
+                )
                 shared()
             }
 /*

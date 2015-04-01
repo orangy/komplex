@@ -1,10 +1,11 @@
-package komplex.kotlin
+package komplex.tools.kotlin
 
 import java.lang
 import java.io.*
 import java.util.HashMap
 import java.nio.file.Paths
 import java.nio.file.Path
+import org.slf4j.LoggerFactory
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
@@ -22,9 +23,10 @@ import komplex.model.ToolStep
 import komplex.utils
 
 
-public val dsl.tools.kotlin: KotlinCompilerRule
+public val komplex.dsl.tools.kotlin: KotlinCompilerRule
     get() = KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinCompiler>("Kotlin compiler", { KotlinCompiler()} ))
 
+val log = LoggerFactory.getLogger("komplex.tools.kotlin")
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
@@ -54,13 +56,13 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
         val args = K2JVMCompilerArguments()
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
-                if (severity == CompilerMessageSeverity.OUTPUT)
-                    return
-
-                if (location == CompilerMessageLocation.NO_LOCATION) {
-                    println("[$severity] $message")
-                } else {
-                    println("[$severity] $message ($location)")
+                fun msg() = if (location == CompilerMessageLocation.NO_LOCATION) "$message" else "$message ($location)"
+                when (severity) {
+                    in CompilerMessageSeverity.ERRORS -> log.error(msg())
+                    CompilerMessageSeverity.LOGGING -> log.debug(msg())
+                    CompilerMessageSeverity.INFO -> log.info(msg())
+                    CompilerMessageSeverity.WARNING -> log.info(msg())
+                    //CompilerMessageSeverity.OUTPUT -> log.trace(msg())
                 }
             }
         }
@@ -104,7 +106,7 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
             else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
         }
 
-        println("[INFO] kotlin: $args")
+        log.info("kotlin: $args")
 
         val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
         // \todo extract actually compiled class files

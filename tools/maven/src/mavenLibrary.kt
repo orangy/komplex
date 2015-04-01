@@ -1,4 +1,4 @@
-package komplex.maven
+package komplex.tools.maven
 
 import java.nio.file.Path
 import komplex.dsl

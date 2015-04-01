@@ -4,9 +4,9 @@ import java.io.*
 import java.util.jar.*
 import java.nio.file.Files
 import java.nio.file.Path
+import org.slf4j.LoggerFactory
 import kotlin.properties.Delegates
 import komplex.dsl
-import komplex.dsl.tools
 import komplex.model.BuildContext
 import komplex.model.ArtifactDesc
 import komplex.model.ArtifactData
@@ -22,7 +22,9 @@ import komplex.dsl.FileGlobArtifact
 import komplex.utils.findGlobFiles
 import komplex.utils.BuildDiagnostic
 
-public val dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
+public val komplex.dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
+
+val log = LoggerFactory.getLogger("komplex.tools.jar")
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
@@ -65,11 +67,11 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
         val targetData =
                 when (targetDesc) {
                     is FileArtifact -> {
-                        println("[INFO] $name to ${targetDesc.path}")
+                        log.info("$name to ${targetDesc.path}")
                         openOutputStream(targetDesc)
                     }
                     is FolderArtifact -> {
-                        println("[INFO] $name to ${targetDesc.path}")
+                        log.info("$name to ${targetDesc.path}")
                         FileOutputStreamData(targetDesc.path.resolve("${context.module.name}.jar")!!)
                     }
                     else -> throw IllegalArgumentException("$targetDesc is not supported in $name")
@@ -86,7 +88,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
             }
         }
         jarStream.close()
-        println("[INFO] $name succeeded")
+        log.info("$name succeeded")
         return BuildResult(BuildDiagnostic.Success, listOf(Pair(targetDesc, targetData)))
     }
 }

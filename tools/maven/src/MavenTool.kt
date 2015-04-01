@@ -1,5 +1,5 @@
 
-package komplex.maven
+package komplex.tools.maven
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -10,6 +10,7 @@ import org.sonatype.aether.util.artifact.DefaultArtifact
 import org.sonatype.aether.repository.RemoteRepository
 import org.sonatype.aether.util.artifact.JavaScopes
 import org.apache.maven.project.MavenProject
+import org.slf4j.LoggerFactory
 import komplex.tools
 import kotlin.properties.Delegates
 import komplex.dsl.tools
@@ -24,6 +25,7 @@ import komplex.data.openFileSetI
 public val tools.maven: MavenResolverRule
     get() = MavenResolverRule(komplex.model.LazyTool<MavenResolverRule, MavenResolver>("maven", { MavenResolver()} ))
 
+val log = LoggerFactory.getLogger("komplex.tools.maven")
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that side-by-side class will work as well
@@ -64,15 +66,15 @@ public open class MavenResolver() : komplex.model.Tool<MavenResolverRule> {
             if (sourceDesc !is MavenLibraryArtifact)
                 return BuildResult(BuildDiagnostic.Fail)
             val id = sourceDesc.id
-            println("[INFO] resolving [$id]")
+            log.info("resolving [$id]")
             val deps = Aether(remoteRepos, localRepo).resolve(
                     DefaultArtifact("${id.groupId}:${id.artifactId}:${id.version}"),
                     JavaScopes.RUNTIME)
             if (deps == null) {
-                println("[ERROR] resolving [$id] failed")
+                log.error("resolving [$id] failed")
                 return BuildResult(BuildDiagnostic.Fail)
             }
-            println("[INFO] resolved successfuly:")
+            log.info("resolved successfuly:")
             result.add(Pair(MavenResolvedLibraryArtifact(sourceDesc), openFileSetI(deps.map { Paths.get(it.getFile().path) })))
         }
         return BuildResult( BuildDiagnostic.Success, result)

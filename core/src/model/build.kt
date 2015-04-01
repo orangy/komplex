@@ -1,7 +1,10 @@
 
 package komplex.model
 
+import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
+
+val log = LoggerFactory.getLogger("komplex")
 
 
 public open class GraphBuildContext(val baseScenario: Scenarios, public val graph: BuildGraph) : BuildContext {
@@ -23,10 +26,10 @@ public fun BuildGraph.build(scenario: Scenarios,
                context.node = n
                val artifacts = hashMapOf<ArtifactDesc, ArtifactData?>()
                n.step.sources.forEach { artifacts.set(it, context.artifacts.get(it)) }
-               println("[BUILD] running ${n.step.name} in module ${n.moduleFlavor.module.name}")
+               log.debug("running ${n.step.name} in module ${n.moduleFlavor.module.name}")
                val result = n.step.execute(context, artifacts)
                result.result.forEach { context.artifacts.set(it.first, it.second) }
-               println("[BUILD] ${n.step.name} ${if (result.diagnostic != BuildDiagnostic.Success) "failed: ${result.diagnostic.message}" else "succeeded!"}")
+               log.info("${n.step.name} ${if (result.diagnostic != BuildDiagnostic.Success) "failed: ${result.diagnostic.message}" else "succeeded!"}")
                result.diagnostic != BuildDiagnostic.Success
            },
            sources,
