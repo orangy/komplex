@@ -39,6 +39,9 @@ public class MavenResolverRule(mavenResolver: komplex.model.Tool<MavenResolverRu
         return this
     }
 
+    override val targets: Iterable<ArtifactDesc> get() =
+            sources.map { MavenResolvedLibraryArtifact(it as MavenLibraryArtifact) }
+
     public fun invoke(body: MavenResolverRule.() -> Unit): MavenResolverRule {
         body()
         return this
@@ -70,7 +73,7 @@ public open class MavenResolver() : komplex.model.Tool<MavenResolverRule> {
                 return BuildResult(BuildDiagnostic.Fail)
             }
             println("[INFO] resolved successfuly:")
-            result.add(Pair(sourceDesc, openFileSetI(deps.map { Paths.get(it.getFile().path) })))
+            result.add(Pair(MavenResolvedLibraryArtifact(sourceDesc), openFileSetI(deps.map { Paths.get(it.getFile().path) })))
         }
         return BuildResult( BuildDiagnostic.Success, result)
     }

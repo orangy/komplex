@@ -7,8 +7,10 @@ import kotlin.properties.Delegates
 import komplex.dsl.from
 import komplex.dsl.FolderArtifact
 import komplex.dsl.into
+import komplex.model.ArtifactDesc
+import komplex.model.Scenarios
 
-public class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
+public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
     override val type = dsl.artifacts.jar
     override val name: String get() = id.toString()
 
@@ -21,6 +23,11 @@ public class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
     } */
 }
 
+public data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryArtifact) : dsl.Artifact {
+    override val type: ArtifactType get() = sourceArtifact.type
+    override val name: String get() = sourceArtifact.name
+}
+
 public class MavenLibraryModule(public val library: MavenLibraryArtifact, public val target: dsl.FolderArtifact)
 : komplex.dsl.Module(null, "library ${library.name}") {
     override val steps by Delegates.lazy {
@@ -29,6 +36,9 @@ public class MavenLibraryModule(public val library: MavenLibraryArtifact, public
         step.export = true
         listOf(step)
     }
+
+//    override fun targets(scenarios: Scenarios): Iterable<ArtifactDesc> =
+//            listOf(MavenResolvedLibraryArtifact(library))
 }
 
 public data class MavenId(val groupId: String, val artifactId: String, val version: String) {
