@@ -5,6 +5,7 @@ import java.util.jar.*
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.properties.Delegates
+import komplex.dsl
 import komplex.dsl.tools
 import komplex.model.BuildContext
 import komplex.model.ArtifactDesc
@@ -21,7 +22,7 @@ import komplex.dsl.FileGlobArtifact
 import komplex.utils.findGlobFiles
 import komplex.utils.BuildDiagnostic
 
-public val tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
+public val dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
