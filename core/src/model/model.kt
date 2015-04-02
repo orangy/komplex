@@ -1,9 +1,11 @@
 
 package komplex.model
 
+import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
 
+val log = LoggerFactory.getLogger("komplex")
 
 public trait ArtifactDesc : Named {}
 

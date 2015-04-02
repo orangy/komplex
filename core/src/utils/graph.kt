@@ -1,8 +1,11 @@
 
 package komplex.utils
 
+import org.slf4j.LoggerFactory
 import java.util.HashSet
 import java.util.ArrayDeque
+
+internal val log = LoggerFactory.getLogger("komplex.graph")
 
 // generic traverse checker with generators
 public class TraversedChecker<Node>() {
@@ -15,6 +18,18 @@ public fun makeVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
     val checker = TraversedChecker<Node>()
     return { (n: Node) -> checker.checkAdd(n) }
 }
+
+public fun makeTracingVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
+    val checker = TraversedChecker<Node>()
+    return if (log.isTraceEnabled())
+        { n: Node ->
+            val res = checker.checkAdd(n)
+            if (!res) log.trace("skipped already traversed node $n")
+            res
+        }
+    else { n: Node -> checker.checkAdd(n) }
+}
+
 
 // \todo invert predicates meaning - instead of "cancel?" use "continue?"
 
@@ -120,6 +135,10 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
                 postorderPred = { stack.peek(); stack.pop(); false },
                 nextNodes = { val nn = nextNodes(it); roots.removeAll(nn); nn },
                 checkTraversal = sharedCheckTraversal)
+    }
+    if (log.isTraceEnabled()) {
+        log.trace("subgraph roots: ${roots.joinToString(", ", "(", ")")}")
+        log.trace("subgraph nodes: ${subgraphNodes.joinToString(", ", "(", ")")}")
     }
     // second phase - apply dfs to subgraph
     return graphDFS(roots, preorderPred, postorderPred, { nextNodes(it).filter { subgraphNodes.contains(it) } }, checkTraversal)

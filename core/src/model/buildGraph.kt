@@ -1,7 +1,9 @@
 
 package komplex.model
 
-import komplex.utils.*
+import komplex.utils.graphDFS
+import komplex.utils.makeTracingVisitedTraversalChecker
+import komplex.utils.subgraphDFS
 import java.util.HashSet
 import java.util.HashMap
 import java.util.ArrayList
@@ -9,7 +11,9 @@ import java.util.ArrayList
 public data class ModuleFlavor(public val module: Module,
                                public val scenarios: Scenarios) {}
 
-public data class BuildGraphNode(public val moduleFlavor: ModuleFlavor, public val step: Step) {}
+public data class BuildGraphNode(public val moduleFlavor: ModuleFlavor, public val step: Step) {
+    override fun toString(): String = "[${moduleFlavor.module.name}.${step.name}]"
+}
 
 
 public class BuildGraph() {
@@ -18,9 +22,9 @@ public class BuildGraph() {
     // all nodes index
     val nodes: HashSet<BuildGraphNode> = hashSetOf()
     // single artifact producing node
-    val producers = hashMapOf<ArtifactDesc, BuildGraphNode>()
+    val producers: HashMap<ArtifactDesc, BuildGraphNode> = hashMapOf()
     // multiple artifact consuming nodes
-    val consumers = hashMapOf<ArtifactDesc, ArrayList<BuildGraphNode>>()
+    val consumers: HashMap<ArtifactDesc, ArrayList<BuildGraphNode>> = hashMapOf()
 
     protected fun add(node: BuildGraphNode) {
         val srcs = node.step.sources.toArrayList()
@@ -83,13 +87,26 @@ public class BuildGraph() {
                 node.step.targets.filter { getConsumingNodes(it, scenarios).any() }
             else listOf()
 
+
     public fun prev(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
+        if (log.isTraceEnabled())
+            if (scenarios.matches(node.step.selector)) {
+                val prev = node.step.sources
+                        .map { getProducingNode(it, scenarios) }
+                        .filterNotNull()
+                        .distinct()
+                log.trace("prev nodes for $node: ${prev.joinToString(", ", "(", ")")}")
+                prev
+            }
+            else { log.trace("skip $node: no matching scenarios"); listOf<BuildGraphNode>() }
+        else
             if (scenarios.matches(node.step.selector))
                 node.step.sources
                         .map { getProducingNode(it, scenarios) }
                         .filterNotNull()
                         .distinct()
-            else listOf()
+            else listOf<BuildGraphNode>()
+
 
     public fun next(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
             if (scenarios.matches(node.step.selector))
@@ -130,10 +147,24 @@ public fun BuildGraph.targets(modules: Iterable<Module>, scenario: Scenarios): I
 }
 
 public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> =
+    if (log.isTraceEnabled()) {
+        val roots = nodes.filter {
+            val areSourcesProduced = sources(it, scenario).any { producers.contains(it) }
+            if (areSourcesProduced)
+                log.trace("filtered out $it from roots because of produced source artifacts ${
+                   sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
+            !areSourcesProduced
+        }
+        log.trace("roots: ${roots.joinToString(", ", "(", ")")}")
+        roots
+    }
+    else
         nodes.filter { !sources(it, scenario).any { producers.contains(it) } }
 
-public fun BuildGraph.leafs(scenario: Scenarios): Iterable<BuildGraphNode> =
-        nodes.filter { !targets(it, scenario).any { consumers.contains(it) } }
+
+public fun BuildGraph.leafs(scenario: Scenarios): Iterable<BuildGraphNode> {
+    return nodes.filter { !targets(it, scenario).any { consumers.contains(it) } }
+}
 
 
 // todo module flavor scenario extraction and handling (stack) on every step
@@ -146,7 +177,7 @@ public fun BuildGraph.buildPartialApply( scenario: Scenarios,
                  preorderPred = { false },
                  postorderPred = buildFun,
                  nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
-                 checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
+                 checkTraversal = makeTracingVisitedTraversalChecker<BuildGraphNode>())
 }
 
 public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildGraphNode) -> Boolean) {
@@ -154,7 +185,7 @@ public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildG
               preorderPred = { false },
               postorderPred = buildFun,
               nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
-              checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
+              checkTraversal = makeTracingVisitedTraversalChecker<BuildGraphNode>())
 }
 
 

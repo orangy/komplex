@@ -1,11 +1,7 @@
 
 package komplex.model
 
-import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
-
-val log = LoggerFactory.getLogger("komplex")
-
 
 public open class GraphBuildContext(val baseScenario: Scenarios, public val graph: BuildGraph) : BuildContext {
     public var node: BuildGraphNode? = null
