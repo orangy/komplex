@@ -3,6 +3,7 @@ package komplex.model
 
 import komplex.utils.graphDFS
 import komplex.utils.makeTracingVisitedTraversalChecker
+import komplex.utils.makeVisitedTraversalChecker
 import komplex.utils.subgraphDFS
 import java.util.HashSet
 import java.util.HashMap
@@ -177,7 +178,7 @@ public fun BuildGraph.buildPartialApply( scenario: Scenarios,
                  preorderPred = { false },
                  postorderPred = buildFun,
                  nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
-                 checkTraversal = makeTracingVisitedTraversalChecker<BuildGraphNode>())
+                 checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
 }
 
 public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildGraphNode) -> Boolean) {
@@ -185,7 +186,7 @@ public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildG
               preorderPred = { false },
               postorderPred = buildFun,
               nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
-              checkTraversal = makeTracingVisitedTraversalChecker<BuildGraphNode>())
+              checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
 }
 
 

@@ -32,27 +32,4 @@ public fun BuildGraph.build(scenario: Scenarios,
            targets)
 }
 
-/*
-public fun BuildGraph.build( scenario: Scenarios,
-                             sources: Set<BuildGraphNode> = this.roots(scenario).toHashSet(),
-                             targets: Iterable<BuildGraphNode> = this.leafs(scenario)) {
-    val artifacts: MutableMap<ArtifactDesc, ArtifactData?> = hashMapOf()
-    buildPartialApply(
-            scenario,
-            { (n) ->
-                val context = object : BuildContext {
-                    override val scenario = n.moduleFlavor.scenarios.resolve(scenario)
-                    override val module = n.moduleFlavor.module
-                }
-                val res = n.step.execute(context, artifacts)
-                if (res.diagnostic == BuildDiagnostic.Fail)
-                    false
-                else {
-                    res.result.forEach { artifacts.put(it.first, it.second) }
-                    true
-                }
-            },
-            sources,
-            targets)
-}
-*/
+

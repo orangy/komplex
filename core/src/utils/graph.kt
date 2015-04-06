@@ -116,13 +116,18 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
                              nextNodes: (n: Node) -> Iterable<Node>,
                              checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
                             ): Boolean {
+    if (log.isTraceEnabled()) {
+        log.trace("subgraph from: ${from.joinToString(", ", "(", ")")}")
+        log.trace("subgraph to: ${to.joinToString(", ", "(", ")")}")
+    }
     val subgraphNodes = hashSetOf<Node>()
     val roots = hashSetOf<Node>()
     val stack = ArrayDeque<Node>()
-    val sharedCheckTraversal = makeVisitedTraversalChecker<Node>()
     // first phase - calculating reachability graph and finding it's roots
+    // \todo check effectiveness of the algo
     for (r in from) {
-        graphDFS(from = nextNodes(r),
+        graphDFS(
+                from = nextNodes(r),
                 preorderPred = {
                     stack.offer(it)
                     if (to.contains(it)) {
@@ -134,14 +139,20 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
                 },
                 postorderPred = { stack.peek(); stack.pop(); false },
                 nextNodes = { val nn = nextNodes(it); roots.removeAll(nn); nn },
-                checkTraversal = sharedCheckTraversal)
+                checkTraversal = { true } // \todo doublecheck traversal checking for path finding
+        )
     }
     if (log.isTraceEnabled()) {
         log.trace("subgraph roots: ${roots.joinToString(", ", "(", ")")}")
         log.trace("subgraph nodes: ${subgraphNodes.joinToString(", ", "(", ")")}")
     }
     // second phase - apply dfs to subgraph
-    return graphDFS(roots, preorderPred, postorderPred, { nextNodes(it).filter { subgraphNodes.contains(it) } }, checkTraversal)
+    return graphDFS(
+            from = roots,
+            preorderPred = preorderPred,
+            postorderPred = postorderPred,
+            nextNodes = { nextNodes(it).filter { subgraphNodes.contains(it) } },
+            checkTraversal = checkTraversal)
 }
 
 
