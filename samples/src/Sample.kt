@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects
-            val sources = files("$moduleName/src/**.kt", artifacts.sources)
+            val sources = files("$moduleName/src/**/*.kt", artifacts.sources)
             val binaries = folder("out/sample/$moduleName", artifacts.binaries)
             val jarFile = file("out/artifacts/sample/$moduleName.jar", artifacts.jar)
 
@@ -136,6 +136,8 @@ fun main(args: Array<String>) {
     println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
     println("\n--- build -------------------------------")
     graph.build(Scenarios.All)
+    println("\n--- build 2 - partial -------------------")
+    graph.build(Scenarios.All, GraphBuildContext(Scenarios.All, graph))
 //    println("\n--- min rebuild plan --------------------")
 //    graph.printPartialBuildPlan(sources = hashSetOf(graph.roots().first()))
 //    println("\n--- target build plan -------------------")

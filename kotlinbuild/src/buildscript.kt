@@ -7,8 +7,10 @@ import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
+import komplex.tools.javac.javac
 import komplex.tools.use
 import komplex.utils
+import java.nio.file.Path
 import java.nio.file.Paths
 
 fun main(args: Array<String>) {
@@ -30,19 +32,22 @@ fun main(args: Array<String>) {
             return libModule
         }
 
-        fun Module.shared() {
+        fun Module.shared(kotlinSources: Iterable<Artifact>, javaSources: Iterable<Artifact>) {
             version("ATTEMPT-0.1")
 
             // shared settings for all projects
-            val sources = files("$moduleName/src/**.kt", artifacts.sources, base = rootDir)
-            val binaries = folder(rootDir.resolve("out/sample/$moduleName"), artifacts.binaries)
-            val jarFile = file(rootDir.resolve("out/artifacts/sample/$moduleName.jar"), artifacts.jar)
+            val binaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
+            val jarFile = file(rootDir.resolve("out/kb/artifacts/$moduleName.jar"), artifacts.jar)
 
             depends on children
 
-            build using(tools.kotlin) from sources into binaries with {
+            build using(tools.kotlin) from kotlinSources into binaries with {
                 use(depends.modules)
                 enableInline = true
+            }
+
+            build using(tools.javac) from javaSources into binaries with {
+                use(depends.modules)
             }
 
             build(jar, test) using tools.jar from binaries export jarFile
@@ -63,12 +68,37 @@ fun main(args: Array<String>) {
             default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
+        fun Module.shared(vararg baseDirs: String) =
+                this.shared(
+                        kotlinSources = baseDirs.map { files("src/**.kt", artifacts.sources, base = it) },
+                        javaSources = baseDirs.map { files("src/**.java", artifacts.sources, base = it) })
+
         module("kotlin") {
-            val core = module("core", "Komplex Core") {
+            val compoler = module("compiler", "Kotlin Compiler") {
                 depends.on(
-                        library("org.slf4j:slf4j-api:1.7.9")
+                        library("org.slf4j:slf4j-api:1.7.12")
                 )
-                shared()
+                shared( "core/descriptor.loader.java",
+                        "core/descriptors",
+                        "core/deserialization",
+                        "core/util.runtime",
+                        "compiler/backend",
+                        "compiler/backend-common",
+                        "compiler/builtins-serializer",
+                        "compiler/cli",
+                        "compiler/cli/cli-common",
+                        "compiler/frontend",
+                        "compiler/frontend.java",
+                        "compiler/light-classes",
+                        "compiler/plugin-api",
+                        "compiler/serialization",
+                        "compiler/util",
+                        "js/js.dart-ast",
+                        "js/js.translator",
+                        "js/js.frontend",
+                        "js/js.inliner",
+                        "js/js.parser",
+                        "js/js.serializer")
             }
         }
         /// BUILD SCRIPT

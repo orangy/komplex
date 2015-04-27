@@ -9,7 +9,10 @@ val log = LoggerFactory.getLogger("komplex")
 
 public trait ArtifactDesc : Named {}
 
-public trait ArtifactData {}
+public trait ArtifactData {
+    public val sourcesHash: ByteArray?
+    public val hash: ByteArray
+}
 
 public trait Scenario {}
 

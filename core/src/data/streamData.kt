@@ -10,6 +10,7 @@ import java.io.FileOutputStream
 import java.io.BufferedOutputStream
 import komplex.model.ArtifactData
 import java.nio.file.Files
+import kotlin.properties.Delegates
 
 public trait InputStreamData : komplex.model.ArtifactData {
     public val inputStream: InputStream
@@ -21,11 +22,15 @@ public trait OutputStreamData : komplex.model.ArtifactData {
 
 
 public open class FileInputStreamData(val path: Path) : InputStreamData {
+    override val sourcesHash: ByteArray? = null
+    override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
 }
 
 public open class FileOutputStreamData(val path: Path) : OutputStreamData {
+    override val sourcesHash: ByteArray? = null
+    override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val outputStream: OutputStream
         get() {
             path.getParent()?.let { Files.createDirectories(it) }

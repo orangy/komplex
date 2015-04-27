@@ -28,17 +28,21 @@ fun findFilesInPath(path: Path, baseDir: Path? = null): List<Path> {
 public fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>, baseDir: Path? = null): List<Path> {
     val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
     val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
+    val basePath = baseDir ?: fileSystem.getPath("")
     val result = arrayListOf<Path>()
 
     class Finder : SimpleFileVisitor<Path?>() {
         override fun visitFile(file: Path?, attrs: BasicFileAttributes): FileVisitResult {
-            if (file != null && includeFilter.any { it.matches(file) } && excludeFilter.none { it.matches(file) }) {
-                result.add(file)
+            if (file != null) {
+                val relfile = basePath.relativize(file)
+                if (includeFilter.any { it.matches(relfile) } && excludeFilter.none { it.matches(relfile) })
+                    result.add(file)
             }
             return FileVisitResult.CONTINUE
         }
     }
-    Files.walkFileTree(baseDir ?: fileSystem.getPath(""), Finder())
+
+    Files.walkFileTree(basePath, Finder())
     return result
 }
 

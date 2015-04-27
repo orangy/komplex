@@ -14,7 +14,9 @@ import komplex.data
 import komplex.model.Tool
 import komplex.model.ToolStep
 import komplex.utils
+import komplex.utils.escape4cli
 import java.net.URI
+import java.nio.channels.FileChannel
 import javax.tools.*
 
 
@@ -37,7 +39,14 @@ public class JavaCompilerRule(override val tool: Tool<JavaCompilerRule>) : kompl
 }
 
 
-class JavaSource(path: String) : SimpleJavaFileObject(URI(path), JavaFileObject.Kind.SOURCE) {}
+fun JavaSource(path: String) = JavaSource(File(path))
+
+class JavaSource(val file: File) : SimpleJavaFileObject(file.toURI(), JavaFileObject.Kind.SOURCE) {
+    override fun openInputStream(): InputStream? = file.inputStream()
+
+    override fun getCharContent(ignoreEncodingErrors: Boolean): CharSequence? =
+        openInputStream()!!.bufferedReader().readText()
+}
 
 public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
     override val name: String = "Java compiler"
@@ -62,7 +71,12 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
         val folder = tgt.single()
         val targetFolder =
                 when (folder) {
-                    is dsl.FolderArtifact -> folder.path.toString()
+                    is dsl.FolderArtifact -> {
+                        val dir = folder.path.toFile()
+                        if (!dir.exists())
+                            dir.mkdirs()
+                        folder.path.toString()
+                    }
                     else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
                 }
 
@@ -77,14 +91,18 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
         val sources = src.filter { explicitSourcesSet.contains(it.first) }
                 .flatMap { data.openFileSet(it).coll.map { it.path.toString() }}
 
+        log.info("javac: \n${options.joinToString("\n")} sources:\n ${sources.map(::escape4cli).joinToString("\n")}")
+
         val task=compiler.getTask(null,fileManager,diagnostics,options,null, sources.map { JavaSource(it) })
 
-        log.info("javac: ${options.joinToString(" ")} ${sources.joinToString(" ")}")
+        log.info("run task")
 
         val success = task.call()
 
+        log.info("task done")
+
         for (diag in diagnostics.getDiagnostics()) {
-            val msg = "${diag.getCode()} (${diag.getLineNumber()},${diag.getColumnNumber()}) ${diag.getMessage(null)}"
+            val msg = "${diag.getSource().getName()} (${diag.getLineNumber()},${diag.getColumnNumber()}) ${diag.getMessage(null)}"
             when (diag.getKind()) {
                 Diagnostic.Kind.ERROR -> log.error(msg)
                 Diagnostic.Kind.NOTE -> log.debug(msg)

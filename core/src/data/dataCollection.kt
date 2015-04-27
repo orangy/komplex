@@ -1,18 +1,56 @@
 package komplex.data
 
+import komplex.dsl.FolderArtifact
 import komplex.model.ArtifactData
 import java.util.HashSet
 import komplex.utils.findFilesInPath
 import java.nio.file.Path
 import komplex.utils.findGlobFiles
+import java.nio.file.Paths
+import java.security.MessageDigest
+import java.util.Arrays
+import java.util.Comparator
+import kotlin.properties.Delegates
+
+public fun ByteArray.hashEquals(other: ByteArray): Boolean = Arrays.equals(this, other)
+
+public fun mergeHashes(artifacts: Iterable<ArtifactData?>): ByteArray {
+    val digest = MessageDigest.getInstance("SHA-1")
+    val comp = object : Comparator<ArtifactData?> {
+        override fun compare(o1: ArtifactData?, o2: ArtifactData?): Int = when {
+            o1 == o2 -> 0 // same object or nulls
+            o1 == null -> -1
+            o2 == null -> 1
+            o1.hash.size() < o2.hash.size() -> -1
+            o1.hash.size() > o2.hash.size() -> 1
+            else -> {
+                val mismatch = o1.hash.asIterable().zip(o2.hash.asIterable()).firstOrNull { it.first != it.second }
+                if (mismatch == null) 0
+                else mismatch.first.compareTo(mismatch.second)
+            }
+        }
+    }
+    artifacts.sortBy(comp).forEach { if (it != null) digest.update(it.hash) }
+    return digest.digest()
+}
+
 
 public trait DataCollection<Data: ArtifactData> : ArtifactData {
     public val coll: Iterable<Data>
 }
 
-public open class DataSet<Data: ArtifactData>(override val coll: HashSet<Data> = hashSetOf()) : DataCollection<Data> { }
+public open class DataSet<Data: ArtifactData>(override val coll: HashSet<Data> = hashSetOf()) : DataCollection<Data> {
+    override val hash: ByteArray by Delegates.lazy { mergeHashes(coll)}
+    override val sourcesHash: ByteArray? = null
+}
+
+// second constructor
+public fun DataSet<Data: ArtifactData>(coll: Iterable<Data>): DataSet<Data> = DataSet(coll.toHashSet())
+
 
 public open class DataToDataCollectionAdaptor<Data: ArtifactData>(data: Data) : DataCollection<Data> {
+    override val hash: ByteArray by Delegates.lazy { mergeHashes(coll)}
+    override val sourcesHash: ByteArray? = null
     override val coll: Iterable<Data> = listOf(data)
 }
 
@@ -20,17 +58,30 @@ public fun adaptToDataCollection<D: ArtifactData>(coll: DataCollection<D>) : Dat
 public fun adaptToDataCollection<D: ArtifactData>(data: D) : DataCollection<D> = DataToDataCollectionAdaptor(data)
 
 
+private fun collectArtifactFiles(artifacts: Iterable<komplex.dsl.FileArtifact>): Iterable<FileData> =
+        artifacts.map { SimpleFileData(it.path) }
+
+private fun collectFolderFiles(folder: FolderArtifact, baseDir: Path?): Iterable<SimpleFileData> =
+        findFilesInPath(folder.path, baseDir).map { SimpleFileData(it) }
+
+private fun collectGlobFiles(glob: komplex.dsl.FileGlobArtifact, baseDir: Path?): Iterable<FileData> =
+        findGlobFiles(glob.included, glob.excluded, baseDir).map { SimpleFileData(it) }
+
+private fun collectFiles(paths: Iterable<Path>): Iterable<FileData> =
+        paths.map { SimpleFileData(it) }
+
+
 public fun openFileSet(vararg artifacts: komplex.dsl.FileArtifact): DataSet<FileData> =
-    DataSet<FileData>( artifacts.map { SimpleFileData(it.path) }.toHashSet())
+        DataSet(collectArtifactFiles(artifacts.asIterable()))
 
 public fun openFileSet(vararg artifacts: komplex.dsl.FolderArtifact, baseDir: Path? = null): DataSet<FileData> =
-    DataSet<FileData>( artifacts.flatMap { findFilesInPath(it.path, baseDir).map { SimpleFileData(it) } }.toHashSet())
+        DataSet(artifacts.flatMap { collectFolderFiles(it, baseDir = baseDir)})
 
 public fun openFileSet(vararg artifacts: komplex.dsl.FileGlobArtifact, baseDir: Path? = null): DataSet<FileData> =
-    DataSet<FileData>( artifacts.flatMap { findGlobFiles(it.included, it.excluded, baseDir).map { SimpleFileData(it) } }.toHashSet())
+        DataSet(artifacts.flatMap { collectGlobFiles(it, baseDir = baseDir)})
 
 public fun openFileSet(vararg paths: Path): DataSet<FileData> =
-    DataSet<FileData>( paths.map { SimpleFileData(it) }.toHashSet())
+        DataSet(collectFiles(paths.asIterable()))
 
 public fun openFileSet(artifact: DataSet<FileData>): DataSet<FileData> = artifact
 
@@ -46,20 +97,21 @@ public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>): D
     }
 }
 
-public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc): DataSet<FileData> =
+public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc, baseDir: Path? = null): DataSet<FileData> =
     // emulating dynamic dispatching with extension methods
     // \todo find more elegant solution
-    when (artifacts.firstOrNull()) {
-        is komplex.dsl.FileArtifact -> openFileSet(*artifacts.map { it as komplex.dsl.FileArtifact }.copyToArray())
-        is komplex.dsl.FolderArtifact -> openFileSet(*(artifacts.map { it as komplex.dsl.FolderArtifact }.copyToArray()))
-        is komplex.dsl.FileGlobArtifact -> openFileSet(*artifacts.map { it as komplex.dsl.FileGlobArtifact }.copyToArray())
-        is Path -> openFileSet(*(artifacts.map { it as Path }.copyToArray()))
-        else -> throw UnsupportedOperationException("cannot open ${artifacts.firstOrNull()?.name ?: "[]"}... as FileSet")
-    }
+    DataSet(artifacts.flatMap {
+        when (it) {
+            // note: sequence matters!
+            is komplex.dsl.FileGlobArtifact -> collectGlobFiles(it, baseDir = (baseDir ?: Paths.get(".")).resolve(it.path))
+            is komplex.dsl.FolderArtifact -> collectFolderFiles(it, baseDir = (baseDir ?: Paths.get(".")).resolve(it.path))
+            is komplex.dsl.FileArtifact -> listOf(SimpleFileData(it.path))
+            is Path -> listOf(SimpleFileData(it))
+            else -> throw UnsupportedOperationException("cannot open ${artifacts.firstOrNull()?.name ?: "[]"}... as FileSet")
+        }})
 
 
-public fun openFileSetI(paths: Iterable<Path>): DataSet<FileData> =
-        DataSet<FileData>( paths.map { SimpleFileData(it) }.toHashSet())
+public fun openFileSetI(paths: Iterable<Path>): DataSet<FileData> = DataSet( paths.map { SimpleFileData(it) })
 
 
 // \todo consider implementing direct open functions for stream sets as for file sets
