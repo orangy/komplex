@@ -77,7 +77,7 @@ public fun <T : Rule> T.export(vararg artifacts: Artifact): T {
 
 public class LambdaRule : RuleImpl(), LambdaStep {
 
-    class object {
+    companion  object {
         internal var counter = 0;
     }
     override var name: String = "lambda${++counter}"

@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.arguments.*
 import java.io.File
 import com.sampullara.cli.Args
+import org.jetbrains.kotlin.cli.jvm.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.parsing.JetScriptDefinition
 import java.net.*
@@ -27,15 +28,17 @@ class ScriptingHost {
 
         val paths = PathUtil.getKotlinPathsForCompiler()
 
+// \todo: restore functionality
+/*
         configuration.addAll(JVMConfigurationKeys.CLASSPATH_KEY, getClasspath(paths, arguments))
         //configuration.addAll(JVMConfigurationKeys.ANNOTATIONS_PATH_KEY, getAnnotationsPath(paths, arguments))
         configuration.addAll(CommonConfigurationKeys.SOURCE_ROOTS_KEY, arguments.freeArgs ?: listOf())
         configuration.put(JVMConfigurationKeys.SCRIPT_PARAMETERS, CommandLineScriptUtils.scriptParameters())
-/*
+
         configuration.put(JVMConfigurationKeys.GENERATE_NOT_NULL_ASSERTIONS, true)
         configuration.put(JVMConfigurationKeys.GENERATE_NOT_NULL_PARAMETER_ASSERTIONS, true)
         configuration.put(JVMConfigurationKeys.ENABLE_INLINE, true)
-*/
+
         configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
         configuration.put(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, listOf(JetScriptDefinition(".kts")))
 
@@ -44,6 +47,7 @@ class ScriptingHost {
         if (scriptClass == null)
             return
         val instance = scriptClass.getConstructor(javaClass<Array<String>>()).newInstance(arguments.freeArgs?.copyToArray())
+*/
         rootDisposable.dispose()
     }
 

@@ -17,7 +17,7 @@ public trait BuildDiagnostic {
     }
     public val status : Status
     public val message : String get() = ""
-    class object {
+    companion object {
         public val Success: BuildDiagnostic = object : BuildDiagnostic {
             override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Succeeded
         }

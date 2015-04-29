@@ -56,13 +56,13 @@ public fun ModuleCollection.nicePrint(indent: IndentLn): String =
         children.map { it.nicePrint(indent.inc()) }.joinToString()
 
 public fun BuildGraph.nicePrintAll( indent: IndentLn, scenario: Scenarios) {
-    buildAllApply(scenario, { (n) -> println(n.nicePrint(indent, this)); false })
+    buildAllApply(scenario, { n -> println(n.nicePrint(indent, this)); false })
 }
 
 public fun BuildGraph.nicePrint( indent: IndentLn,
                                  scenario: Scenarios,
                                  sources: Set<BuildGraphNode> = this.roots(scenario).toHashSet(),
                                  targets: Iterable<BuildGraphNode> = this.leafs(scenario)) {
-    buildPartialApply(scenario, { (n) -> println(n.nicePrint(indent, this)); false }, sources, targets)
+    buildPartialApply(scenario, { n -> println(n.nicePrint(indent, this)); false }, sources, targets)
 }
 

@@ -17,7 +17,7 @@ public fun makeSelector(vararg scenarioNames: String) : ScenarioSelector =
 
 public fun makeSelector(vararg selectors: ScenarioSelector) : ScenarioSelector =
     if (selectors.isEmpty()) ScenarioSelector.None
-    else selectors.reduce { (a, b) -> a.combine(b) }
+    else selectors.reduce { a, b -> a.combine(b) }
 
 public fun scenario(name: String, body: ScenarioSelector.() -> Unit = {}): ScenarioSelector {
     val selector = makeSelector(name)

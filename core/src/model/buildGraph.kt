@@ -177,7 +177,7 @@ public fun BuildGraph.buildPartialApply( scenario: Scenarios,
                  to = sources,
                  preorderPred = { false },
                  postorderPred = buildFun,
-                 nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
+                 nextNodes = { n: BuildGraphNode -> this.prev(n, scenario)},
                  checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
 }
 
@@ -185,7 +185,7 @@ public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildG
     graphDFS( from = leafs(scenario),
               preorderPred = { false },
               postorderPred = buildFun,
-              nextNodes = {(n: BuildGraphNode) -> this.prev(n, scenario)},
+              nextNodes = { n: BuildGraphNode -> this.prev(n, scenario)},
               checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
 }
 

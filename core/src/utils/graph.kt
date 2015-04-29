@@ -16,7 +16,7 @@ public class TraversedChecker<Node>() {
 
 public fun makeVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
     val checker = TraversedChecker<Node>()
-    return { (n: Node) -> checker.checkAdd(n) }
+    return { n: Node -> checker.checkAdd(n) }
 }
 
 public fun makeTracingVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {

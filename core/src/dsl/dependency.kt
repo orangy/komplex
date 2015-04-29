@@ -33,7 +33,7 @@ public open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {
 }
 
 
-public class Dependencies(vararg scenarios: ScenarioSelector = array(ScenarioSelector.Any)) : DependencyGroup(scenarios.toList()) {
+public class Dependencies(vararg scenarios: ScenarioSelector = arrayOf(ScenarioSelector.Any)) : DependencyGroup(scenarios.toList()) {
     val groups: MutableList<DependencyGroup> = arrayListOf(this)
 
     inline public fun invoke(vararg scenarios: ScenarioSelector, body: DependencyGroup.() -> Unit): DependencyGroup {

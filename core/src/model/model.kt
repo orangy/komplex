@@ -25,7 +25,7 @@ public open class Scenarios(public val items: Collection<Scenario> = listOf(), o
 
     override fun toString(): String = if (name.isEmpty()) items.joinToString(",","[","]") else name
 
-    class object {
+    companion object {
         val All = Scenarios(name="All")
         val Same = Scenarios(name="Some")
         val Default_ = Scenarios(name="Default")
@@ -34,7 +34,7 @@ public open class Scenarios(public val items: Collection<Scenario> = listOf(), o
 }
 
 public data class ScenarioSelector(public val scenarios: Scenarios) {
-    class object {
+    companion object {
         val Any = ScenarioSelector(Scenarios.All)
         val None = ScenarioSelector(Scenarios.None)
     }
@@ -59,7 +59,7 @@ public fun ScenarioSelector.combine(selector: ScenarioSelector): ScenarioSelecto
 
 public fun<T: ScenarioSelector> Iterable<T>.combine(defaultToAny: Boolean = false): ScenarioSelector =
     if (this.none()) (if (defaultToAny) ScenarioSelector.Any else ScenarioSelector.None)
-    else this.reduce { (a: ScenarioSelector, b: ScenarioSelector) -> a.combine(b) }
+    else this.reduce { a: ScenarioSelector, b: ScenarioSelector -> a.combine(b) }
 
 public fun Scenarios.resolve(current: Scenarios, default: Scenarios = Scenarios.All): Scenarios =
     when {
