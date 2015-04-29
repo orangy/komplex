@@ -1,14 +1,12 @@
 package komplex.tools.kotlin
 
+import com.intellij.openapi.util.Disposer
 import java.lang
 import java.io.*
 import java.util.HashMap
 import java.nio.file.Paths
 import java.nio.file.Path
 import org.slf4j.LoggerFactory
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
@@ -21,6 +19,16 @@ import komplex.data
 import komplex.model.Tool
 import komplex.model.ToolStep
 import komplex.utils
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.messages.*
+import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
+import org.jetbrains.kotlin.cli.jvm.config.addJavaSourceRoot
+import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoots
+import org.jetbrains.kotlin.codegen.CompilationException
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.addKotlinSourceRoot
 
 
 public val komplex.dsl.tools.kotlin: KotlinCompilerRule
@@ -39,6 +47,7 @@ public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : k
         return this
     }
     public var enableInline: Boolean = true
+    public var includeRuntime: Boolean = true
     public val sourceRoots: MutableCollection<String> = arrayListOf()
 }
 
@@ -54,7 +63,11 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
                          tgt: Iterable<model.ArtifactDesc>
     ): model.BuildResult {
         val compiler = K2JVMCompiler()
-        val args = K2JVMCompilerArguments()
+        val rootDisposable = Disposer.newDisposable()
+        val compilerCfg = CompilerConfiguration()
+
+//        val args = K2JVMCompilerArguments()
+
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
                 fun msg() = if (location == CompilerMessageLocation.NO_LOCATION) "$message" else "$message ($location)"
@@ -71,10 +84,10 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
 
         val explicitSourcesSet = cfg.explicitSources.toHashSet()
 
-        args.freeArgs = src.filter { explicitSourcesSet.contains(it.first) }
-                           .flatMap { data.openFileSet(it).coll.map { it.path.toString() }} +
-                        cfg.sourceRoots
-        if (args.freeArgs.size() == 0) {
+        val kotlinSources = src.filter { explicitSourcesSet.contains(it.first) }
+                               .flatMap { data.openFileSet(it).coll.map { it.path.toString() }}
+
+        if (kotlinSources.none()) {
             messageCollector.report(
                     CompilerMessageSeverity.ERROR,
                     "No sources to compile in module ${project.name}: ${src.map { it.first }}",
@@ -82,35 +95,46 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
             return model.BuildResult(utils.BuildDiagnostic.Fail)
         }
 
-        messageCollector.report(
-                CompilerMessageSeverity.INFO,
-                "compiling module ${project.name} from ${args.freeArgs} to $tgt",
-                CompilerMessageLocation.NO_LOCATION)
+        kotlinSources.forEach { compilerCfg.addKotlinSourceRoot(it) }
+
+        cfg.sourceRoots.forEach { compilerCfg.addJavaSourceRoot(File(it)) }
 
         val dependenciesSet = cfg.depSources.toHashSet()
 
         val libraries = src
                 .filter { dependenciesSet.contains(it.first) }
                 .flatMap { data.openFileSet(it).coll }
-                .map { it.path.toAbsolutePath() }
+                .map { it.path.toAbsolutePath().normalize().toFile() }
                 .distinct()
+                .toList()
                 // \todo convert to relative/optimal paths
-                .joinToString(File.pathSeparator)
 
-        //log.debug("classpath: {}", libraries)
+        compilerCfg.addJvmClasspathRoots(libraries)
+
+        compilerCfg.put<MessageCollector>(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
+
+        messageCollector.report(
+                CompilerMessageSeverity.INFO,
+                "compiling module ${project.name} from ${kotlinSources} to $tgt",
+                CompilerMessageLocation.NO_LOCATION)
         messageCollector.report(CompilerMessageSeverity.INFO, "build classpath: $libraries", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report(CompilerMessageSeverity.INFO, "build java sources roots: ${cfg.sourceRoots}", CompilerMessageLocation.NO_LOCATION)
 
-        args.classpath = libraries
+        val destFolder = tgt.single() as? dsl.FolderArtifact ?:
+                throw IllegalArgumentException("Compiler only supports single folder as destination")
 
-        val folder = tgt.single()
-        when (folder) {
-            is dsl.FolderArtifact -> args.destination = folder.path.toString()
-            else -> throw IllegalArgumentException("Compiler only supports single folder as destination")
+        var exitCode = ExitCode.OK
+        try {
+            val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, compilerCfg, EnvironmentConfigFiles.JVM_CONFIG_FILES)
+            KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolder.path.toFile(), cfg.includeRuntime)
+        }
+        catch (e: CompilationException) {
+            messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),
+                    MessageUtil.psiElementToMessageLocation(e.getElement()))
+            exitCode = ExitCode.INTERNAL_ERROR
         }
 
-        log.info("kotlin: $args")
-
-        val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
+        // compiler.exec(messageCollector, Services.EMPTY, args)
         // \todo extract actually compiled class files
 
         messageCollector.report(
@@ -119,7 +143,7 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
                 CompilerMessageLocation.NO_LOCATION)
 
         return when (exitCode) {
-            ExitCode.OK -> model.BuildResult(utils.BuildDiagnostic.Success, listOf(Pair(folder, data.openFileSet(folder))))
+            ExitCode.OK -> model.BuildResult(utils.BuildDiagnostic.Success, listOf(Pair(destFolder, data.openFileSet(destFolder))))
             else -> model.BuildResult(utils.BuildDiagnostic.Fail)
         }
     }

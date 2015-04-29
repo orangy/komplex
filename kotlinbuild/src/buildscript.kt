@@ -40,7 +40,7 @@ fun main(args: Array<String>) {
             val javaBinaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
             val jarFile = file(rootDir.resolve("out/kb/artifacts/$moduleName.jar"), artifacts.jar)
             val libs = artifactsSet(
-                    file(rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-compiler.jar"), artifacts.jar),
+                    file(rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar"), artifacts.jar),
                     file(rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar"), artifacts.jar),
                     files("*.jar", artifacts.jar, base = rootDir.resolve("ideaSDK/core")),
                     files("**/*.jar", artifacts.jar, base = rootDir.resolve("lib"))
@@ -81,7 +81,7 @@ fun main(args: Array<String>) {
         fun Module.makeFrom(vararg baseDirs: String) =
                 this.shared(
                         kotlinSources = baseDirs.map { files("src/**.kt", artifacts.sources, base = it) },
-                        kotlinSourceRoots = baseDirs.asIterable(),
+                        kotlinSourceRoots = baseDirs.map { it + "/src" },
                         javaSources = baseDirs.map { files("src/**.java", artifacts.sources, base = it) })
 
         module("kotlin") {
