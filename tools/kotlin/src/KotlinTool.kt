@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoots
 import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.addKotlinSourceRoot
+import org.jetbrains.kotlin.utils.PathUtil
 
 
 public val komplex.dsl.tools.kotlin: KotlinCompilerRule
@@ -82,6 +83,12 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
         }
         val project = context.module
 
+        val destFolder = tgt.single() as? dsl.FolderArtifact ?:
+                throw IllegalArgumentException("Compiler only supports single folder as destination")
+        val destFolderFile = destFolder.path.toFile()
+        if (!destFolderFile.exists())
+            destFolderFile.mkdirs()
+
         val explicitSourcesSet = cfg.explicitSources.toHashSet()
 
         val kotlinSources = src.filter { explicitSourcesSet.contains(it.first) }
@@ -109,7 +116,8 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
                 .toList()
                 // \todo convert to relative/optimal paths
 
-        compilerCfg.addJvmClasspathRoots(libraries)
+        compilerCfg.addJvmClasspathRoots(libraries + destFolderFile)
+        compilerCfg.addJvmClasspathRoots(PathUtil.getJdkClassesRoots())
 
         compilerCfg.put<MessageCollector>(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
 
@@ -120,13 +128,10 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
         messageCollector.report(CompilerMessageSeverity.INFO, "build classpath: $libraries", CompilerMessageLocation.NO_LOCATION)
         messageCollector.report(CompilerMessageSeverity.INFO, "build java sources roots: ${cfg.sourceRoots}", CompilerMessageLocation.NO_LOCATION)
 
-        val destFolder = tgt.single() as? dsl.FolderArtifact ?:
-                throw IllegalArgumentException("Compiler only supports single folder as destination")
-
         var exitCode = ExitCode.OK
         try {
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, compilerCfg, EnvironmentConfigFiles.JVM_CONFIG_FILES)
-            KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolder.path.toFile(), cfg.includeRuntime)
+            KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, cfg.includeRuntime)
         }
         catch (e: CompilationException) {
             messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),

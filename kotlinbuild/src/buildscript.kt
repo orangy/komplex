@@ -42,7 +42,12 @@ fun main(args: Array<String>) {
             val libs = artifactsSet(
                     file(rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar"), artifacts.jar),
                     file(rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar"), artifacts.jar),
+                    file(rootDir.resolve("dependencies/jline.jar"), artifacts.jar),
+                    file(rootDir.resolve("dependencies/jansi.jar"), artifacts.jar),
+                    file(rootDir.resolve("dependencies/cli-parser-1.1.1.jar"), artifacts.jar),
+                    file(rootDir.resolve("ideaSDK/jps/jps-model.jar"), artifacts.jar),
                     files("*.jar", artifacts.jar, base = rootDir.resolve("ideaSDK/core")),
+                    files("*.jar", artifacts.jar, base = rootDir.resolve("lib")),
                     files("**/*.jar", artifacts.jar, base = rootDir.resolve("lib"))
             )
 
@@ -104,14 +109,13 @@ fun main(args: Array<String>) {
                           "compiler/light-classes",
                           "compiler/plugin-api",
                           "compiler/serialization",
-                          "compiler/util"
-//                        ,
-//                          "js/js.dart-ast",
-//                          "js/js.translator",
-//                          "js/js.frontend",
-//                          "js/js.inliner",
-//                          "js/js.parser",
-//                          "js/js.serializer"
+                          "compiler/util",
+                          "js/js.dart-ast",
+                          "js/js.translator",
+                          "js/js.frontend",
+                          "js/js.inliner",
+                          "js/js.parser",
+                          "js/js.serializer"
                 )
             }
         }
