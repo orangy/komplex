@@ -36,26 +36,28 @@ fun main(args: Array<String>) {
             version("ATTEMPT-0.1")
 
             // shared settings for all projects
-            val binaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
+            val kotlinBinaries = folder(rootDir.resolve("out/kb/build.kt/$moduleName"), artifacts.binaries)
+            val javaBinaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
             val jarFile = file(rootDir.resolve("out/kb/artifacts/$moduleName.jar"), artifacts.jar)
 
             depends on children
 
-            build using(tools.javac) from javaSources into binaries with {
-                use(depends.modules)
-            }
-
-            build using(tools.kotlin) from kotlinSources into binaries with {
+            build using(tools.kotlin) from kotlinSources into kotlinBinaries with {
                 use(depends.modules)
                 sourceRoots.addAll(kotlinSourceRoots)
                 enableInline = true
             }
 
-            build(jar, test) using tools.jar from binaries export jarFile
+            build using(tools.javac) from javaSources into javaBinaries with {
+                use(depends.modules)
+                use(kotlinBinaries)
+            }
+
+            build(jar, test) using tools.jar from javaBinaries export jarFile
 
             build(publish) {
                 using(tools.jar) {
-                    from(binaries)
+                    from(javaBinaries)
                     into(jarFile)
                     compression = 2
                 }

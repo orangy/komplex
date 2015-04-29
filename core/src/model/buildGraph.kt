@@ -1,10 +1,8 @@
 
 package komplex.model
 
-import komplex.utils.graphDFS
-import komplex.utils.makeTracingVisitedTraversalChecker
-import komplex.utils.makeVisitedTraversalChecker
-import komplex.utils.subgraphDFS
+import komplex.*
+import komplex.utils.*
 import java.util.HashSet
 import java.util.HashMap
 import java.util.ArrayList
@@ -28,6 +26,9 @@ public class BuildGraph() {
     val consumers: HashMap<ArtifactDesc, ArrayList<BuildGraphNode>> = hashMapOf()
 
     protected fun add(node: BuildGraphNode) {
+        val valid = node.step.validate()
+        if (valid.status != BuildDiagnostic.Status.Succeeded)
+            throw Exception(valid.message)
         val srcs = node.step.sources.toArrayList()
         val tgts = node.step.targets.toArrayList()
         // skip steps without inputs and outputs

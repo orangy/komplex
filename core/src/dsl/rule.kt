@@ -10,6 +10,7 @@ import komplex.model.LambdaStep
 import komplex.model.ArtifactData
 import komplex.model.ToolStep
 import komplex.model.Tool
+import komplex.utils.BuildDiagnostic
 
 // rules in fact
 public object tools {}

@@ -4,8 +4,7 @@ package komplex.utils
 import org.slf4j.LoggerFactory
 import java.util.HashSet
 import java.util.ArrayDeque
-
-internal val log = LoggerFactory.getLogger("komplex.graph")
+import komplex.*
 
 // generic traverse checker with generators
 public class TraversedChecker<Node>() {

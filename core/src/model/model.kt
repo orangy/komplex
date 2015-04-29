@@ -4,8 +4,7 @@ package komplex.model
 import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
-
-val log = LoggerFactory.getLogger("komplex")
+import komplex.*
 
 public trait ArtifactDesc : Named {}
 
@@ -87,6 +86,12 @@ public trait Step : Named {
     public val sources: Iterable<ArtifactDesc> // consumed artifacts
     public val export: Boolean // defines if step targets are local or exported from the module
     public val targets: Iterable<ArtifactDesc> // produced artifacts
+
+    public open fun validate(): BuildDiagnostic {
+        val intersection = sources.intersect(targets)
+        return if (intersection.none()) BuildDiagnostic.Success
+        else BuildDiagnostic.Fail("Invalid step '$name': both sources and targets contain (${intersection.map { it.name }.joinToString(", ")})")
+    }
 
     public fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?> = hashMapOf()) : BuildResult
             = BuildResult(BuildDiagnostic.Success)

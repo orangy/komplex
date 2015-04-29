@@ -10,6 +10,7 @@ import komplex.dsl.Module
 import komplex.dsl.ModuleDependency
 import komplex.model.Tool
 import komplex.model.ToolStep
+import komplex.utils.BuildDiagnostic
 import java.util.concurrent.CopyOnWriteArrayList
 
 // \todo validate each use on addition
@@ -27,7 +28,6 @@ public abstract class CompilerRule<Config: CompilerRule<Config, T>, T: Tool<Conf
     public val usedRules: MutableCollection<Rule> = arrayListOf()
     public val usedModules: MutableCollection<Module> = arrayListOf()
     public val usedSources: MutableCollection<Iterable<*>> = CopyOnWriteArrayList() // todo: find out why concurrent collection is needed
-
 }
 
 public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg artifacts: ArtifactDesc): CompilerRule<Config, T> {

@@ -1,6 +1,7 @@
 
 package komplex.model
 
+import komplex.*
 import komplex.data.hashEquals
 import komplex.data.mergeHashes
 import komplex.utils.BuildDiagnostic

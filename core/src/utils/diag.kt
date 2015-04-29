@@ -9,7 +9,6 @@ public trait Named {
     override fun toString(): String = name
 }
 
-// \todo add exception and/or message
 public trait BuildDiagnostic {
     public enum class Status {
         Succeeded
@@ -28,7 +27,7 @@ public trait BuildDiagnostic {
 
 
 public class FailBuildDiagnostic(override val message : String) : BuildDiagnostic {
-    override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Succeeded
+    override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Failed
 }
 
 
