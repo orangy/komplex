@@ -91,18 +91,19 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
         val sources = src.filter { explicitSourcesSet.contains(it.first) }
                 .flatMap { data.openFileSet(it).coll.map { it.path.toString() }}
 
-        log.info("javac: \n${options.joinToString("\n")} sources:\n ${sources.map(::escape4cli).joinToString("\n")}")
+        log.debug("javac options: ${options.joinToString(" ")}")
+        log.debug("sources:\n${sources.map(::escape4cli).joinToString("\n")}")
 
         val task=compiler.getTask(null,fileManager,diagnostics,options,null, sources.map { JavaSource(it) })
 
-        log.info("run task")
+        log.info("start compilation")
 
         val success = task.call()
 
-        log.info("task done")
+        log.info("compilation finished. diagnostics:")
 
         for (diag in diagnostics.getDiagnostics()) {
-            val msg = "${diag.getSource().getName()} (${diag.getLineNumber()},${diag.getColumnNumber()}) ${diag.getMessage(null)}"
+            val msg = "${diag.getSource()?.getName() ?: "<no source>"} (${diag.getLineNumber()},${diag.getColumnNumber()}) ${diag.getMessage(null)}"
             when (diag.getKind()) {
                 Diagnostic.Kind.ERROR -> log.error(msg)
                 Diagnostic.Kind.NOTE -> log.debug(msg)

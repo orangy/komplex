@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
             return libModule
         }
 
-        fun Module.shared(kotlinSources: Iterable<Artifact>, javaSources: Iterable<Artifact>) {
+        fun Module.shared(kotlinSources: Iterable<Artifact>, kotlinSourceRoots: Iterable<String>, javaSources: Iterable<Artifact>) {
             version("ATTEMPT-0.1")
 
             // shared settings for all projects
@@ -41,13 +41,14 @@ fun main(args: Array<String>) {
 
             depends on children
 
-            build using(tools.kotlin) from kotlinSources into binaries with {
-                use(depends.modules)
-                enableInline = true
-            }
-
             build using(tools.javac) from javaSources into binaries with {
                 use(depends.modules)
+            }
+
+            build using(tools.kotlin) from kotlinSources into binaries with {
+                use(depends.modules)
+                sourceRoots.addAll(kotlinSourceRoots)
+                enableInline = true
             }
 
             build(jar, test) using tools.jar from binaries export jarFile
@@ -68,37 +69,40 @@ fun main(args: Array<String>) {
             default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
-        fun Module.shared(vararg baseDirs: String) =
+        fun Module.makeFrom(vararg baseDirs: String) =
                 this.shared(
                         kotlinSources = baseDirs.map { files("src/**.kt", artifacts.sources, base = it) },
+                        kotlinSourceRoots = baseDirs.asIterable(),
                         javaSources = baseDirs.map { files("src/**.java", artifacts.sources, base = it) })
 
         module("kotlin") {
             val compoler = module("compiler", "Kotlin Compiler") {
                 depends.on(
-                        library("org.slf4j:slf4j-api:1.7.12")
+                        library("org.slf4j:slf4j-api:1.7.12"),
+                        library("org.jetbrains:annotations:13.0")
                 )
-                shared( "core/descriptor.loader.java",
-                        "core/descriptors",
-                        "core/deserialization",
-                        "core/util.runtime",
-                        "compiler/backend",
-                        "compiler/backend-common",
-                        "compiler/builtins-serializer",
-                        "compiler/cli",
-                        "compiler/cli/cli-common",
-                        "compiler/frontend",
-                        "compiler/frontend.java",
-                        "compiler/light-classes",
-                        "compiler/plugin-api",
-                        "compiler/serialization",
-                        "compiler/util",
-                        "js/js.dart-ast",
-                        "js/js.translator",
-                        "js/js.frontend",
-                        "js/js.inliner",
-                        "js/js.parser",
-                        "js/js.serializer")
+                makeFrom( "core/descriptor.loader.java",
+                          "core/descriptors",
+                          "core/deserialization",
+                          "core/util.runtime",
+                          "compiler/backend",
+                          "compiler/backend-common",
+                          "compiler/builtins-serializer",
+                          "compiler/cli",
+                          "compiler/cli/cli-common",
+                          "compiler/frontend",
+                          "compiler/frontend.java",
+                          "compiler/light-classes",
+                          "compiler/plugin-api",
+                          "compiler/serialization",
+                          "compiler/util",
+                          "js/js.dart-ast",
+                          "js/js.translator",
+                          "js/js.frontend",
+                          "js/js.inliner",
+                          "js/js.parser",
+                          "js/js.serializer"
+                )
             }
         }
         /// BUILD SCRIPT

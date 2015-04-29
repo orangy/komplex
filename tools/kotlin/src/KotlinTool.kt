@@ -39,6 +39,7 @@ public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : k
         return this
     }
     public var enableInline: Boolean = true
+    public val sourceRoots: MutableCollection<String> = arrayListOf()
 }
 
 
@@ -71,7 +72,8 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
         val explicitSourcesSet = cfg.explicitSources.toHashSet()
 
         args.freeArgs = src.filter { explicitSourcesSet.contains(it.first) }
-                           .flatMap { data.openFileSet(it).coll.map { it.path.toString() }}
+                           .flatMap { data.openFileSet(it).coll.map { it.path.toString() }} +
+                        cfg.sourceRoots
         if (args.freeArgs.size() == 0) {
             messageCollector.report(
                     CompilerMessageSeverity.ERROR,
