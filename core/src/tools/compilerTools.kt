@@ -1,13 +1,10 @@
 
 package komplex.tools
 
+import komplex.dsl.*
 import java.util.ArrayList
 import komplex.model.targets
-import komplex.dsl.RuleImpl
 import komplex.model.ArtifactDesc
-import komplex.dsl.Rule
-import komplex.dsl.Module
-import komplex.dsl.ModuleDependency
 import komplex.model.Tool
 import komplex.model.ToolStep
 import komplex.utils.BuildDiagnostic
@@ -32,6 +29,11 @@ public abstract class CompilerRule<Config: CompilerRule<Config, T>, T: Tool<Conf
 
 public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg artifacts: ArtifactDesc): CompilerRule<Config, T> {
     artifacts.forEach { usedLibs.add(it) }
+    return this
+}
+
+public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config, T>.use(vararg artifactssets: ArtifactsSet): CompilerRule<Config, T> {
+    artifactssets.forEach { it.members.forEach { usedLibs.add(it) } }
     return this
 }
 

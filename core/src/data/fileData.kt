@@ -15,7 +15,8 @@ public trait FileData : komplex.model.ArtifactData {
     public val path: Path
 }
 
-public open class SimpleFileData(override val path: Path) : FileData {
+public open class SimpleFileData(ipath: Path) : FileData {
+    override val path: Path = ipath.normalize()
     override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
 }

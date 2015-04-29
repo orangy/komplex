@@ -1,5 +1,6 @@
 package komplex.utils
 
+import komplex.log
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Path
@@ -28,7 +29,7 @@ fun findFilesInPath(path: Path, baseDir: Path? = null): List<Path> {
 public fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>, baseDir: Path? = null): List<Path> {
     val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
     val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
-    val basePath = baseDir ?: fileSystem.getPath("")
+    val basePath = (baseDir ?: fileSystem.getPath("")).normalize()
     val result = arrayListOf<Path>()
 
     class Finder : SimpleFileVisitor<Path?>() {
@@ -43,6 +44,8 @@ public fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>,
     }
 
     Files.walkFileTree(basePath, Finder())
+    if (result.none())
+        log.warn("No files found in the '$basePath' by the glob +[${included.joinToString(",")}] -[${excluded.joinToString(",")}")
     return result
 }
 

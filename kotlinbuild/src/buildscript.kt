@@ -39,11 +39,18 @@ fun main(args: Array<String>) {
             val kotlinBinaries = folder(rootDir.resolve("out/kb/build.kt/$moduleName"), artifacts.binaries)
             val javaBinaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
             val jarFile = file(rootDir.resolve("out/kb/artifacts/$moduleName.jar"), artifacts.jar)
+            val libs = artifactsSet(
+                    file(rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-compiler.jar"), artifacts.jar),
+                    file(rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar"), artifacts.jar),
+                    files("*.jar", artifacts.jar, base = rootDir.resolve("ideaSDK/core")),
+                    files("**/*.jar", artifacts.jar, base = rootDir.resolve("lib"))
+            )
 
             depends on children
 
             build using(tools.kotlin) from kotlinSources into kotlinBinaries with {
                 use(depends.modules)
+                use(libs)
                 sourceRoots.addAll(kotlinSourceRoots)
                 enableInline = true
             }
@@ -97,13 +104,14 @@ fun main(args: Array<String>) {
                           "compiler/light-classes",
                           "compiler/plugin-api",
                           "compiler/serialization",
-                          "compiler/util",
-                          "js/js.dart-ast",
-                          "js/js.translator",
-                          "js/js.frontend",
-                          "js/js.inliner",
-                          "js/js.parser",
-                          "js/js.serializer"
+                          "compiler/util"
+//                        ,
+//                          "js/js.dart-ast",
+//                          "js/js.translator",
+//                          "js/js.frontend",
+//                          "js/js.inliner",
+//                          "js/js.parser",
+//                          "js/js.serializer"
                 )
             }
         }
