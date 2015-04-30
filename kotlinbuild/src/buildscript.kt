@@ -38,12 +38,11 @@ fun main(args: Array<String>) {
             // shared settings for all projects
             val kotlinBinaries = folder(rootDir.resolve("out/kb/build.kt/$moduleName"), artifacts.binaries)
             val javaBinaries = folder(rootDir.resolve("out/kb/build/$moduleName"), artifacts.binaries)
-            val jarFile = file(rootDir.resolve("out/kb/artifacts/$moduleName.jar"), artifacts.jar)
+            val jarFile = file(rootDir.resolve("out/kb/artifacts/kotlin-$moduleName.jar"), artifacts.jar)
             val libs = artifactsSet(
                     file(rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar"), artifacts.jar),
                     file(rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar"), artifacts.jar),
                     file(rootDir.resolve("dependencies/jline.jar"), artifacts.jar),
-                    file(rootDir.resolve("dependencies/jansi.jar"), artifacts.jar),
                     file(rootDir.resolve("dependencies/cli-parser-1.1.1.jar"), artifacts.jar),
                     file(rootDir.resolve("ideaSDK/jps/jps-model.jar"), artifacts.jar),
                     files("*.jar", artifacts.jar, base = rootDir.resolve("ideaSDK/core")),
@@ -66,13 +65,17 @@ fun main(args: Array<String>) {
                 use(libs)
             }
 
-            build(jar, test) using tools.jar from javaBinaries export jarFile
+            build(jar, test) using tools.jar with {
+                from(kotlinBinaries, javaBinaries, libs)
+                export(jarFile)
+                deflate = true
+            }
 
             build(publish) {
                 using(tools.jar) {
-                    from(javaBinaries)
+                    from(kotlinBinaries, javaBinaries, libs)
                     into(jarFile)
-                    compression = 2
+                    deflate = true
                 }
                 /*
                 using(tools.publish) {

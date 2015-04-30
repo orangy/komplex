@@ -42,21 +42,21 @@ public fun <TR : Rule> TR.with(body: TR.() -> Unit): TR {
     return this
 }
 
-public fun <T : Rule, S> T.from(vararg sources: S): T {
+public fun <T : Rule, S> T.from(sources: Iterable<S>): T {
     for (src in sources)
         when (src) {
-            is Artifact -> explicitSources.add(src)
+            is ArtifactsSet -> explicitSources.addAll(src.members)
             is ModuleDependency -> explicitDependencies.add(src)
+            is Artifact -> explicitSources.add(src)
+            else -> throw Exception("Unknown source type: $src")
         }
     return this
 }
 
+public fun <T : Rule, S> T.from(vararg sources: S): T = from(sources.asIterable())
+
 public fun <T : Rule, S> T.from(vararg sources: Iterable<S>): T {
-    for (src in sources)
-        when (src.firstOrNull()) {
-            is Artifact -> explicitSources.addAll(src as Iterable<Artifact>)
-            is ModuleDependency -> explicitDependencies.addAll(src as Iterable<ModuleDependency>)
-        }
+    sources.forEach { from(it) }
     return this
 }
 
