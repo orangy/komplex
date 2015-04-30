@@ -73,10 +73,10 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
                 fun msg() = if (location == CompilerMessageLocation.NO_LOCATION) "$message" else "$message ($location)"
                 when (severity) {
-                    in CompilerMessageSeverity.ERRORS -> log.error(msg())
+                    in CompilerMessageSeverity.ERRORS -> log.error("Error: "+msg())
                     CompilerMessageSeverity.LOGGING -> log.debug(msg())
                     CompilerMessageSeverity.INFO -> log.info(msg())
-                    CompilerMessageSeverity.WARNING -> log.info(msg())
+                    CompilerMessageSeverity.WARNING -> log.info("Warning: "+msg())
                     //CompilerMessageSeverity.OUTPUT -> log.trace(msg())
                 }
             }

@@ -31,7 +31,8 @@ public trait FileArtifact : Artifact{
 
 public fun file(path: Path, `type`: ArtifactType): FileArtifact = SimpleFileArtifact(path, `type`)
 public fun file(path: String, `type`: ArtifactType): FileArtifact = SimpleFileArtifact(fileSystem.getPath(path), `type`)
-public class SimpleFileArtifact(override val path: Path, override val `type`: ArtifactType) : FileArtifact {
+public class SimpleFileArtifact(ipath: Path, override val `type`: ArtifactType) : FileArtifact {
+    override val path: Path = ipath.toAbsolutePath().normalize()
     override val name: String = "$`type` file ${path}"
 }
 
@@ -40,7 +41,8 @@ public trait FileSetArtifact : Artifact {}
 public fun folder(path: Path, `type`: ArtifactType): FolderArtifact = FolderArtifact(path, `type`)
 public fun folder(path: String, `type`: ArtifactType): FolderArtifact = FolderArtifact(fileSystem.getPath(path), `type`)
 
-public open class FolderArtifact(public val path: Path, override val `type`: ArtifactType) : FileSetArtifact {
+public open class FolderArtifact(ipath: Path, override val `type`: ArtifactType) : FileSetArtifact {
+    public  val path: Path = ipath.toAbsolutePath().normalize()
     override val name: String = "$`type` folder ${path}"
 }
 

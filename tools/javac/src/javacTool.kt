@@ -62,7 +62,7 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
 
         val libraries = src
                 .filter { dependenciesSet.contains(it.first) }
-                .flatMap { data.openFileSet(it).coll }
+                .flatMap { data.openFileSet(it, foldersAsLibraries = true).coll }
                 .map { it.path.toAbsolutePath() }
                 .distinct()
                 // \todo convert to relative/optimal paths

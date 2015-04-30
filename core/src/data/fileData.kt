@@ -16,9 +16,15 @@ public trait FileData : komplex.model.ArtifactData {
 }
 
 public open class SimpleFileData(ipath: Path) : FileData {
-    override val path: Path = ipath.normalize()
+    override val path: Path = ipath.normalize().toAbsolutePath()
     override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
 }
 
 public fun getFile(artifact: komplex.dsl.FileArtifact): FileData = SimpleFileData(artifact.path)
+
+public class FolderData(ipath: Path) : FileData {
+    override val path: Path = ipath.normalize().toAbsolutePath()
+    override val sourcesHash: ByteArray? = null
+    override val hash: ByteArray by Delegates.lazy { mergeHashes(collectFolderFiles(path)) }
+}

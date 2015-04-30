@@ -1,7 +1,9 @@
 package komplex.data
 
+import komplex.dsl.ArtifactType
 import komplex.dsl.FolderArtifact
 import komplex.model.ArtifactData
+import komplex.model.nicePrint
 import java.util.HashSet
 import komplex.utils.findFilesInPath
 import java.nio.file.Path
@@ -61,52 +63,54 @@ public fun adaptToDataCollection<D: ArtifactData>(data: D) : DataCollection<D> =
 private fun collectArtifactFiles(artifacts: Iterable<komplex.dsl.FileArtifact>): Iterable<FileData> =
         artifacts.map { SimpleFileData(it.path) }
 
-private fun collectFolderFiles(folder: FolderArtifact, baseDir: Path?): Iterable<SimpleFileData> =
-        findFilesInPath(folder.path, baseDir).map { SimpleFileData(it) }
+private fun collectFolderFiles(folder: Path): Iterable<SimpleFileData> =
+        findFilesInPath(folder).map { SimpleFileData(it) }
 
-private fun collectGlobFiles(glob: komplex.dsl.FileGlobArtifact, baseDir: Path?): Iterable<FileData> =
-        findGlobFiles(glob.included, glob.excluded, baseDir).map { SimpleFileData(it) }
+private fun collectGlobFiles(included: Iterable<String>, excluded: Iterable<String>, baseDir: Path?): Iterable<FileData> =
+        findGlobFiles(included, excluded, baseDir).map { SimpleFileData(it) }
 
 private fun collectFiles(paths: Iterable<Path>): Iterable<FileData> =
         paths.map { SimpleFileData(it) }
 
 
-public fun openFileSet(vararg artifacts: komplex.dsl.FileArtifact): DataSet<FileData> =
-        DataSet(collectArtifactFiles(artifacts.asIterable()))
-
-public fun openFileSet(vararg artifacts: komplex.dsl.FolderArtifact, baseDir: Path? = null): DataSet<FileData> =
-        DataSet(artifacts.flatMap { collectFolderFiles(it, baseDir = baseDir)})
-
-public fun openFileSet(vararg artifacts: komplex.dsl.FileGlobArtifact, baseDir: Path? = null): DataSet<FileData> =
-        DataSet(artifacts.flatMap { collectGlobFiles(it, baseDir = baseDir)})
-
-public fun openFileSet(vararg paths: Path): DataSet<FileData> =
-        DataSet(collectFiles(paths.asIterable()))
-
-public fun openFileSet(artifact: DataSet<FileData>): DataSet<FileData> = artifact
-
-public fun openFileSet(artifact: FileData): DataSet<FileData> = DataSet(hashSetOf(artifact))
-
-public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>): DataCollection<FileData> {
+public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
+                       baseDir: Path? = null,
+                       foldersAsLibraries: Boolean = false
+): DataCollection<FileData> {
+    val fst = pair.first
     val snd = pair.second
     return when (snd) {
-        is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData) openFileSet(pair.first)
-                         else adaptToDataCollection(snd as DataCollection<FileData>)
+        is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData ||
+                                // special treatment of folders as libraries
+                                // \todo find better solution, e.g. dispatching by artifact type and separate functions like openLibrariesSet
+                                (foldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binaries))
+                            openFileSet(fst, baseDir = baseDir, foldersAsLibraries = foldersAsLibraries)
+                         else
+                            adaptToDataCollection(snd as DataCollection<FileData>)
         is FileData -> adaptToDataCollection(snd)
-        else -> openFileSet(pair.first)
+        else -> openFileSet(fst, baseDir = baseDir, foldersAsLibraries = foldersAsLibraries)
     }
 }
 
-public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc, baseDir: Path? = null): DataSet<FileData> =
+public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
+                       baseDir: Path? = null,
+                       foldersAsLibraries: Boolean = false
+): DataSet<FileData> =
     // emulating dynamic dispatching with extension methods
     // \todo find more elegant solution
     DataSet(artifacts.flatMap {
         when (it) {
             // note: sequence matters!
-            is komplex.dsl.FileGlobArtifact -> collectGlobFiles(it, baseDir = (baseDir ?: Paths.get(".")).resolve(it.path))
-            is komplex.dsl.FolderArtifact -> collectFolderFiles(it, baseDir = (baseDir ?: Paths.get(".")).resolve(it.path))
+            is komplex.dsl.FileGlobArtifact -> collectGlobFiles(it.included, it.excluded, baseDir = (baseDir ?: Paths.get(".")).resolve(it.path))
+            is komplex.dsl.FolderArtifact ->
+                // special treatment of folders as libraries
+                // \todo find better solution, see openFileSet(pair...)
+                if (foldersAsLibraries && it.type == komplex.dsl.artifacts.binaries ) listOf(FolderData(it.path))
+                else collectFolderFiles((baseDir ?: Paths.get(".")).resolve(it.path))
             is komplex.dsl.FileArtifact -> listOf(SimpleFileData(it.path))
             is Path -> listOf(SimpleFileData(it))
+            is DataSet<*> -> it.coll as Iterable<FileData>
+            is FileData -> listOf(it)
             else -> throw UnsupportedOperationException("cannot open ${artifacts.firstOrNull()?.name ?: "[]"}... as FileSet")
         }})
 

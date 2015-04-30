@@ -63,6 +63,7 @@ fun main(args: Array<String>) {
             build using(tools.javac) from javaSources into javaBinaries with {
                 use(depends.modules)
                 use(kotlinBinaries)
+                use(libs)
             }
 
             build(jar, test) using tools.jar from javaBinaries export jarFile
