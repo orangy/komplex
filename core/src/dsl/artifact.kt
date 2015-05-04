@@ -25,24 +25,44 @@ public object artifacts {
     public val jar: ArtifactType = NamedArtifactType("jar")
 }
 
-public trait FileArtifact : Artifact{
-    public val path: Path
+public trait PathBasedArtifact : Artifact {
+    // storing path in two parts, base and relative, allowing to rebase with base setter
+    var basePath: Path
+    var relPath: Path
+    public val path: Path get() = basePath.resolve(relPath).normalize()
+    public var base: Path
+        get() = basePath
+        set(v: Path) {
+            val newBase = v.toAbsolutePath().normalize()
+            relPath = newBase.relativize(path)
+            basePath = newBase
+        }
 }
 
-public fun file(path: Path, `type`: ArtifactType): FileArtifact = SimpleFileArtifact(path, `type`)
-public fun file(path: String, `type`: ArtifactType): FileArtifact = SimpleFileArtifact(fileSystem.getPath(path), `type`)
-public class SimpleFileArtifact(ipath: Path, override val `type`: ArtifactType) : FileArtifact {
-    override val path: Path = ipath.toAbsolutePath().normalize()
+public fun<A: PathBasedArtifact> A.base(p: Path): A { this.base = p.toAbsolutePath().normalize(); return this }
+public fun<A: PathBasedArtifact> A.base(p: String): A = this.base(Paths.get(p))
+
+public trait FileArtifact : PathBasedArtifact { }
+
+public fun file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(`type`, path)
+public fun file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(`type`, fileSystem.getPath(path))
+
+public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : FileArtifact {
+    init { assert(ipath.toFile().isFile(), "Expecting a file at '$ipath'") }
+    override var basePath: Path = ipath.getParent().toAbsolutePath().normalize()
+    override var relPath = basePath.relativize(ipath.toAbsolutePath().normalize())
     override val name: String = "$`type` file ${path}"
 }
 
-public trait FileSetArtifact : Artifact {}
+public trait FileSetArtifact : PathBasedArtifact {}
 
-public fun folder(path: Path, `type`: ArtifactType): FolderArtifact = FolderArtifact(path, `type`)
-public fun folder(path: String, `type`: ArtifactType): FolderArtifact = FolderArtifact(fileSystem.getPath(path), `type`)
+public fun folder(type: ArtifactType, path: Path): FolderArtifact = FolderArtifact(`type`, path)
+public fun folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(`type`, fileSystem.getPath(path))
 
-public open class FolderArtifact(ipath: Path, override val `type`: ArtifactType) : FileSetArtifact {
-    public  val path: Path = ipath.toAbsolutePath().normalize()
+public open class FolderArtifact(override val type: ArtifactType, ipath: Path) : FileSetArtifact {
+    init { assert(ipath.toFile().isDirectory(), "Expecting a directory at '$ipath'") }
+    override var basePath: Path = ipath.toAbsolutePath().normalize()
+    override var relPath = Paths.get(".")
     override val name: String = "$`type` folder ${path}"
 }
 
@@ -52,41 +72,49 @@ public class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-public fun files(glob: String, `type`: ArtifactType, base: String? = null): Artifact =
-        FileGlobArtifact(if (base != null) Paths.get(base) else Paths.get(glob).getParent(),`type`).let { it.include(glob); it }
+public fun files(type: ArtifactType): FileGlobArtifact = FileGlobArtifact(type, Paths.get("."))
+public fun files(type: ArtifactType, include: String): FileGlobArtifact = files(type).include(include)
+public fun files(type: ArtifactType, base: Path, include: String): FileGlobArtifact = FileGlobArtifact(`type`, base).include(include)
 
-public fun files(glob: String, `type`: ArtifactType, base: Path): Artifact =
-        FileGlobArtifact(base,`type`).let { it.include(glob); it }
-
-class FileGlobArtifact(base: Path, type: ArtifactType) : FolderArtifact(base, type) {
-    val included = arrayListOf<String>()
-    val excluded = arrayListOf<String>()
+open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(type, base) {
+    var included = arrayListOf<String>()
+    var excluded = arrayListOf<String>()
 
     public fun invoke(body: FileGlobArtifact.() -> Unit) {
         this.body()
     }
 
-    public fun append(files: FileGlobArtifact) {
+    public fun append(files: FileGlobArtifact): FileGlobArtifact {
         included.addAll(files.included)
         excluded.addAll(files.excluded)
+        return this
     }
 
-    public fun include(glob: String) {
+    public fun include(glob: String): FileGlobArtifact {
         included.add(glob)
+        return this
     }
 
-    public fun exclude(glob: String) {
+    public fun all(): FileGlobArtifact {
+        included.add("**")
+        return this
+    }
+
+    public fun exclude(glob: String): FileGlobArtifact {
         excluded.add(glob)
+        return this
     }
 
-    public fun include(body: GlobCollection.() -> Unit) {
+    public fun include(body: GlobCollection.() -> Unit): FileGlobArtifact {
         val collection = GlobCollection(included)
         collection.body()
+        return this
     }
 
-    public fun exclude(body: GlobCollection.() -> Unit) {
+    public fun exclude(body: GlobCollection.() -> Unit): FileGlobArtifact {
         val collection = GlobCollection(excluded)
         collection.body()
+        return this
     }
 
     override val name: String get() = "$`type` folder $path glob +$included -$excluded"

@@ -116,22 +116,22 @@ public class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
                 .toList()
                 // \todo convert to relative/optimal paths
 
-        compilerCfg.addJvmClasspathRoots(libraries + destFolderFile)
+        compilerCfg.addJvmClasspathRoots(libraries)
         compilerCfg.addJvmClasspathRoots(PathUtil.getJdkClassesRoots())
 
         compilerCfg.put<MessageCollector>(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
 
-        messageCollector.report(
-                CompilerMessageSeverity.INFO,
-                "compiling module ${project.name} from ${kotlinSources} to $tgt",
-                CompilerMessageLocation.NO_LOCATION)
-        messageCollector.report(CompilerMessageSeverity.INFO, "build classpath: $libraries", CompilerMessageLocation.NO_LOCATION)
-        messageCollector.report(CompilerMessageSeverity.INFO, "build java sources roots: ${cfg.sourceRoots}", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report( CompilerMessageSeverity.INFO, "compiling module ${project.name}", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report( CompilerMessageSeverity.INFO, "build sources: ${kotlinSources.joinToString("\n  ","\n  ")}", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report( CompilerMessageSeverity.INFO, "build target: $tgt", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report(CompilerMessageSeverity.INFO, "build classpath: ${libraries.joinToString("\n  ","\n  ")}", CompilerMessageLocation.NO_LOCATION)
+        messageCollector.report(CompilerMessageSeverity.INFO, "build java sources roots: ${cfg.sourceRoots.joinToString("\n  ","\n  ")}", CompilerMessageLocation.NO_LOCATION)
 
-        var exitCode = ExitCode.OK
+        var exitCode = ExitCode.INTERNAL_ERROR
         try {
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, compilerCfg, EnvironmentConfigFiles.JVM_CONFIG_FILES)
-            KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, cfg.includeRuntime)
+            exitCode = if (KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, cfg.includeRuntime))
+                ExitCode.OK else ExitCode.COMPILATION_ERROR
         }
         catch (e: CompilationException) {
             messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),

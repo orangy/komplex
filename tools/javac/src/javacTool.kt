@@ -92,7 +92,7 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
                 .flatMap { data.openFileSet(it).coll.map { it.path.toString() }}
 
         log.debug("javac options: ${options.joinToString(" ")}")
-        log.debug("sources:\n${sources.map(::escape4cli).joinToString("\n")}")
+        log.debug("sources: ${sources.map(::escape4cli).joinToString("\n  ","\n  ")}")
 
         val task=compiler.getTask(null,fileManager,diagnostics,options,null, sources.map { JavaSource(it) })
 
