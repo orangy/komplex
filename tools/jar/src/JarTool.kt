@@ -37,8 +37,21 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
 public class JarPackager : komplex.model.Tool<JarPackagerRule> {
     override val name: String = "jar packager"
 
+    private fun addDirs(root: Path, sourcePath: Path, target: JarOutputStream, deflate: Boolean, entries: MutableSet<String>) {
+        if (!root.equals(sourcePath)) {
+            val entry = JarEntry(root.relativize(sourcePath).toString() + "/")
+            if (entries.add(entry.getName())) {
+                log.trace("Adding directory entry ${entry.getName()}")
+                target.putNextEntry(entry)
+                target.closeEntry()
+            }
+            addDirs(root, sourcePath.getParent(), target, deflate, entries)
+        }
+    }
+
     // \todo add compression support
     private fun add(root: Path, sourcePath: Path, sourceData: InputStreamData, target: JarOutputStream, deflate: Boolean, entries: MutableSet<String>) {
+        addDirs(root, sourcePath.getParent(), target, deflate, entries)
         val entry = JarEntry(root.relativize(sourcePath).toString())
         //entry.setMethod(if (deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
         //entry.setTime(source.lastModified())
@@ -71,7 +84,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
             if (entry == null) break
             //entry.setMethod(if (deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
             if (entries.add(entry.getName())) {
-                log.trace("Adding entry ${entry.getName()}")
+                log.trace("  ${entry.getName()}")
                 target.putNextEntry(entry)
                 if (!entry.isDirectory()) {
                     var count = 0
@@ -116,6 +129,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                     else -> throw IllegalArgumentException("$targetDesc is not supported in $name")
                 }
         var jarStream = JarOutputStream(targetData.outputStream, manifest)
+        //jarStream.setMethod()
 
         val entries = hashSetOf<String>()
 

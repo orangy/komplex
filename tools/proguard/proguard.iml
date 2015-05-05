@@ -7,14 +7,9 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="core" />
-    <orderEntry type="module" module-name="jar" />
-    <orderEntry type="module" module-name="kotlin" />
-    <orderEntry type="module" module-name="maven" />
-    <orderEntry type="library" name="org.slf4j:slf4j-api:1.7.9" level="project" />
-    <orderEntry type="library" name="org.slf4j:slf4j-simple:1.7.9" level="project" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
-    <orderEntry type="module" module-name="javac" />
-    <orderEntry type="module" module-name="proguard" />
+    <orderEntry type="module" module-name="core" />
+    <orderEntry type="library" name="org.slf4j:slf4j-api:1.7.9" level="project" />
+    <orderEntry type="library" exported="" name="net.sf.proguard:proguard-base:5.2.1" level="project" />
   </component>
 </module>

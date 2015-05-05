@@ -8,6 +8,9 @@ import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.javac.javac
+import komplex.tools.proguard.filters
+import komplex.tools.proguard.options
+import komplex.tools.proguard.proguard
 import komplex.tools.use
 import komplex.utils
 import java.nio.file.Path
@@ -17,6 +20,7 @@ fun main(args: Array<String>) {
 
     // \todo detect root
     val rootDir = Paths.get(args.first())
+    val javaHome = Paths.get(System.getenv("JAVA_HOME"),"jre") // as ant does
 
     val script = script {
         /// BUILD SCRIPT
@@ -38,9 +42,11 @@ fun main(args: Array<String>) {
             // shared settings for all projects
             val kotlinBinaries = folder(artifacts.binaries, rootDir.resolve("out/kb/build.kt/$moduleName"))
             val javaBinaries = folder(artifacts.binaries, rootDir.resolve("out/kb/build/$moduleName"))
-            val jarFile = file(artifacts.jar, rootDir.resolve("out/kb/artifacts/kotlin-$moduleName.jar"))
+            val jarFile = file(artifacts.jar, rootDir.resolve("out/kb/artifacts/kotlin-$moduleName-uncompressed.jar"))
+            val finalJarFile = file(artifacts.jar, rootDir.resolve("out/kb/artifacts/kotlin-$moduleName.jar"))
+            val bootstrapRuntime = file(artifacts.jar, rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar"))
             val libs = artifactsSet(
-                    file(artifacts.jar, rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar")),
+                    bootstrapRuntime,
                     file(artifacts.jar, rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar")),
                     file(artifacts.jar, rootDir.resolve("dependencies/jline.jar")),
                     file(artifacts.jar, rootDir.resolve("dependencies/cli-parser-1.1.1.jar")),
@@ -87,17 +93,131 @@ fun main(args: Array<String>) {
                 deflate = true
             }
 
-            build(publish) {
-                using(tools.jar) {
-                    from(kotlinBinaries, javaBinaries, libs)
-                    into(jarFile)
-                    deflate = true
-                }
-                /*
-                using(tools.publish) {
-                    from(jarFile)
-                }
-                */
+            build(jar) using tools.proguard from jarFile export finalJarFile with {
+                filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
+                        "!com/thoughtworks/xstream/converters/reflection/CGLIBEnhancedConverter**",
+                        "!com/thoughtworks/xstream/io/xml/Dom4J**",
+                        "!com/thoughtworks/xstream/io/xml/Xom**",
+                        "!com/thoughtworks/xstream/io/xml/Wstx**",
+                        "!com/thoughtworks/xstream/io/xml/KXml2**",
+                        "!com/thoughtworks/xstream/io/xml/BEAStax**",
+                        "!com/thoughtworks/xstream/io/json/Jettison**",
+                        "!com/thoughtworks/xstream/mapper/CGLIBMapper**",
+                        "!org/apache/log4j/jmx/Agent*",
+                        "!org/apache/log4j/net/JMS*",
+                        "!org/apache/log4j/net/SMTP*",
+                        "!org/apache/log4j/or/jms/MessageRenderer*",
+                        "!org/jdom/xpath/Jaxen*",
+                        "!org/mozilla/javascript/xml/impl/xmlbeans/**",
+                        "!META-INF/maven**",
+                        "**.class",
+                        "**.properties",
+                        "**.kt",
+                        "**.kotlin_*",
+                        "META-INF/services/**",
+                        "META-INF/native/**",
+                        "META-INF/extensions/**",
+                        "META-INF/MANIFEST.MF",
+                        "messages/**")
+                options("""
+                   -dontnote **
+                   -dontwarn com.intellij.util.ui.IsRetina*
+                   -dontwarn com.intellij.util.RetinaImage*
+                   -dontwarn apple.awt.*
+                   -dontwarn dk.brics.automaton.*
+                   -dontwarn org.fusesource.**
+                   -dontwarn org.xerial.snappy.SnappyBundleActivator
+                   -dontwarn com.intellij.util.CompressionUtil
+                   -dontwarn com.intellij.util.SnappyInitializer
+                   -dontwarn net.sf.cglib.**
+                   -dontwarn org.objectweb.asm.** # this is ASM3, the old version that we do not use
+                   """)
+
+                options("""
+                   -libraryjars '${javaHome.resolve("lib/rt.jar")}'
+                   -libraryjars '${javaHome.resolve("lib/jsse.jar")}'
+                   -libraryjars '${bootstrapRuntime.path}'
+                   """)
+
+                options("""
+                   -target 1.6
+                   -dontoptimize
+                   -dontobfuscate
+
+                   -keep class org.fusesource.** { *; }
+                   -keep class org.jdom.input.JAXPParserFactory { *; }
+
+                   -keep class org.jetbrains.annotations.** {
+                       public protected *;
+                   }
+
+                   -keep class javax.inject.** {
+                       public protected *;
+                   }
+
+                   -keep class org.jetbrains.kotlin.** {
+                       public protected *;
+                   }
+
+                   -keep class org.jetbrains.kotlin.compiler.plugin.** {
+                       public protected *;
+                   }
+
+                   -keep class org.jetbrains.kotlin.extensions.** {
+                       public protected *;
+                   }
+
+                   -keep class org.jetbrains.org.objectweb.asm.Opcodes { *; }
+
+                   -keep class org.jetbrains.kotlin.codegen.extensions.** {
+                       public protected *;
+                   }
+
+                   -keepclassmembers class com.intellij.openapi.vfs.VirtualFile {
+                       public InputStream getInputStream();
+                   }
+
+                   -keep class jet.** {
+                       public protected *;
+                   }
+
+                   -keep class com.intellij.psi.** {
+                       public protected *;
+                   }
+
+                   -keep class com.intellij.openapi.util.TextRange { *; }
+                   -keep class com.intellij.lang.impl.PsiBuilderImpl* {
+                       public protected *;
+                   }
+                   -keep class com.intellij.openapi.util.text.StringHash { *; }
+
+                   -keep class com.intellij.openapi.util.io.ZipFileCache { public *; }
+                   -keep class com.intellij.openapi.util.LowMemoryWatcher { public *; }
+
+                   -keepclassmembers enum * {
+                       public static **[] values();
+                       public static ** valueOf(java.lang.String);
+                   }
+
+                   -keepclassmembers class * {
+                       ** toString();
+                       ** hashCode();
+                       void start();
+                       void stop();
+                       void dispose();
+                   }
+
+                   -keepclassmembers class org.jetbrains.org.objectweb.asm.Opcodes {
+                       *** ASM5;
+                   }
+
+                   -keepclassmembers class org.jetbrains.org.objectweb.asm.ClassReader {
+                       *** SKIP_CODE;
+                       *** SKIP_DEBUG;
+                       *** SKIP_FRAMES;
+                   }
+                   """
+                )
             }
 
             default(jar) // default build scenario, '*'/null if not specified (means - all)
