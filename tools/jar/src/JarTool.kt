@@ -130,6 +130,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 }
         var jarStream = JarOutputStream(targetData.outputStream, manifest)
         //jarStream.setMethod()
+        jarStream.setMethod(if (cfg.deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
 
         val entries = hashSetOf<String>()
 
