@@ -90,8 +90,8 @@ open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(typ
         return this
     }
 
-    public fun include(glob: String): FileGlobArtifact {
-        included.add(glob)
+    public fun include(vararg glob: String): FileGlobArtifact {
+        included.addAll(glob)
         return this
     }
 
@@ -100,8 +100,8 @@ open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(typ
         return this
     }
 
-    public fun exclude(glob: String): FileGlobArtifact {
-        excluded.add(glob)
+    public fun exclude(vararg glob: String): FileGlobArtifact {
+        excluded.addAll(glob)
         return this
     }
 

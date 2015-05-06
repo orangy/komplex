@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects
-            val sources = files(artifacts.sources, "$moduleName/src/**/*.kt")
+            val sources = files(artifacts.sources).include("$moduleName/src/**/*.kt", "$moduleName/src/*.kt")
             val binaries = folder(artifacts.binaries, "out/sample/$moduleName")
             val jarFile = file(artifacts.jar, "out/artifacts/sample/$moduleName.jar")
 
@@ -37,6 +37,7 @@ fun main(args: Array<String>) {
 
             build using(tools.kotlin) from sources into binaries with {
                 use(depends.modules)
+                use(file(artifacts.jar, "lib/kotlin-runtime.jar"))
                 enableInline = true
             }
 
@@ -70,6 +71,22 @@ fun main(args: Array<String>) {
                 depends.on(
                     core, // reference to project by name
                     library("org.slf4j:slf4j-api:1.7.9")
+                )
+                shared()
+            }
+            val toolsProGuard = module("tools/proguard", "Komplex proguard tool") {
+                depends.on(
+                        core,
+                        library("net.sf.proguard:proguard-base:5.2.1"),
+                        library("org.slf4j:slf4j-api:1.7.9")
+                )
+                shared()
+            }
+            val toolsJavac = module("tools/javac", "Komplex Java Compiler tool") {
+                depends.on(
+                        core,
+                        library("org.jetbrains.kotlin:kotlin-runtime:0.11.91"),
+                        library("org.slf4j:slf4j-api:1.7.9")
                 )
                 shared()
             }
