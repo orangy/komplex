@@ -57,6 +57,8 @@ public class BuildGraph() {
 
         // processing own build steps - adding nodes that do not change scenario
         module.steps.forEach { step -> add(BuildGraphNode(ModuleFlavor(module, scenarios), step)) }
+
+        // \todo warn if module exports nothing
         return this
     }
 

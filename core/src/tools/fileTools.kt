@@ -1,6 +1,7 @@
 
 package komplex.tools
 
+import komplex.data.*
 import komplex.model.BuildContext
 import komplex.model.ArtifactDesc
 import komplex.model.ArtifactData
@@ -9,10 +10,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import komplex.dsl.FileArtifact
 import komplex.dsl.FolderArtifact
-import komplex.data.openInputStream
-import komplex.data.FileData
-import komplex.data.InputStreamData
-import komplex.data.SimpleFileData
+import komplex.log
 import komplex.utils.BuildDiagnostic
 import java.nio.file.Path
 
@@ -29,20 +27,23 @@ public class CopyTool : komplex.model.Tool<CopyToolRule> {
     override fun execute(context: BuildContext, cfg: CopyToolRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
         val result = arrayListOf<Pair<ArtifactDesc, ArtifactData>>()
         for (destination in tgt) {
+            log.debug("copying into target $destination")
             for (source in src) {
-                val sourceData = source.second
-                val sourceStream = openInputStream(sourceData!!) // \todo proper exception here
+                log.debug("copying from source ${source.first}")
+                val sourceFiles = openFileSet(source)
                 when (destination) {
-                    is FileArtifact -> {
-                        Files.copy(sourceStream.inputStream, destination.path, StandardCopyOption.REPLACE_EXISTING)
-                        result.add(Pair(source.first, SimpleFileData(destination.path)))
-                    }
-                    is FolderArtifact -> {
-                        val path = if (sourceData is FileData) destination.path.resolve(sourceData.path) else destination.path
-                        Files.copy(sourceStream.inputStream, path, StandardCopyOption.REPLACE_EXISTING)
-                        result.add(Pair(source.first, SimpleFileData(path)))
-                    }
-                    else -> throw IllegalArgumentException("$destination is not supported in copy tool")
+                    is FileArtifact ->
+                        sourceFiles.coll.forEach {
+                            Files.copy(openInputStream(it).inputStream, destination.path, StandardCopyOption.REPLACE_EXISTING)
+                            result.add(Pair(source.first, SimpleFileData(destination.path)))
+                        }
+                    is FolderArtifact ->
+                        sourceFiles.coll.forEach {
+                            val path = destination.path.resolve(it.path)
+                            Files.copy(openInputStream(it).inputStream, path, StandardCopyOption.REPLACE_EXISTING)
+                            result.add(Pair(source.first, SimpleFileData(path)))
+                        }
+                    else -> throw IllegalArgumentException("$destination is not supported as a destination in copy tool")
                 }
             }
         }
