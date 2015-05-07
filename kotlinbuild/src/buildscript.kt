@@ -7,6 +7,7 @@ import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
+import komplex.tools.copy
 import komplex.tools.javac.javac
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
@@ -24,11 +25,14 @@ fun main(args: Array<String>) {
 
     val script = script {
         /// BUILD SCRIPT
+
+        env.rootDir = rootDir
+
         val test = scenario("test")
         val jar = scenario("jar")
         val publish = scenario("publish")
 
-        val libraries = folder(artifacts.binaries, rootDir.resolve("out/sample/libs"))
+        val libraries = folder(artifacts.binaries, "out/kb/libs")
 
         fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
             val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
@@ -40,36 +44,36 @@ fun main(args: Array<String>) {
             version("ATTEMPT-0.1")
 
             // shared settings for all projects
-            val kotlinBinaries = folder(artifacts.binaries, rootDir.resolve("out/kb/build.kt/$moduleName"))
-            val javaBinaries = folder(artifacts.binaries, rootDir.resolve("out/kb/build/$moduleName"))
-            val jarFile = file(artifacts.jar, rootDir.resolve("out/kb/artifacts/kotlin-$moduleName-uncompressed.jar"))
-            val finalJarFile = file(artifacts.jar, rootDir.resolve("out/kb/artifacts/kotlin-$moduleName.jar"))
-            val bootstrapRuntime = file(artifacts.jar, rootDir.resolve("dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar"))
+            val kotlinBinaries = folder(artifacts.binaries, "out/kb/build.kt/$moduleName")
+            val javaBinaries = folder(artifacts.binaries, "out/kb/build/$moduleName")
+            val jarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-$moduleName-uncompressed.jar")
+            val finalJarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-$moduleName.jar")
+            val bootstrapRuntime = file(artifacts.jar, "dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar")
             val libs = artifactsSet(
                     bootstrapRuntime,
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar")),
-                    file(artifacts.jar, rootDir.resolve("dependencies/jline.jar")),
-                    file(artifacts.jar, rootDir.resolve("dependencies/cli-parser-1.1.1.jar")),
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/jps/jps-model.jar")),
-                    files(artifacts.jar, rootDir.resolve("ideaSDK/core"), "*.jar"),
-                    files(artifacts.jar, rootDir.resolve("lib"), "*.jar"),
-                    files(artifacts.jar, rootDir.resolve("lib"), "**/*.jar")
+                    file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
+                    file(artifacts.jar, "dependencies/jline.jar"),
+                    file(artifacts.jar, "dependencies/cli-parser-1.1.1.jar"),
+                    file(artifacts.jar, "ideaSDK/jps/jps-model.jar"),
+                    files(artifacts.jar, "ideaSDK/core", "*.jar"),
+                    files(artifacts.jar, "lib", "*.jar"),
+                    files(artifacts.jar, "lib", "**/*.jar")
             )
             val jarContent = artifactsSet(
-                    files(artifacts.jar, rootDir.resolve("lib"), "*.jar"),
-                    files(artifacts.jar, rootDir.resolve("ideaSDK/core"), "*.jar").exclude("util.jar"),
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/jps/jps-model.jar")),
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/lib/jna-utils.jar")),
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/lib/oromatcher.jar")),
-                    file(artifacts.jar, rootDir.resolve("ideaSDK/lib/protobuf-2.5.0.jar")),
-                    file(artifacts.jar, rootDir.resolve("dependencies/jline.jar")),
-                    file(artifacts.jar, rootDir.resolve("dependencies/cli-parser-1.1.1.jar")),
-                    files(artifacts.sources, rootDir.resolve("compiler/frontend.java/src"), "META-INF/services/**"),
-                    files(artifacts.sources, rootDir.resolve("compiler/backend/src"), "META-INF/services/**"),
-                    files(artifacts.sources, rootDir.resolve("resources"), "kotlinManifest.properties"),
-                    files(artifacts.sources, rootDir.resolve("idea/src"), "META-INF/extensions/common.xml"),
-                    files(artifacts.sources, rootDir.resolve("idea/src"), "META-INF/extensions/kotlin2jvm.xml"),
-                    files(artifacts.sources, rootDir.resolve("idea/src"), "META-INF/extensions/kotlin2js.xml")
+                    files(artifacts.jar, "lib", "*.jar"),
+                    files(artifacts.jar, "ideaSDK/core", "*.jar").exclude("util.jar"),
+                    file(artifacts.jar, "ideaSDK/jps/jps-model.jar"),
+                    file(artifacts.jar, "ideaSDK/lib/jna-utils.jar"),
+                    file(artifacts.jar, "ideaSDK/lib/oromatcher.jar"),
+                    file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
+                    file(artifacts.jar, "dependencies/jline.jar"),
+                    file(artifacts.jar, "dependencies/cli-parser-1.1.1.jar"),
+                    files(artifacts.sources, "compiler/frontend.java/src", "META-INF/services/**"),
+                    files(artifacts.sources, "compiler/backend/src", "META-INF/services/**"),
+                    files(artifacts.sources, "resources", "kotlinManifest.properties"),
+                    files(artifacts.sources, "idea/src", "META-INF/extensions/common.xml"),
+                    files(artifacts.sources, "idea/src", "META-INF/extensions/kotlin2jvm.xml"),
+                    files(artifacts.sources, "idea/src", "META-INF/extensions/kotlin2js.xml")
             )
 
             depends on children
@@ -225,11 +229,17 @@ fun main(args: Array<String>) {
 
         fun Module.makeFrom(vararg baseDirs: String) =
                 this.shared(
-                        kotlinSources = baseDirs.map { files(artifacts.sources, rootDir.resolve(it), "src/**.kt") },
+                        kotlinSources = baseDirs.map { files(artifacts.sources, it, "src/**.kt") },
                         kotlinSourceRoots = baseDirs.map { it + "/src" },
-                        javaSources = baseDirs.map { files(artifacts.sources, rootDir.resolve(it), "src/**.java") })
+                        javaSources = baseDirs.map { files(artifacts.sources, it, "src/**.java") })
 
         module("kotlin") {
+            val prepareDist = module("prepareDist") {
+
+                val target = folder(artifacts.binaries, "out/kb/build.kt")
+//                val
+//                build(tools.copy) from
+            }
             val compoler = module("compiler", "Kotlin Compiler") {
                 depends.on(
                         library("org.slf4j:slf4j-api:1.7.12"),

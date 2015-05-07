@@ -6,6 +6,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.SortedSet
 import komplex.utils.fileSystem
+import komplex.utils.resolvePath
 import java.io.File
 
 public trait Artifact : komplex.model.ArtifactDesc {
@@ -44,8 +45,8 @@ public fun<A: PathBasedArtifact> A.base(p: String): A = this.base(Paths.get(p))
 
 public trait FileArtifact : PathBasedArtifact { }
 
-public fun file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(`type`, path)
-public fun file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(`type`, fileSystem.getPath(path))
+public fun ScriptContext.file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
+public fun ScriptContext.file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
 
 public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : FileArtifact {
     init { assert(ipath.toFile().isFile(), "Expecting a file at '$ipath'") }
@@ -56,8 +57,8 @@ public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : 
 
 public trait FileSetArtifact : PathBasedArtifact {}
 
-public fun folder(type: ArtifactType, path: Path): FolderArtifact = FolderArtifact(`type`, path)
-public fun folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(`type`, fileSystem.getPath(path))
+public fun ScriptContext.folder(type: ArtifactType, path: Path): FolderArtifact =  FolderArtifact(`type`, this.resolvePath(path))
+public fun ScriptContext.folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(`type`, this.resolvePath(path))
 
 public open class FolderArtifact(override val type: ArtifactType, ipath: Path) : FileSetArtifact {
     init { assert(ipath.toFile().isDirectory(), "Expecting a directory at '$ipath'") }
@@ -72,9 +73,12 @@ public class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-public fun files(type: ArtifactType): FileGlobArtifact = FileGlobArtifact(type, Paths.get("."))
-public fun files(type: ArtifactType, include: String): FileGlobArtifact = files(type).include(include)
-public fun files(type: ArtifactType, base: Path, include: String): FileGlobArtifact = FileGlobArtifact(`type`, base).include(include)
+public fun ScriptContext.files(type: ArtifactType): FileGlobArtifact = FileGlobArtifact(type, this.resolvePath("."))
+public fun ScriptContext.files(type: ArtifactType, include: String): FileGlobArtifact = files(type).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: Path, include: String): FileGlobArtifact =
+        FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: String, include: String): FileGlobArtifact =
+        FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
 
 open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(type, base) {
     var included = arrayListOf<String>()
@@ -122,9 +126,9 @@ open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(typ
 
 public open class ArtifactsSet(public val members: Collection<Artifact>) {}
 
-public fun artifactsSet(vararg artifacts: Artifact) : ArtifactsSet = ArtifactsSet(artifacts.toArrayList())
+public fun ScriptContext.artifactsSet(vararg artifacts: Artifact) : ArtifactsSet = ArtifactsSet(artifacts.toArrayList())
 
-public fun artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
+public fun ScriptContext.artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
     ArtifactsSet(artifacts.flatMap { when (it) {
         is ArtifactsSet -> it.members
         is Artifact -> listOf(it)
@@ -132,4 +136,4 @@ public fun artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
         else -> throw Exception("Unknown argument for ArtifactsSet: $it")
     }})
 
-public fun artifactsSet(vararg artifacts: Any): ArtifactsSet = artifactsSet(artifacts.asIterable())
+public fun ScriptContext.artifactsSet(vararg artifacts: Any): ArtifactsSet = artifactsSet(artifacts.asIterable())

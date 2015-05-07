@@ -5,8 +5,10 @@ import komplex.model.ModuleMetadata
 import komplex.model.Step
 import komplex.model.ScenarioSelector
 import komplex.model.Scenarios
+import java.nio.file.Path
 
-public open class ModuleCollection(override val parent: Module? = null) : komplex.model.ModuleCollection {
+public open class ModuleCollection(override val parent: Module? = null) : komplex.model.ModuleCollection, ScriptContext {
+    override val env: ContextEnvironment = ContextEnvironment(parent)
     override val children: MutableList<Module> = arrayListOf()
 
     public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {

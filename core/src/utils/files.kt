@@ -11,6 +11,9 @@ import java.nio.file.Files
 
 public val fileSystem: FileSystem = FileSystems.getDefault()!!
 
+fun komplex.dsl.ScriptContext.resolvePath(path: Path): Path = this.env.rootDir?.resolve(path) ?: path
+fun komplex.dsl.ScriptContext.resolvePath(path: String): Path = this.env.rootDir?.resolve(path) ?: fileSystem.getPath(path)
+
 fun findFilesInPath(path: Path, baseDir: Path? = null): List<Path> {
     val result = arrayListOf<Path>()
     class Finder : SimpleFileVisitor<Path?>() {

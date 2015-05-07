@@ -2,6 +2,8 @@
 package komplex.dsl
 
 import komplex.model.BuildGraph
+import java.nio.file.Path
+import java.nio.file.Paths
 
 /*
 public class ModuleScript(val module: Module) {
@@ -30,7 +32,11 @@ public fun script(body: BuildScript.() -> Unit): BuildScript {
 }
 
 
-public class BuildScript() : ModuleCollection() {
+public class BuildScript() : ModuleCollection(), ScriptContext {
+
+    init {
+        env.rootDir = Paths.get(".")
+    }
 
     fun buildGraph(): BuildGraph {
         val graph = BuildGraph()
