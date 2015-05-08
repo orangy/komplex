@@ -52,3 +52,5 @@ public fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>,
     return result
 }
 
+public fun Path.div(p: Path): Path = resolve(p)
+public fun Path.div(p: String): Path = resolve(p)

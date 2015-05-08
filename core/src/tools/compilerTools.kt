@@ -1,14 +1,17 @@
 
 package komplex.tools
 
+import komplex.data.OpenFileSet
+import komplex.data.openFileSet
 import komplex.dsl.*
-import java.util.ArrayList
-import komplex.model.targets
-import komplex.model.ArtifactDesc
-import komplex.model.Tool
-import komplex.model.ToolStep
+import komplex.dsl.Module
+import komplex.dsl.ModuleDependency
+import komplex.model.*
 import komplex.utils.BuildDiagnostic
+import java.nio.file.Path
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.platform.platformName
 
 // \todo validate each use on addition
 
@@ -67,3 +70,24 @@ public fun<Config: CompilerRule<Config, T>, T: Tool<Config>> CompilerRule<Config
     }
     return this
 }
+
+platformName("getPaths_Pairs_of_ArtifactDesc_ArtifactData")
+public fun Iterable<Pair<ArtifactDesc, ArtifactData?>>.getPaths(options: OpenFileSet = OpenFileSet.Nothing): Iterable<Path> =
+        this.flatMap { openFileSet(it, options = options).coll.map { it.path.toAbsolutePath().normalize() } }
+        // \todo consider converting to relative/optimal paths
+
+platformName("getPaths_ArtifactDescs")
+public fun Iterable<ArtifactDesc>.getPaths(options: OpenFileSet = OpenFileSet.Nothing): Iterable<Path> =
+        this.flatMap { openFileSet(it, options = options).coll.map { it.path.toAbsolutePath().normalize() } }
+
+
+public fun Iterable<Pair<ArtifactDesc, ArtifactData?>>.filterIn(explicitSourcesSet: Set<ArtifactDesc>): Iterable<Pair<ArtifactDesc, ArtifactData?>> =
+        this.filter { explicitSourcesSet.contains(it.first) }
+
+public fun Iterable<Pair<ArtifactDesc, ArtifactData?>>.filterIn(explicitSources: Iterable<ArtifactDesc>): Iterable<Pair<ArtifactDesc, ArtifactData?>> =
+        this.filterIn(explicitSources.toHashSet())
+
+
+public fun Iterable<ArtifactDesc>.singleDestFolder(): FolderArtifact =
+        this.single() as? FolderArtifact ?:
+                throw IllegalArgumentException("Compiler only supports single folder as destination")

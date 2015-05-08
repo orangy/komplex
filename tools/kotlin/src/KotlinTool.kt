@@ -5,10 +5,14 @@ import java.nio.file.Path
 import komplex.data.openFileSet
 import komplex.dsl.FolderArtifact
 import komplex.data
+import komplex.data.OpenFileSet
 import komplex.model
 import komplex.model.ArtifactData
 import komplex.model.ArtifactDesc
 import komplex.model.Tool
+import komplex.tools.filterIn
+import komplex.tools.getPaths
+import komplex.tools.singleDestFolder
 import komplex.utils
 import komplex.utils.BuildDiagnostic
 
@@ -39,15 +43,15 @@ public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> 
 
         val project = context.module
 
-        val destFolder = getCompilerDestFolder(tgt)
-        val kotlinSources = getCompilingSources(cfg, src)
+        val destFolder = tgt.singleDestFolder()
+        val kotlinSources = src.filterIn(cfg.explicitSources).getPaths()
 
         if (kotlinSources.none()) {
             log.error("Error: No sources to compile in module ${project.name}: ${src.map { it.first }}")
             return model.BuildResult(utils.BuildDiagnostic.Fail)
         }
 
-        val libraries = getClassPath(cfg, src)
+        val libraries = src.filterIn(cfg.depSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
 
         log.info("compiling module ${project.name}")
         log.info("build sources: ${kotlinSources.joinToString("\n  ","\n  ")}")
@@ -68,33 +72,10 @@ public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> 
         }
     }
 
-    protected fun getCompilerDestFolder(tgt: Iterable<ArtifactDesc>): FolderArtifact =
-            tgt.single() as? FolderArtifact ?:
-                    throw IllegalArgumentException("Compiler only supports single folder as destination")
-
-    protected fun getCompilingSources(cfg: KotlinCompilerRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>): List<Path> {
-        val explicitSourcesSet = cfg.explicitSources.toHashSet()
-
-        return src.filter { explicitSourcesSet.contains(it.first) }
-                  .flatMap { openFileSet(it).coll.map { it.path } }
-    }
-
-    protected  fun getClassPath(cfg: KotlinCompilerRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>): List<Path> {
-        val dependenciesSet = cfg.depSources.toHashSet()
-
-        // \todo convert to relative/optimal paths
-        return src
-                .filter { dependenciesSet.contains(it.first) }
-                .flatMap { openFileSet(it).coll }
-                .map { it.path.toAbsolutePath().normalize() }
-                .distinct()
-                .toList()
-    }
-
     protected abstract fun compile( destFolder: FolderArtifact,
-                                    kotlinSources: List<Path>,
-                                    sourceRoots: MutableCollection<String>,
-                                    libraries: List<Path>,
+                                    kotlinSources: Iterable<Path>,
+                                    sourceRoots: Iterable<String>,
+                                    libraries: Iterable<Path>,
                                     includeRuntime: Boolean)
             : BuildDiagnostic
 }

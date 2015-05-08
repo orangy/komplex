@@ -73,9 +73,14 @@ private fun collectFiles(paths: Iterable<Path>): Iterable<FileData> =
         paths.map { SimpleFileData(it) }
 
 
+public enum class OpenFileSet {
+    Nothing
+    FoldersAsLibraries
+}
+
 public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
                        baseDir: Path? = null,
-                       foldersAsLibraries: Boolean = false
+                       options: OpenFileSet = OpenFileSet.Nothing
 ): DataCollection<FileData> {
     val fst = pair.first
     val snd = pair.second
@@ -83,18 +88,18 @@ public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
         is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData ||
                                 // special treatment of folders as libraries
                                 // \todo find better solution, e.g. dispatching by artifact type and separate functions like openLibrariesSet
-                                (foldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binaries))
-                            openFileSet(fst, baseDir = baseDir, foldersAsLibraries = foldersAsLibraries)
+                                (options == OpenFileSet.FoldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binaries))
+                            openFileSet(fst, baseDir = baseDir, options = options)
                          else
                             adaptToDataCollection(snd as DataCollection<FileData>)
         is FileData -> adaptToDataCollection(snd)
-        else -> openFileSet(fst, baseDir = baseDir, foldersAsLibraries = foldersAsLibraries)
+        else -> openFileSet(fst, baseDir = baseDir, options = options)
     }
 }
 
 public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
                        baseDir: Path? = null,
-                       foldersAsLibraries: Boolean = false
+                       options: OpenFileSet = OpenFileSet.Nothing
 ): DataSet<FileData> =
     // emulating dynamic dispatching with extension methods
     // \todo find more elegant solution
@@ -105,7 +110,7 @@ public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
             is komplex.dsl.FolderArtifact ->
                 // special treatment of folders as libraries
                 // \todo find better solution, see openFileSet(pair...)
-                if (foldersAsLibraries && it.type == komplex.dsl.artifacts.binaries ) listOf(FolderData(it.path))
+                if (options == OpenFileSet.FoldersAsLibraries && it.type == komplex.dsl.artifacts.binaries ) listOf(FolderData(it.path))
                 else collectFolderFiles((baseDir ?: Paths.get(".")).resolve(it.path))
             is komplex.dsl.FileArtifact -> listOf(SimpleFileData(it.path))
             is Path -> listOf(SimpleFileData(it))

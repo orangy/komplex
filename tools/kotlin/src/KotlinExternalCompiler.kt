@@ -7,6 +7,7 @@ import komplex.tools.kotlin.KotlinCompilerRule
 import komplex.tools.kotlin.log
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
+import java.io.File
 import java.nio.file.Path
 
 public fun komplex.dsl.tools.kotlin(compilerCmd: String): KotlinCompilerRule =
@@ -15,7 +16,7 @@ public fun komplex.dsl.tools.kotlin(compilerCmd: String): KotlinCompilerRule =
 public class KotlinExternalCompiler(val compilerCmd: String) : KotlinCompiler() {
     override val name: String = "Kotlin external compiler"
 
-    override fun compile(destFolder: FolderArtifact, kotlinSources: List<Path>, sourceRoots: MutableCollection<String>, libraries: List<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
+    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
 
         val destFolderFile = destFolder.path.toFile()
         if (!destFolderFile.exists())
@@ -26,7 +27,7 @@ public class KotlinExternalCompiler(val compilerCmd: String) : KotlinCompiler() 
                 "-d",
                 escape4cli(destFolder.path.toString()),
                 "-classpath",
-                "${escape4cli(libraries.joinToString(":"))}")
+                "${escape4cli(libraries.joinToString(File.pathSeparator))}")
 
         if (!includeRuntime) ktccmdline.add("-no-stdlib")
 

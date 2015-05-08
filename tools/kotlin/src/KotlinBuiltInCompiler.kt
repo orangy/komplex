@@ -29,7 +29,7 @@ public val komplex.dsl.tools.kotlin: KotlinCompilerRule
 public class KotlinBuiltInCompiler() : KotlinCompiler() {
     override val name: String = "Kotlin built-in compiler"
 
-    override fun compile(destFolder: FolderArtifact, kotlinSources: List<Path>, sourceRoots: MutableCollection<String>, libraries: List<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
+    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
 
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {

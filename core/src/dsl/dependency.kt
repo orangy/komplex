@@ -1,6 +1,7 @@
 
 package komplex.dsl
 
+import komplex.model.ArtifactDesc
 import komplex.model.combine
 import komplex.model.ScenarioSelector
 import komplex.model.Scenarios
@@ -53,4 +54,5 @@ public class Dependencies(vararg scenarios: ScenarioSelector = arrayOf(ScenarioS
 
 }
 
-
+public fun Dependencies.allArtifacts(scenarios: Scenarios = Scenarios.Same): Iterable<ArtifactDesc> =
+        modules.flatMap { it.module.targets(scenarios) }

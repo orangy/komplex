@@ -76,7 +76,9 @@ public fun <T : Rule> T.export(vararg artifacts: Artifact): T {
     return into(*artifacts)
 }
 
-public class LambdaRule : RuleImpl(), LambdaStep {
+public class LambdaRule(
+       public var body: ((Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>)? = null
+) : RuleImpl(), LambdaStep {
 
     companion  object {
         internal var counter = 0;
@@ -85,8 +87,6 @@ public class LambdaRule : RuleImpl(), LambdaStep {
 
     override val func: (Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>
         get() = body!!
-
-    public var body: ((Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>)? = null
 }
 
 
@@ -106,4 +106,5 @@ public open class BasicToolRule<Config, T: Tool<Config>>(
 
 
 public val tools.custom: LambdaRule get() = LambdaRule()
+public fun tools.custom( body: ((Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>)): LambdaRule = LambdaRule(body)
 
