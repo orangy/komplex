@@ -1,5 +1,7 @@
 package kotlin.buildscript
 
+import komplex.data.OpenFileSet
+import komplex.data.openFileSet
 import komplex.dsl.*
 import komplex.dsl.tools
 import komplex.dsl.Module
@@ -8,20 +10,33 @@ import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.copy
+import komplex.tools.getPaths
 import komplex.tools.javac.javac
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
+import komplex.tools.singleDestFolder
 import komplex.tools.use
 import komplex.utils
+import komplex.utils.div
+import komplex.utils.escape4cli
+import komplex.utils.runProcess
+import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+
+internal val log = LoggerFactory.getLogger("kotlinbuild")
+
+fun run(args: Iterable<String>): Int = runProcess(args, { log.debug(it) }, { log.error(it) })
+fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it) }, { log.error(it) })
 
 fun main(args: Array<String>) {
 
     // \todo detect root
     val rootDir = Paths.get(args.first())
     val javaHome = Paths.get(System.getenv("JAVA_HOME"),"jre") // as ant does
+    val maxHeapSizeForForkedJvm = "1024m"
 
     val script = script {
         /// BUILD SCRIPT
@@ -32,7 +47,8 @@ fun main(args: Array<String>) {
         val jar = scenario("jar")
         val publish = scenario("publish")
 
-        val libraries = folder(artifacts.binaries, "out/kb/libs")
+        val outputDir = rootDir.resolve("out/kb")
+        val libraries = folder(artifacts.binaries, outputDir / "libs")
 
         fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
             val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
@@ -138,8 +154,8 @@ fun main(args: Array<String>) {
                    """)
 
                 options("""
-                   -libraryjars '${javaHome.resolve("lib/rt.jar")}'
-                   -libraryjars '${javaHome.resolve("lib/jsse.jar")}'
+                   -libraryjars '${javaHome / "lib/rt.jar"}'
+                   -libraryjars '${javaHome / "lib/jsse.jar"}'
                    -libraryjars '${bootstrapRuntime.path}'
                    """)
 
@@ -227,45 +243,106 @@ fun main(args: Array<String>) {
             default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
-        fun Module.makeFrom(vararg baseDirs: String) =
+        val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
+        val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
+        val compilerSourceRoots = listOf(
+                "core/descriptor.loader.java",
+                "core/descriptors",
+                "core/deserialization",
+                "core/util.runtime",
+                "compiler/backend",
+                "compiler/backend-common",
+                "compiler/builtins-serializer",
+                "compiler/cli",
+                "compiler/cli/cli-common",
+                "compiler/frontend",
+                "compiler/frontend.java",
+                "compiler/light-classes",
+                "compiler/plugin-api",
+                "compiler/serialization",
+                "compiler/util",
+                "js/js.dart-ast",
+                "js/js.translator",
+                "js/js.frontend",
+                "js/js.inliner",
+                "js/js.parser",
+                "js/js.serializer")
+
+        fun Module.makeFrom(baseDirs: Iterable<String>) =
                 this.shared(
                         kotlinSources = baseDirs.map { files(artifacts.sources, it, "src/**.kt") },
                         kotlinSourceRoots = baseDirs.map { it + "/src" },
                         javaSources = baseDirs.map { files(artifacts.sources, it, "src/**.java") })
+        fun Module.makeFrom(vararg baseDirs: String) = makeFrom(baseDirs.asIterable())
 
         module("kotlin") {
+
             val prepareDist = module("prepareDist") {
 
                 val target = folder(artifacts.binaries, "out/kb/build.kt")
-//                val
-//                build(tools.copy) from
+                val sources = folder(artifacts.binaries, "compiler/cli/bin")
+                build using(tools.copy) from sources export target
             }
-            val compoler = module("compiler", "Kotlin Compiler") {
-                depends.on(
+
+            val compiler = module("compiler", "Kotlin Compiler") {
+
+                depends.on (
                         library("org.slf4j:slf4j-api:1.7.12"),
                         library("org.jetbrains:annotations:13.0")
                 )
-                makeFrom( "core/descriptor.loader.java",
-                          "core/descriptors",
-                          "core/deserialization",
-                          "core/util.runtime",
-                          "compiler/backend",
-                          "compiler/backend-common",
-                          "compiler/builtins-serializer",
-                          "compiler/cli",
-                          "compiler/cli/cli-common",
-                          "compiler/frontend",
-                          "compiler/frontend.java",
-                          "compiler/light-classes",
-                          "compiler/plugin-api",
-                          "compiler/serialization",
-                          "compiler/util",
-                          "js/js.dart-ast",
-                          "js/js.translator",
-                          "js/js.frontend",
-                          "js/js.inliner",
-                          "js/js.parser",
-                          "js/js.serializer"
+                makeFrom( compilerSourceRoots )
+            }
+
+            val preloader = module("preloader", "Preloader") {
+
+                val classes = folder(artifacts.binaries, outputDir / "build.kt/preloader")
+                val sources = folder(artifacts.sources, "compiler/preloader/src")
+                val jarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
+
+                build using(tools.javac) from sources into classes
+
+                build using tools.jar from classes export(jarFile) with {
+                    deflate = true
+                }
+            }
+
+            val serializeBuiltins = module("serialize-builtins") {
+
+                val sources = artifactsSet(
+                        folder(artifacts.sources, "core/builtins/native"),
+                        folder(artifacts.sources, "core/builtins/src"))
+                val target = folder(artifacts.binaries, outputDir / "builtins")
+
+                fun serialize(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
+                    val classpath = depends.allArtifacts().getPaths(OpenFileSet.FoldersAsLibraries)
+                    val target = tgts.singleDestFolder()
+
+                    val params = arrayListOf( "java", "-Xmx$maxHeapSizeForForkedJvm")
+                    if (classpath.any()) {
+                        params.add("-cp")
+                        params.add(escape4cli(classpath.joinToString(File.pathSeparator)))
+                    }
+                    params.addAll( listOf(
+                            "-jar",
+                            escape4cli(bootstrapCompilerHome / "lib/kotlin-compiler.jar"),
+                            "org.jetbrains.kotlin.serialization.builtins.BuiltinsPackage",
+                            escape4cli(target.path)) +
+                            srcs.getPaths().map { escape4cli(it) })
+                    val res = run(params)
+                    if (res > 0)
+                        throw Exception("Serializing builtins failed with error code $res")
+                    return openFileSet(target).coll
+                }
+
+                build using(tools.custom(::serialize)) from sources into target
+            }
+
+            module("all", "Build All") {
+                depends.on (
+                        prepareDist,
+                        preloader,
+                        serializeBuiltins ,
+                        compiler
                 )
             }
         }
