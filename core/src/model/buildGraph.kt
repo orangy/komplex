@@ -47,18 +47,32 @@ public class BuildGraph() {
 
         // \todo "replace" functionality
         val moduleFlavor = ModuleFlavor(module, scenarios)
-        moduleSelectors.put(moduleFlavor, moduleSelectors.get(moduleFlavor)?.combine(selector) ?: selector)
+        val previousSel = moduleSelectors.get(moduleFlavor)
+        val newSel = previousSel?.combine(selector) ?: selector
+        if (previousSel == null || previousSel != newSel) {
 
-        // processing dependency modules
-        module.dependencies.forEach { add(it.module, it.scenarios, it.selector) }
+            if (previousSel == null)
+                log.trace("Adding module ${module.fullName} for scenario(s) $newSel")
+            else
+                log.trace("Updating module ${module.fullName} for scenario(s) $newSel")
 
-        // processing nested modules; nested modules are visible outside the module, so results are added to the outgoingTargets
-        module.children.forEach { add(it) }
+            moduleSelectors.put(moduleFlavor, newSel)
 
-        // processing own build steps - adding nodes that do not change scenario
-        module.steps.forEach { step -> add(BuildGraphNode(ModuleFlavor(module, scenarios), step)) }
+            // processing dependency modules
+            module.dependencies.forEach { add(it.module, it.scenarios, it.selector) }
 
-        // \todo warn if module exports nothing
+            // processing nested modules; nested modules are visible outside the module, so results are added to the outgoingTargets
+            module.children.forEach { add(it) }
+
+            // processing own build steps - adding nodes that do not change scenario
+            module.steps.forEach { step -> add(BuildGraphNode(ModuleFlavor(module, scenarios), step)) }
+
+            val matchingScenarios = if (scenarios.resolved()) scenarios else Scenarios.All
+            if (module.targets(matchingScenarios).none())
+                log.info("Warning: module ${module.fullName} do not export anything in scenario(s) $matchingScenarios")
+        }
+        else
+            log.trace("Module ${module.fullName} is already added for scenario(s) $previousSel")
         return this
     }
 

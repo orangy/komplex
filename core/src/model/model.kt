@@ -26,7 +26,7 @@ public open class Scenarios(public val items: Collection<Scenario> = listOf(), o
 
     companion object {
         val All = Scenarios(name="All")
-        val Same = Scenarios(name="Some")
+        val Same = Scenarios(name="Same")
         val Default_ = Scenarios(name="Default")
         val None = Scenarios(name="None")
     }
@@ -39,13 +39,15 @@ public data class ScenarioSelector(public val scenarios: Scenarios) {
     }
 }
 
+public fun<T: Scenarios> T.resolved(): Boolean = this != Scenarios.Same && this != Scenarios.Default_
+
 public fun<T: Scenarios> T.matches(selector: ScenarioSelector): Boolean =
     when {
         this == Scenarios.None -> false
         selector == ScenarioSelector.Any -> true
         selector == ScenarioSelector.None -> false
         this == Scenarios.All -> true
-        this == Scenarios.Same || this == Scenarios.Default_ -> throw Exception("Unresolved scenario: $this")
+        !this.resolved() -> throw Exception("Unresolved scenario: $this")
         else -> this.items.any { selector.scenarios.items.contains(it) }
     }
 

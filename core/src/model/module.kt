@@ -17,6 +17,7 @@ public trait Module : ModuleCollection, Named {
     public val dependencies: Iterable<ModuleDependency>
     public val steps: Iterable<Step>
     public val defaultScenario: Scenarios get() = Scenarios.All
+    public val fullName: String get() = sequence(this, { it.parent }).toList().reverse().map { it.name }.joinToString(".")
 
     public fun sources(scenarios: Scenarios): Iterable<ArtifactDesc> =
         children.flatMap { it.sources(scenarios) } +
