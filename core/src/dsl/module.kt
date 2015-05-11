@@ -12,7 +12,7 @@ public open class ModuleCollection(override val parent: Module? = null) : komple
     override val children: MutableList<Module> = arrayListOf()
 
     public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {
-        val module = Module(parent, name)
+        val module = Module(this as? Module, name)
         if (description != null)
             module.description(description)
         module.body()
