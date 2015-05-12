@@ -82,6 +82,7 @@ fun main(args: Array<String>) {
 
         val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
         val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
+        val bootstrapRuntime = file(artifacts.jar, "dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar")
         val compilerSourceRoots = listOf(
                 "core/descriptor.loader.java",
                 "core/descriptors",
@@ -129,7 +130,6 @@ fun main(args: Array<String>) {
                 val javaBinaries = folder(artifacts.binaries, "out/kb/build/$moduleName")
                 val jarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-$moduleName-uncompressed.jar")
                 val finalJarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-$moduleName.jar")
-                val bootstrapRuntime = file(artifacts.jar, "dependencies/bootstrap-compiler/Kotlin/lib/kotlin-runtime.jar")
                 val libs = artifactsSet(
                         bootstrapRuntime,
                         file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
@@ -311,6 +311,26 @@ fun main(args: Array<String>) {
                 build using(tools.javac) from sources into classes
 
                 build using tools.jar from classes export jarFile with {
+                    deflate = true
+                }
+            }
+
+            val antTools = module("ant-tools", "Kotlin ant tols") {
+
+                depends on preloader
+
+                val kotlinBinaries = folder(artifacts.binaries, "out/kb/build.kt/ant")
+                val javaBinaries = folder(artifacts.binaries, "out/kb/build/ant")
+                val jarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar")
+                val libs = artifactsSet(
+                        bootstrapRuntime,
+                        file(artifacts.jar, "dependencies/ant-1.7/lib/ant.jar"))
+
+                compileKotlinJavaMix(listOf(folder(artifacts.sources, rootDir / "ant" )), kotlinBinaries, javaBinaries, libs)
+
+                build using(tools.jar) with {
+                    from(kotlinBinaries, javaBinaries)
+                    export(jarFile)
                     deflate = true
                 }
             }
