@@ -15,7 +15,7 @@ public trait ArtifactData {
 
 public trait Scenario {}
 
-public open class Scenarios(public val items: Collection<Scenario> = listOf(), override val name: String = "" ) : Named {
+public open class Scenarios(public val items: Iterable<Scenario> = listOf(), override val name: String = "" ) : Named {
     public fun combine(other: Scenarios): Scenarios = when {
         this == All || other == None || other == Same || other == Default_ -> this
         this == None || this == Same || this == Default_ || other == All -> other

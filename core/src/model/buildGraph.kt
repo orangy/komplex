@@ -6,6 +6,7 @@ import komplex.utils.*
 import java.util.HashSet
 import java.util.HashMap
 import java.util.ArrayList
+import kotlin.platform.platformName
 
 public data class ModuleFlavor(public val module: Module,
                                public val scenarios: Scenarios) {}
@@ -13,6 +14,16 @@ public data class ModuleFlavor(public val module: Module,
 public data class BuildGraphNode(public val moduleFlavor: ModuleFlavor, public val step: Step) {
     override fun toString(): String = "[${moduleFlavor.module.name}.${step.name}]"
 }
+
+platformName("producers_map_contains")
+internal fun HashMap<ArtifactDesc, BuildGraphNode>.contains(artifact: ArtifactDesc, scenario: Scenarios): Boolean {
+    val node = get(artifact)
+    return if (node != null) scenario.matches(node.step.selector) else false
+}
+
+platformName("consumers_map_contains")
+internal fun HashMap<ArtifactDesc, ArrayList<BuildGraphNode>>.contains(artifact: ArtifactDesc, scenario: Scenarios): Boolean =
+    get(artifact)?.any { scenario.matches(it.step.selector) } ?: false
 
 
 public class BuildGraph() {
@@ -113,10 +124,10 @@ public class BuildGraph() {
                         .map { getProducingNode(it, scenarios) }
                         .filterNotNull()
                         .distinct()
-                log.trace("prev nodes for $node: ${prev.joinToString(", ", "(", ")")}")
+                log.trace("prev nodes for $node($scenarios): ${prev.joinToString(", ", "(", ")")}")
                 prev
             }
-            else { log.trace("skip $node: no matching scenarios"); listOf<BuildGraphNode>() }
+            else { log.trace("skip $node($scenarios): no matching scenarios"); listOf<BuildGraphNode>() }
         else
             if (scenarios.matches(node.step.selector))
                 node.step.sources
@@ -152,7 +163,7 @@ public fun BuildGraph(modules: Iterable<Module>): BuildGraph {
 public fun BuildGraph.targets(scenario: Scenarios): Iterable<ArtifactDesc> =
         nodes.filter { scenario.matches(it.step.selector) }
              .flatMap { if (it.step.export) targets(it, scenario)
-                        else targets(it, scenario).filter { !consumers.contains(it) } }
+                        else targets(it, scenario).filter { !consumers.contains(it, scenario) } }
 
 // returns target artifacts
 // \todo targets from submodules?
@@ -161,27 +172,27 @@ public fun BuildGraph.targets(modules: Iterable<Module>, scenario: Scenarios): I
     val modulesSet = modules.toHashSet()
     return nodes.filter { scenario.matches(it.step.selector) && modulesSet.contains(it.moduleFlavor) }
                 .flatMap { if (it.step.export) targets(it, scenario)
-                           else targets(it, scenario).filter { !consumers.contains(it) } }
+                           else targets(it, scenario).filter { !consumers.contains(it, scenario) } }
 }
 
-public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> =
-    if (log.isTraceEnabled()) {
-        val roots = nodes.filter {
-            val areSourcesProduced = sources(it, scenario).any { producers.contains(it) }
-            if (areSourcesProduced)
+public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> {
+    val roots = nodes.filter {
+        if (scenario.matches(it.step.selector)) {
+            val areSourcesProduced = sources(it, scenario).any { producers.contains(it, scenario) }
+            if (log.isTraceEnabled() && areSourcesProduced)
                 log.trace("filtered out $it from roots because of produced source artifacts ${
-                   sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
+                sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
             !areSourcesProduced
-        }
-        log.trace("roots: ${roots.joinToString(", ", "(", ")")}")
-        roots
+        } else false
     }
-    else
-        nodes.filter { !sources(it, scenario).any { producers.contains(it) } }
+    log.trace("roots: ${roots.joinToString(", ", "(", ")")}")
+    return roots
+}
 
 
 public fun BuildGraph.leafs(scenario: Scenarios): Iterable<BuildGraphNode> {
-    return nodes.filter { !targets(it, scenario).any { consumers.contains(it) } }
+    return nodes.filter { scenario.matches(it.step.selector) &&
+                          targets(it, scenario).none { consumers.contains(it, scenario) } }
 }
 
 

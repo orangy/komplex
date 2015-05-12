@@ -24,3 +24,7 @@ public fun scenario(name: String, body: ScenarioSelector.() -> Unit = {}): Scena
     selector.body()
     return selector
 }
+
+public fun scenarios(vararg items: Scenario): Scenarios = Scenarios(items.asIterable())
+public fun scenarios(vararg items: ScenarioSelector): Scenarios = items.asIterable().combine().scenarios
+

@@ -38,14 +38,15 @@ fun main(args: Array<String>) {
     val javaHome = Paths.get(System.getenv("JAVA_HOME"),"jre") // as ant does
     val maxHeapSizeForForkedJvm = "1024m"
 
+    val test = scenario("test")
+    val jar = scenario("jar")
+    val check = scenario("check")
+    val publish = scenario("publish")
+
     val script = script {
         /// BUILD SCRIPT
 
         env.rootDir = rootDir
-
-        val test = scenario("test")
-        val jar = scenario("jar")
-        val publish = scenario("publish")
 
         val outputDir = rootDir.resolve("out/kb")
         val libraries = folder(artifacts.binaries, outputDir / "libs")
@@ -113,7 +114,7 @@ fun main(args: Array<String>) {
                 deflate = true
             }
 
-            build(jar) using tools.proguard from jarFile export finalJarFile with {
+            build(check) using tools.proguard from jarFile export finalJarFile with {
                 filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
                         "!com/thoughtworks/xstream/converters/reflection/CGLIBEnhancedConverter**",
                         "!com/thoughtworks/xstream/io/xml/Dom4J**",
@@ -354,18 +355,18 @@ fun main(args: Array<String>) {
     println("\n--- script ------------------------------")
     println(script.nicePrint(indent))
 
-    val scenario = Scenarios.All
+    val scenarios = scenarios(jar)
     val graph = script.buildGraph()
 
     println("\n--- roots -------------------------------")
-    graph.roots(scenario).forEach { println(it.nicePrint(indent, graph, scenario)) }
+    graph.roots(scenarios).forEach { println(it.nicePrint(indent, graph, scenarios)) }
     println("\n--- leafs -------------------------------")
-    graph.leafs(scenario).forEach { println(it.nicePrint(indent, graph, scenario)) }
+    graph.leafs(scenarios).forEach { println(it.nicePrint(indent, graph, scenarios)) }
     println("\n--- plan --------------------------------")
-    println(graph.nicePrint(indent, scenario))
+    println(graph.nicePrint(indent, scenarios))
 
     println("\n--- build -------------------------------")
-    graph.build(scenario)
+    graph.build(scenarios)
 
     println("\n-- done. --------------------------------")
 }
