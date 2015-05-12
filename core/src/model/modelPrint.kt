@@ -8,9 +8,9 @@ import komplex.utils.SpaceIndent
 
 public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null, scenario: Scenarios = Scenarios.All): String =
         if (graph == null)
-            step.nicePrint(indent)
+            step.nicePrint(indent, moduleName = moduleFlavor.module.fullName, printInsOuts = true)
         else
-            step.nicePrint(indent, false) +
+            step.nicePrint(indent, moduleName = moduleFlavor.module.fullName, printInsOuts = false) +
             nicePrintPins(indent, graph.sources(this, scenario), "from:") +
             nicePrintPins(indent, graph.targets(this, scenario), "to:")
 
@@ -32,11 +32,14 @@ public fun ScenarioSelector.nicePrint(indent: IndentLn): String = "$indent" + wh
     else -> scenarios.nicePrint(indent)
 }
 
-public fun Step.nicePrint(indent: IndentLn, printInsOuts: Boolean = true): String =
-        "$indent$name (${selector.nicePrint(SpaceIndent())})" +
-        if (printInsOuts)
+public fun Step.nicePrint(indent: IndentLn, moduleName: String = "", printInsOuts: Boolean = true): String =
+        indent.toString() +
+        (if (moduleName.length() > 0) "[$moduleName] " else "") +
+        name +
+        "(${selector.nicePrint(SpaceIndent())})" +
+        (if (printInsOuts)
             nicePrintPins(indent, sources, "from:") + nicePrintPins(indent, targets, "to:")
-        else ""
+         else "")
 
 private fun nicePrintPins(indent: IndentLn, pins: Iterable<ArtifactDesc>, prefix: String): String {
     return (if (pins.none()) ""
