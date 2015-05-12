@@ -125,6 +125,7 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
     // first phase - calculating reachability graph and finding it's roots
     // \todo check effectiveness of the algo
     for (r in from) {
+        if (r in to) roots.add(r)
         graphDFS(
                 from = nextNodes(r),
                 preorderPred = {

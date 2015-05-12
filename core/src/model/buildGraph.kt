@@ -101,8 +101,8 @@ public class BuildGraph() {
     // filtered outputs
     public fun targets(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
             if (scenarios.matches(node.step.selector))
-            // assuming that not all step's targets are consumed, so selecting only those that are
-                node.step.targets.filter { getConsumingNodes(it, scenarios).any() }
+                // all node targets
+                node.step.targets
             else listOf()
 
 
