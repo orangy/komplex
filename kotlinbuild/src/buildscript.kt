@@ -323,7 +323,7 @@ fun main(args: Array<String>) {
                         params.add(escape4cli(classpath.joinToString(File.pathSeparator)))
                     }
                     params.addAll( listOf(
-                            "-jar",
+                            "-cp",
                             escape4cli(bootstrapCompilerHome / "lib/kotlin-compiler.jar"),
                             "org.jetbrains.kotlin.serialization.builtins.BuiltinsPackage",
                             escape4cli(target.path)) +
@@ -334,7 +334,7 @@ fun main(args: Array<String>) {
                     return openFileSet(target).coll
                 }
 
-                build using(tools.custom(::serialize)) from sources into target
+                build using(tools.custom(::serialize)) from sources export target
             }
 
             module("all", "Build All") {
@@ -349,13 +349,24 @@ fun main(args: Array<String>) {
         /// BUILD SCRIPT
     }
 
+    val indent = utils.TwoSpaceIndentLn()
+
     println("\n--- script ------------------------------")
-    println(script.nicePrint(utils.TwoSpaceIndentLn()))
+    println(script.nicePrint(indent))
+
+    val scenario = Scenarios.All
     val graph = script.buildGraph()
+
+    println("\n--- roots -------------------------------")
+    graph.roots(scenario).forEach { println(it.nicePrint(indent, graph, scenario)) }
+    println("\n--- leafs -------------------------------")
+    graph.leafs(scenario).forEach { println(it.nicePrint(indent, graph, scenario)) }
     println("\n--- plan --------------------------------")
-    println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
+    println(graph.nicePrint(indent, scenario))
+
     println("\n--- build -------------------------------")
-    graph.build(Scenarios.All)
+    graph.build(scenario)
+
     println("\n-- done. --------------------------------")
 }
 

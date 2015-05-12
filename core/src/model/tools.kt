@@ -13,7 +13,7 @@ import komplex.utils.Named
 
 
 public trait LambdaStep : Step {
-    protected val func: (Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>
+    public val func: (Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>
 
     public override fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?>) : BuildResult {
         try {
