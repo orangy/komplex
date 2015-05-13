@@ -76,6 +76,7 @@ public trait BuildContext{
     public val module: Module
 }
 
+// \todo add used sources to build results, so it would be possible to detect the redundant dependencies
 public data class BuildResult(public val diagnostic: BuildDiagnostic,
                               public val result: Iterable<Pair<ArtifactDesc, ArtifactData?>> = listOf())
 //                              public val dependsOn: Iterable<Pair<ArtifactDesc, ArtifactData?>> = listOf())
@@ -86,6 +87,7 @@ public data class BuildResult(public val diagnostic: BuildDiagnostic,
 public trait Step : Named {
     public val selector: ScenarioSelector // determines if the step should be selected for execution for given scenario(s)
     public val sources: Iterable<ArtifactDesc> // consumed artifacts
+    // \todo consider having separate property for exported targets, instead of the flag
     public val export: Boolean // defines if step targets are local or exported from the module
     public val targets: Iterable<ArtifactDesc> // produced artifacts
 

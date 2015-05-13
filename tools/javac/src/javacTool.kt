@@ -64,7 +64,7 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
                          src: Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>,
                          tgt: Iterable<model.ArtifactDesc>
     ): model.BuildResult {
-        val libraries = src.filterIn(cfg.depSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
+        val libraries = src.filterIn(cfg.classpathSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
 
         val folder = tgt.single()
         val targetFolder =
@@ -84,7 +84,7 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
         val diagnostics = DiagnosticCollector<JavaFileObject>()
         val fileManager=compiler.getStandardFileManager(diagnostics, null, null)
 
-        val sources = src.filterIn(cfg.explicitSources).getPaths()
+        val sources = src.filterIn(cfg.fromSources).getPaths()
 
         log.debug("javac options: ${options.joinToString(" ")}")
         log.debug("sources: ${sources.map { escape4cli(it) }.joinToString("\n  ","\n  ")}")

@@ -18,6 +18,7 @@ import komplex.dsl.FileGlobArtifact
 import komplex.utils.*
 import java.nio.file.Paths
 import java.util.regex.Pattern
+import kotlin.text.RegexOption
 
 public val komplex.dsl.tools.proguard: ProGuardRule get() = ProGuardRule(ProGuardTool())
 
@@ -77,7 +78,7 @@ public class ProGuardTool : komplex.model.Tool<ProGuardRule> {
                 if (cfg.filters.any()) cfg.filters.map { escape4cli(it) }.joinToString(",","(",")") else ""
 
         cfg.options.forEach {
-            if ("(in|out)jars".toRegex(Pattern.CASE_INSENSITIVE).matcher(it).find())
+            if ("(in|out)jars".toRegex(RegexOption.IGNORE_CASE).matcher(it).find())
                 log.warn("using -injars or -outjars in directly in options could lead to undesirable results, use from/into/export outside of options instead")
         }
 

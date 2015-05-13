@@ -46,7 +46,7 @@ public data class MavenId(val groupId: String, val artifactId: String, val versi
 }
 
 private fun mavenId(id: String, version: String?): MavenId {
-    val names = id.split("[/:]")
+    val names = id.split("[/:]".toRegex())
     return MavenId(names[0],
             if (names.size() > 1) names[1] else names[0],
             version ?: if (names.size() > 2) names[2] else "")

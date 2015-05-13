@@ -1,5 +1,6 @@
 package komplex.tools.kotlin
 
+import com.sun.tools.javac.resources.compiler
 import komplex.dsl.FolderArtifact
 import komplex.utils
 import komplex.tools.kotlin.KotlinCompiler
@@ -9,11 +10,17 @@ import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import java.io.File
 import java.nio.file.Path
+import java.util.*
 
-public fun komplex.dsl.tools.kotlin(compilerCmd: String): KotlinCompilerRule =
+public fun komplex.dsl.tools.kotlin(compilerCmd: Iterable<String>): KotlinCompilerRule =
         KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinExternalCompiler>("Kotlin compiler", { KotlinExternalCompiler(compilerCmd) } ))
 
-public class KotlinExternalCompiler(val compilerCmd: String) : KotlinCompiler() {
+public fun komplex.dsl.tools.kotlin(vararg compilerCmd: String): KotlinCompilerRule = komplex.dsl.tools.kotlin(compilerCmd.asIterable())
+
+public fun komplex.dsl.tools.kotlin(compilerJarPath: Path): KotlinCompilerRule = komplex.dsl.tools.kotlin("java", "-jar", compilerJarPath.toString())
+
+
+public class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinCompiler() {
     override val name: String = "Kotlin external compiler"
 
     override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
@@ -22,12 +29,11 @@ public class KotlinExternalCompiler(val compilerCmd: String) : KotlinCompiler() 
         if (!destFolderFile.exists())
             destFolderFile.mkdirs()
 
-        val ktccmdline = arrayListOf(
-                escape4cli(compilerCmd),
-                "-d",
-                escape4cli(destFolder.path.toString()),
-                "-classpath",
-                "${escape4cli(libraries.joinToString(File.pathSeparator))}")
+        val ktccmdline: ArrayList<String> = compilerCmd.map { escape4cli(it) }.toArrayList()
+        ktccmdline.addAll(listOf("-d",
+                                 escape4cli(destFolder.path.toString()),
+                                 "-classpath",
+                                 "${escape4cli(libraries.joinToString(File.pathSeparator))}"))
 
         if (!includeRuntime) ktccmdline.add("-no-stdlib")
 

@@ -44,14 +44,14 @@ public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> 
         val project = context.module
 
         val destFolder = tgt.singleDestFolder()
-        val kotlinSources = src.filterIn(cfg.explicitSources).getPaths()
+        val kotlinSources = src.filterIn(cfg.fromSources).getPaths()
 
         if (kotlinSources.none()) {
             log.error("Error: No sources to compile in module ${project.name}: ${src.map { it.first }}")
             return model.BuildResult(utils.BuildDiagnostic.Fail)
         }
 
-        val libraries = src.filterIn(cfg.depSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
+        val libraries = src.filterIn(cfg.classpathSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
 
         log.info("compiling module ${project.name}")
         log.info("build sources: ${kotlinSources.joinToString("\n  ","\n  ")}")

@@ -7,7 +7,7 @@ import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
-import komplex.tools.use
+import komplex.tools.classpath
 import komplex.utils
 
 fun main(args: Array<String>) {
@@ -36,8 +36,7 @@ fun main(args: Array<String>) {
             depends on children
 
             build using(tools.kotlin) from sources into binaries with {
-                use(depends.modules)
-                use(file(artifacts.jar, "lib/kotlin-runtime.jar"))
+                classpath(depends.modules, file(artifacts.jar, "lib/kotlin-runtime.jar"))
                 enableInline = true
             }
 
