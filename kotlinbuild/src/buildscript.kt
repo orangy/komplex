@@ -10,6 +10,7 @@ import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.*
+import komplex.tools.jar.addManifestProperty
 import komplex.tools.javac.javac
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
@@ -157,6 +158,7 @@ fun main(args: Array<String>) {
                     from(kotlinBinaries, javaBinaries, jarContent)
                     export(jarFile)
                     deflate = true
+                    addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
                 }
 
                 build(check) using tools.proguard from jarFile export checkedJarFile with {

@@ -25,11 +25,19 @@ public val komplex.dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPac
 
 val log = LoggerFactory.getLogger("komplex.tools.jar")
 
+public data class JarManifestProperty(public val name: String, public val value: String) {}
+
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
 public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRule<JarPackagerRule, komplex.model.Tool<JarPackagerRule>>(jarPackager) {
     // configuration params
     public var deflate : Boolean = false
+    public val manifest: MutableCollection<JarManifestProperty> = arrayListOf()
+}
+
+public fun JarPackagerRule.addManifestProperty(name: String, value: String): JarPackagerRule {
+    manifest.add(JarManifestProperty(name, value))
+    return this
 }
 
 // compresses all sources into single destination described by the first target
@@ -113,7 +121,9 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
     override fun execute(context: BuildContext, cfg: JarPackagerRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
 
         val manifest = Manifest()
-        manifest.getMainAttributes()?.put(Attributes.Name.MANIFEST_VERSION, "1.0")
+        val manifestAttrs = manifest.getMainAttributes()!!
+        manifestAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0")
+        cfg.manifest.forEach { manifestAttrs.put(Attributes.Name(it.name), it.value) }
 
         val targetDesc = tgt.single()
         val targetData =
