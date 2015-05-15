@@ -12,7 +12,7 @@ public data class ModuleFlavor(public val module: Module,
                                public val scenarios: Scenarios) {}
 
 public data class BuildGraphNode(public val moduleFlavor: ModuleFlavor, public val step: Step) {
-    override fun toString(): String = "[${moduleFlavor.module.name}.${step.name}]"
+    override fun toString(): String = "[${moduleFlavor.module.name}.${step.name}](${step.selector.scenarios})"
 }
 
 platformName("producers_map_contains")
@@ -45,7 +45,11 @@ public class BuildGraph() {
         // skip steps without inputs and outputs
         if (!srcs.isEmpty() || !tgts.isEmpty()) {
             nodes.add(node)
-            producers.putAll(tgts.map { Pair(it, node) })
+            for (tgt in tgts) {
+                val n = producers.getOrPut(tgt, { node } )
+                if (n != node)
+                    throw Exception("Error cannot add $node, because $n produces the same artifact $tgt")
+            }
             for (it in srcs) {
                 val lst = consumers.get(it)
                 if (lst != null) lst.add(node)
@@ -87,19 +91,24 @@ public class BuildGraph() {
         return this
     }
 
-    private fun isSelected(producingNode: BuildGraphNode, scenarios: Scenarios): Boolean =
+    private fun isSelected(producingNode: BuildGraphNode, scenarios: Scenarios): Boolean {
         // check match with module and node selectors
-        // \todo log skipped steps and reasons
-        scenarios.matches(moduleSelectors.get(producingNode.moduleFlavor) ?:
-                    throw Exception("incosistent graph: missing module for node $producingNode"))
-            && scenarios.matches(producingNode.step.selector)
+        val moduleSel = moduleSelectors.get(producingNode.moduleFlavor ?:
+                throw Exception("incosistent graph: missing module for node $producingNode"))
+        if (!scenarios.matches(moduleSel))
+            log.trace("skipping $producingNode because it's module selector $moduleSel doesn't match with $scenarios")
+        else if (!scenarios.matches(producingNode.step.selector))
+            log.trace("skipping $producingNode because it itself doesn't match with $scenarios")
+        else return true
+        return false;
+    }
 
-    private fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
+    public fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
         val producingNode = producers.get(it)// ?: throw Exception("incosistent graph: missing producer for $it")
         return if (producingNode != null && isSelected(producingNode, scenarios)) producingNode else null
     }
 
-    private fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
+    public fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
         consumers.get(it)?.filter { isSelected(it, scenarios) } ?: listOf()
 
     // filtered inputs
@@ -118,7 +127,6 @@ public class BuildGraph() {
 
 
     public fun prev(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
-        if (log.isTraceEnabled())
             if (scenarios.matches(node.step.selector)) {
                 val prev = node.step.sources
                         .map { getProducingNode(it, scenarios) }
@@ -127,14 +135,10 @@ public class BuildGraph() {
                 log.trace("prev nodes for $node($scenarios): ${prev.joinToString(", ", "(", ")")}")
                 prev
             }
-            else { log.trace("skip $node($scenarios): no matching scenarios"); listOf<BuildGraphNode>() }
-        else
-            if (scenarios.matches(node.step.selector))
-                node.step.sources
-                        .map { getProducingNode(it, scenarios) }
-                        .filterNotNull()
-                        .distinct()
-            else listOf<BuildGraphNode>()
+            else {
+                log.trace("skip $node($scenarios): no matching scenarios")
+                listOf<BuildGraphNode>()
+            }
 
 
     public fun next(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =

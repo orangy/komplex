@@ -30,10 +30,10 @@ public class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinC
             destFolderFile.mkdirs()
 
         val ktccmdline: ArrayList<String> = compilerCmd.map { escape4cli(it) }.toArrayList()
-        ktccmdline.addAll(listOf("-d",
-                                 escape4cli(destFolder.path.toString()),
-                                 "-classpath",
-                                 "${escape4cli(libraries.joinToString(File.pathSeparator))}"))
+
+        ktccmdline.addAll(listOf("-d", escape4cli(destFolder.path.toString())))
+
+        if (libraries.any()) ktccmdline.addAll(listOf( "-classpath", "${escape4cli(libraries.joinToString(File.pathSeparator))}"))
 
         if (!includeRuntime) ktccmdline.add("-no-stdlib")
 

@@ -11,7 +11,9 @@ public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null,
             step.nicePrint(indent, moduleName = moduleFlavor.module.fullName, printInsOuts = true)
         else
             step.nicePrint(indent, moduleName = moduleFlavor.module.fullName, printInsOuts = false) +
-            nicePrintPins(indent, graph.sources(this, scenario), "from:") +
+            nicePrintPins(indent, graph.sources(this, scenario), "from:", pinDescFn = {
+                val prod = graph.getProducingNode(it,scenario);
+                if (prod != null) "produced by $prod(${prod.step.selector.scenarios})" else "(external)" } ) +
             nicePrintPins(indent, graph.targets(this, scenario), "to:")
 
 public fun ArtifactDesc.nicePrint(indent: IndentLn): String = "$indent$name"
@@ -41,9 +43,9 @@ public fun Step.nicePrint(indent: IndentLn, moduleName: String = "", printInsOut
             nicePrintPins(indent, sources, "from:") + nicePrintPins(indent, targets, "to:")
          else "")
 
-private fun nicePrintPins(indent: IndentLn, pins: Iterable<ArtifactDesc>, prefix: String): String {
+private fun nicePrintPins(indent: IndentLn, pins: Iterable<ArtifactDesc>, prefix: String, pinDescFn: ((ArtifactDesc) -> String)? = null): String {
     return (if (pins.none()) ""
-    else "${indent.inc()}$prefix" + pins.map { it.nicePrint(indent.inc(2)) }.joinToString())
+    else "${indent.inc()}$prefix" + pins.map { it.nicePrint(indent.inc(2)) + (if (pinDescFn!=null) " -- ${pinDescFn(it)}" else "") }.joinToString())
 }
 
 public fun Module.nicePrint(indent: IndentLn): String =

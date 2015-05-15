@@ -74,9 +74,9 @@ public fun <T : Rule, S> T.from(args: Iterable<S>): T = addToSources(explicitFro
 public fun <T : Rule, S> T.from(vararg args: S): T = addToSources(explicitFroms, args.asIterable())
 public fun <T : Rule, S> T.from(vararg args: Iterable<S>): T = addToSources(explicitFroms, args.asIterable())
 
-public fun <T : Rule, S> T.depends(args: Iterable<S>): T = addToSources(explicitDepends, args)
-public fun <T : Rule, S> T.depends(vararg args: S): T = addToSources(explicitDepends, args.asIterable())
-public fun <T : Rule, S> T.depends(vararg args: Iterable<S>): T = addToSources(explicitDepends, args.asIterable())
+public fun <T : Rule, S> T.dependsOn(args: Iterable<S>): T = addToSources(explicitDepends, args)
+public fun <T : Rule, S> T.dependsOn(vararg args: S): T = addToSources(explicitDepends, args.asIterable())
+public fun <T : Rule, S> T.dependsOn(vararg args: Iterable<S>): T = addToSources(explicitDepends, args.asIterable())
 
 public fun <T : Rule> T.into(vararg artifacts: Iterable<Artifact>): T {
     artifacts.forEach { explicitTargets.addAll(it) }

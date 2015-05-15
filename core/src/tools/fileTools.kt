@@ -17,7 +17,9 @@ import java.nio.file.Path
 public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 
-public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {}
+public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
+    public var makeDirs: Boolean = false
+}
 
 
 // copies all sources to all destinations
@@ -32,17 +34,21 @@ public class CopyTool : komplex.model.Tool<CopyToolRule> {
                 log.debug("copying from source ${source.first}")
                 val sourceFiles = openFileSet(source)
                 when (destination) {
-                    is FileArtifact ->
+                    is FileArtifact -> {
+                        if (cfg.makeDirs && !destination.path.getParent().toFile().exists()) destination.path.getParent().toFile().mkdirs()
                         sourceFiles.coll.forEach {
                             Files.copy(openInputStream(it).inputStream, destination.path, StandardCopyOption.REPLACE_EXISTING)
                             result.add(Pair(source.first, SimpleFileData(destination.path)))
                         }
-                    is FolderArtifact ->
+                    }
+                    is FolderArtifact -> {
+                        if (cfg.makeDirs && !destination.path.toFile().exists()) destination.path.toFile().mkdirs()
                         sourceFiles.coll.forEach {
                             val path = destination.path.resolve(it.path)
                             Files.copy(openInputStream(it).inputStream, path, StandardCopyOption.REPLACE_EXISTING)
                             result.add(Pair(source.first, SimpleFileData(path)))
                         }
+                    }
                     else -> throw IllegalArgumentException("$destination is not supported as a destination in copy tool")
                 }
             }
