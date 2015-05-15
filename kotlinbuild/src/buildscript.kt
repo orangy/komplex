@@ -399,6 +399,19 @@ fun main(args: Array<String>) {
 
             }
 
+            val stdlib = module("stdlib") {
+
+                val classes = folder(artifacts.binaries, "out/kb/build.ktnew/stdlib")
+                val sources = files(artifacts.sources, "libraries/stdlib", "src/**.kt")
+
+                build using(tools.kotlin(outputCompilerJar.path)) from sources export classes with {
+                    dependsOn(compiler)
+                    classpath(builtins)
+                    enableInline = true
+                    includeRuntime = false
+                }
+
+            }
             module("all", "Build All") {
                 depends.on (
                         prepareDist,
