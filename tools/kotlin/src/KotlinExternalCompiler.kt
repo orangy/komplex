@@ -42,7 +42,7 @@ public class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinC
         // \todo - promote idea of adding special option to compiler and use it
         ktccmdline.addAll(sourceRoots.map { escape4cli(it.toString()) })
 
-        val res = runProcess(ktccmdline, { log.info(it) }, { log.error(it) })
+        val res = runProcess(ktccmdline, { log.info(it) }, { log.info(it) })
 
         return if (res == 0) utils.BuildDiagnostic.Success
                else utils.BuildDiagnostic.Fail

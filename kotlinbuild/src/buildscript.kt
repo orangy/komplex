@@ -46,7 +46,7 @@ fun main(args: Array<String>) {
 
         env.rootDir = rootDir
 
-        val outputDir = rootDir.resolve("out/kb")
+        val outputDir = rootDir / "out/kb"
         val libraries = folder(artifacts.binaries, outputDir / "libs")
 
         fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
@@ -58,8 +58,14 @@ fun main(args: Array<String>) {
         val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
         val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
         val bootstrapRuntime = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-runtime.jar")
+        val bootstrapReflect = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-reflect.jar")
         val bootstrapCompilerJar = file(artifacts.jar, bootstrapCompilerHome / "lib/kotlin-compiler.jar")
         val compilerJar = rootDir / "out/kb/artifacts/kotlin-compiler.jar"
+
+        val outputCompilerDir = outputDir / "kotlinc"
+        val outputCompilerJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler.jar")
+        val outputBootstrapRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-internal-bootstrap.jar")
+        val outputBootstrapReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect-internal-bootstrap.jar")
 
         fun Module.compileKotlinJavaMix(sourceRootDirs: Iterable<FolderArtifact>, kotlinBinaries: FolderArtifact, javaBinaries: FolderArtifact, libs: ArtifactsSet) {
 
@@ -112,11 +118,14 @@ fun main(args: Array<String>) {
                 val target = folder(artifacts.binaries, "out/kb/build.kt")
                 val sources = folder(artifacts.binaries, "compiler/cli/bin")
                 build using(tools.copy) from sources export target
+                build using(tools.copy) from bootstrapRuntime export outputBootstrapRuntime with { makeDirs = true }
+                build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
             }
 
             val compiler = module("compiler", "Kotlin Compiler") {
 
                 depends.on (
+                        prepareDist,
                         library("org.slf4j:slf4j-api:1.7.12"),
                         library("org.jetbrains:annotations:13.0")
                 )
@@ -154,14 +163,18 @@ fun main(args: Array<String>) {
 
                 compileKotlinJavaMix(compilerSourceRoots, kotlinBinaries, javaBinaries, libs)
 
-                build(jar, test) using tools.jar with {
+                val makeUncheckedJar = build(jar, test) using tools.jar with {
                     from(kotlinBinaries, javaBinaries, jarContent)
-                    export(jarFile)
+                    into(jarFile)
+                    dependsOn(prepareDist)
                     deflate = true
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
+                    addManifestProperty("Class-Path", listOf(outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
                 }
 
-                build(check) using tools.proguard from jarFile export checkedJarFile with {
+                build(jar, test) using tools.copy from makeUncheckedJar export outputCompilerJar
+
+                val makeCheckedJar = build(check) using tools.proguard from jarFile into checkedJarFile with {
                     filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
                             "!com/thoughtworks/xstream/converters/reflection/CGLIBEnhancedConverter**",
                             "!com/thoughtworks/xstream/io/xml/Dom4J**",
@@ -288,6 +301,8 @@ fun main(args: Array<String>) {
                     )
                 }
 
+//                build(check) using tools.copy from makeCheckedJar export outputCompilerJar
+
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
 
@@ -302,11 +317,11 @@ fun main(args: Array<String>) {
 
                 val classes = folder(artifacts.binaries, outputDir / "build.kt/preloader")
                 val sources = folder(artifacts.sources, "compiler/preloader/src")
-                val jarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
+                val preloaderJarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
 
                 build using(tools.javac) from sources into classes
 
-                build using tools.jar from classes export jarFile with {
+                build using tools.jar from classes export preloaderJarFile with {
                     deflate = true
                 }
             }
@@ -373,12 +388,13 @@ fun main(args: Array<String>) {
 
                 val classes = folder(artifacts.binaries, "out/kb/build.ktnew/builtins")
                 val sources = artifactsSet(listOf(
-                    "core/builtins/src",
-                    "core/runtime.jvm/src").map { folder(artifacts.sources, it) })
+                    "core/builtins",
+                    "core/runtime.jvm").map { files(artifacts.sources, it, "src/**.kt") })
 
-                build using(tools.kotlin(compilerJar)) from sources export classes with {
-                    depends(compiler)
+                build using(tools.kotlin(outputCompilerJar.path)) from sources export classes with {
+                    dependsOn(compiler)
                     enableInline = true
+                    includeRuntime = false
                 }
 
             }
@@ -400,6 +416,7 @@ fun main(args: Array<String>) {
     println("\n--- script ------------------------------")
     println(script.nicePrint(indent))
 
+    //val scenarios = Scenarios.All
     val scenarios = scenarios(jar)
     val graph = script.buildGraph()
 

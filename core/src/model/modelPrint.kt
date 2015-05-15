@@ -13,7 +13,7 @@ public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null,
             step.nicePrint(indent, moduleName = moduleFlavor.module.fullName, printInsOuts = false) +
             nicePrintPins(indent, graph.sources(this, scenario), "from:", pinDescFn = {
                 val prod = graph.getProducingNode(it,scenario);
-                if (prod != null) "produced by $prod(${prod.step.selector.scenarios})" else "(external)" } ) +
+                if (prod != null) "produced by $prod" else "(external)" } ) +
             nicePrintPins(indent, graph.targets(this, scenario), "to:")
 
 public fun ArtifactDesc.nicePrint(indent: IndentLn): String = "$indent$name"
