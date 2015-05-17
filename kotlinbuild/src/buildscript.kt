@@ -80,9 +80,10 @@ fun main(args: Array<String>) {
         val outputDir = rootDir / "out/kb"
         val libraries = folder(artifacts.binaries, outputDir / "libs")
 
-        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
+        fun Module.library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
             val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
             libModule.build using tools.maven
+            this.children.add(libModule)
             return libModule
         }
 
@@ -380,7 +381,8 @@ fun main(args: Array<String>) {
                 val classes = build using bootstrapCompiler() with {
                     from(listOf(folder(artifacts.sources, rootDir / "ant" )))
                     classpath( bootstrapRuntime,
-                               antlib)
+                               antlib,
+                               preloader)
                     kotlin.into(folder(artifacts.binaries, "out/kb/build.kt/ant"))
                     java.into(folder(artifacts.binaries, "out/kb/build/ant"))
                 }
