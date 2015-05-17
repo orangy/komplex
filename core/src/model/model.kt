@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
 import komplex.*
+import komplex.utils.plus
 
 public trait ArtifactDesc : Named {}
 
@@ -82,6 +83,7 @@ public data class BuildResult(public val diagnostic: BuildDiagnostic,
 //                              public val dependsOn: Iterable<Pair<ArtifactDesc, ArtifactData?>> = listOf())
 {}
 
+public fun BuildResult.plus(other: BuildResult): BuildResult = BuildResult(diagnostic.plus(other.diagnostic), result + other.result)
 
 // build step, tied to single scenario in order to build fixed relationships in graph
 public trait Step : Named {
@@ -90,6 +92,8 @@ public trait Step : Named {
     // \todo consider having separate property for exported targets, instead of the flag
     public val export: Boolean // defines if step targets are local or exported from the module
     public val targets: Iterable<ArtifactDesc> // produced artifacts
+
+    // \todo add configure method (e.g. auto target generation)
 
     public open fun validate(): BuildDiagnostic {
         val intersection = sources.intersect(targets)

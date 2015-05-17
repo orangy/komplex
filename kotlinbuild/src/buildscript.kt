@@ -11,11 +11,14 @@ import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.*
 import komplex.tools.jar.addManifestProperty
+import komplex.tools.javac.JavaCompilerRule
 import komplex.tools.javac.javac
+import komplex.tools.kotlin.KotlinCompilerRule
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
 import komplex.utils
+import komplex.utils.Named
 import komplex.utils.div
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
@@ -28,6 +31,34 @@ internal val log = LoggerFactory.getLogger("kotlinbuild")
 
 fun run(args: Iterable<String>): Int = runProcess(args, { log.debug(it) }, { log.error(it) })
 fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it) }, { log.error(it) })
+
+// \todo move into separate tool
+class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCompilerRule = tools.kotlin, public val java: JavaCompilerRule = tools.javac)
+: komplex.dsl.RuleSetDesc(listOf(kotlin, java)), Named {
+
+    init { java.classpath(kotlin) }
+
+    public fun from(sourceRootDirs: Iterable<FolderArtifact>): KotlinJavaToolRule {
+        kotlin.with {
+            sourceRoots.addAll( sourceRootDirs.map { (it.path / "src").toString() })
+            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.kt") })
+        }
+        java.with {
+            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.java") })
+        }
+        return this
+    }
+    public fun from(vararg sourceRootDirs: FolderArtifact): KotlinJavaToolRule = from(sourceRootDirs.asIterable())
+
+    public fun<S> classpath(v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(v); java.classpath(v); return this }
+    public fun<S> classpath(vararg v: S): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
+    public fun<S> classpath(vararg v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
+
+    public fun with(body: KotlinJavaToolRule.() -> Unit): KotlinJavaToolRule {
+        body()
+        return this
+    }
+}
 
 fun main(args: Array<String>) {
 
@@ -68,22 +99,7 @@ fun main(args: Array<String>) {
         val outputBootstrapRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-internal-bootstrap.jar")
         val outputBootstrapReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect-internal-bootstrap.jar")
 
-        fun Module.compileKotlinJavaMix(sourceRootDirs: Iterable<FolderArtifact>, kotlinBinaries: FolderArtifact, javaBinaries: FolderArtifact, libs: ArtifactsSet) {
-
-            val kotlinSources = sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.kt") }
-            val kotlinSourceRoots = sourceRootDirs.map { it.path / "src" }
-            val javaSources = sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.java") }
-
-            build using(tools.kotlin(bootstrapCompilerJar.path)) from kotlinSources into kotlinBinaries with {
-                classpath(depends.modules, libs)
-                sourceRoots.addAll(kotlinSourceRoots.map { it.toString() })
-                enableInline = true
-            }
-
-            build using(tools.javac) from javaSources into javaBinaries with {
-                classpath(depends.modules, kotlinBinaries, libs)
-            }
-        }
+        fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
 
         val compilerSourceRoots = listOf(
                 "core/descriptor.loader.java",
@@ -147,14 +163,12 @@ fun main(args: Array<String>) {
 
             val compiler = module("compiler", "Kotlin Compiler") {
 
-                depends.on (
-                        prepareDist,
-                        library("org.slf4j:slf4j-api:1.7.12"),
-                        library("org.jetbrains:annotations:13.0")
-                )
+//                depends.on (
+//                        prepareDist,
+//                        library("org.slf4j:slf4j-api:1.7.12"),
+//                        library("org.jetbrains:annotations:13.0")
+//                )
                 // shared settings for all projects
-                val kotlinBinaries = folder(artifacts.binaries, "out/kb/build.kt/compiler")
-                val javaBinaries = folder(artifacts.binaries, "out/kb/build/compiler")
                 val jarFile = file(artifacts.jar, compilerJar)
                 val checkedJarFile = file(artifacts.jar, "out/kb/artifacts/checked/kotlin-compiler.jar")
                 val libs = artifactsSet(
@@ -184,10 +198,15 @@ fun main(args: Array<String>) {
                         files(artifacts.sources, "idea/src", "META-INF/extensions/kotlin2js.xml")
                 )
 
-                compileKotlinJavaMix(compilerSourceRoots, kotlinBinaries, javaBinaries, libs)
+                val classes = build using bootstrapCompiler() with {
+                    from(compilerSourceRoots)
+                    classpath(libs)
+                    kotlin.into(folder(artifacts.binaries, "out/kb/build/compiler.kt"))
+                    java.into(folder(artifacts.binaries, "out/kb/build/compiler.java"))
+                }
 
                 val makeUncheckedJar = build(jar, test) using tools.jar with {
-                    from(kotlinBinaries, javaBinaries, jarContent)
+                    from(classes, jarContent)
                     into(jarFile)
                     dependsOn(prepareDist)
                     deflate = true
@@ -329,6 +348,11 @@ fun main(args: Array<String>) {
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
 
+            fun newCompiler() = KotlinJavaToolRule("New compiler", kotlin =
+                tools.kotlin(outputCompilerJar.path)) with {
+                    kotlin.dependsOn(compiler)
+                }
+
             val compilerSources = module("compiler-sources", "Kotlin Compiler sources") {
                 val jarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-compiler-sources.jar")
                 build using tools.jar from compilerSourceRoots export jarFile with {
@@ -351,35 +375,25 @@ fun main(args: Array<String>) {
 
             val antTools = module("ant-tools", "Kotlin ant tools") {
 
-                depends.on (
-                        preloader,
-                        library("org.apache.ant:ant:1.7.1")
-                )
+                val antlib = library("org.apache.ant:ant:1.7.1")
 
-                val kotlinBinaries = folder(artifacts.binaries, "out/kb/build.kt/ant")
-                val javaBinaries = folder(artifacts.binaries, "out/kb/build/ant")
-                val jarFile = file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar")
-                val libs = artifactsSet(
-                        bootstrapRuntime
-                //        ,
-                //        file(artifacts.jar, "dependencies/ant-1.7/lib/ant.jar")
-                )
-
-                compileKotlinJavaMix(listOf(folder(artifacts.sources, rootDir / "ant" )), kotlinBinaries, javaBinaries, libs)
+                val classes = build using bootstrapCompiler() with {
+                    from(listOf(folder(artifacts.sources, rootDir / "ant" )))
+                    classpath( bootstrapRuntime,
+                               antlib)
+                    kotlin.into(folder(artifacts.binaries, "out/kb/build.kt/ant"))
+                    java.into(folder(artifacts.binaries, "out/kb/build/ant"))
+                }
 
                 build using(tools.jar) with {
-                    from(kotlinBinaries, javaBinaries)
-                    export(jarFile)
+                    from(classes)
+                    export(file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar"))
                     deflate = true
                 }
             }
 
-            val serializeBuiltins = module("serialize-builtins") {
 
-                val sources = artifactsSet(
-                        folder(artifacts.sources, "core/builtins/native"),
-                        folder(artifacts.sources, "core/builtins/src"))
-                val target = folder(artifacts.binaries, outputDir / "builtins")
+            val serializeBuiltins = module("serialize-builtins") {
 
                 fun serialize(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
                     val classpath = depends.allArtifacts().getPaths(OpenFileSet.FoldersAsLibraries)
@@ -402,34 +416,36 @@ fun main(args: Array<String>) {
                     return openFileSet(target).coll
                 }
 
-                build using(tools.custom(::serialize)) from sources export target
+                build using(tools.custom(::serialize)) with {
+                    from( folder(artifacts.sources, "core/builtins/native"),
+                          folder(artifacts.sources, "core/builtins/src"))
+                    export(folder(artifacts.binaries, outputDir / "builtins"))
+                }
             }
+
 
             val builtins = module("builtins") {
 
-                depends on compiler
-
-                val classes = folder(artifacts.binaries, "out/kb/build.ktnew/builtins")
-                val sources = artifactsSet(listOf(
+                val sources = listOf(
                     "core/builtins",
-                    "core/runtime.jvm").map { files(artifacts.sources, it, "src/**.kt") })
+                    "core/runtime.jvm").map { folder(artifacts.sources, it) }
 
-                build using(tools.kotlin(outputCompilerJar.path)) from sources export classes with {
-                    dependsOn(compiler)
-                    enableInline = true
-                    includeRuntime = false
+                build using newCompiler() with {
+                    from(sources)
+                    kotlin.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.kt"))
+                    java.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.java"))
+                    kotlin.enableInline = true
+                    kotlin.includeRuntime = false
                 }
 
             }
 
             val stdlib = module("stdlib") {
 
-                val classes = folder(artifacts.binaries, "out/kb/build.ktnew/stdlib")
-                val sources = files(artifacts.sources, "libraries/stdlib", "src/**.kt")
-
-                build using(tools.kotlin(outputCompilerJar.path)) from sources export classes with {
-                    dependsOn(compiler)
-                    classpath(builtins)
+                build using tools.kotlin(outputCompilerJar.path) with {
+                    from( files(artifacts.sources, "libraries/stdlib", "src/**.kt"))
+                    classpath( builtins)
+                    export( folder(artifacts.binaries, "out/kb/build.ktnew/stdlib.kt"))
                     enableInline = true
                     includeRuntime = false
                 }
@@ -437,14 +453,15 @@ fun main(args: Array<String>) {
 
 
             val core = module("core") {
-                build using(tools.kotlin(outputCompilerJar.path)) with {
-                    export (folder(artifacts.binaries, "out/kb/build.ktnew/core"))
+                build using newCompiler() with {
+                    kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/core.kt"))
+                    java.export (folder(artifacts.binaries, "out/kb/build.ktnew/core.java"))
                     from (listOf(
                         "core/descriptor.loader.java",
                         "core/descriptors",
                         "core/descriptors.runtime",
                         "core/deserialization",
-                        "core/util.runtime").map { files(artifacts.sources, it, "src/**.kt") })
+                        "core/util.runtime").map { folder(artifacts.sources, it) })
                     classpath( builtins,
                                stdlib,
                                protobufLite,
@@ -453,9 +470,10 @@ fun main(args: Array<String>) {
             }
 
             val reflection = module("reflection") {
-                build using(tools.kotlin(outputCompilerJar.path)) with {
-                    export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection"))
-                    from (files(artifacts.sources, "libraries/reflection.jvm", "src/**.kt"))
+                build using newCompiler() with {
+                    kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.kt"))
+                    java.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.java"))
+                    from (folder(artifacts.sources, "core/reflection.jvm"))
                     classpath( builtins,
                                stdlib,
                                core,

@@ -36,10 +36,11 @@ public class BuildGraph() {
     // multiple artifact consuming nodes
     val consumers: HashMap<ArtifactDesc, ArrayList<BuildGraphNode>> = hashMapOf()
 
+    // \todo add rule validation and autoconfiguration (a.g. automatic target)
     protected fun add(node: BuildGraphNode) {
         val valid = node.step.validate()
         if (valid.status != BuildDiagnostic.Status.Succeeded)
-            throw Exception(valid.message)
+            throw Exception(valid.messages.joinToString("\n"))
         val srcs = node.step.sources.toArrayList()
         val tgts = node.step.targets.toArrayList()
         // skip steps without inputs and outputs

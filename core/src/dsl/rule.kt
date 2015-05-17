@@ -4,10 +4,12 @@ package komplex.dsl
 import komplex.model.*
 import java.util.ArrayList
 import komplex.utils.BuildDiagnostic
+import komplex.utils.plus
 
 // rules in fact
 public object tools {}
 
+// \todo - redesign the rules/tools/steps to less inheritance and with more aggregation and traits
 // \todo optimize with separating Step and Rule, so rule could be mutable, but converted into immutable Step then added to the graph,
 // or alternatively make rule immutable with copy-on-write behaviour
 
@@ -42,11 +44,11 @@ public trait Rule : Step {
 
 
 public abstract class RuleImpl : Rule {
-    override var selector: ScenarioSelector = ScenarioSelector.Any
-    override var export: Boolean = false
     override val explicitFroms: RuleSources = RuleSources()
     override val explicitDepends: RuleSources = RuleSources()
     override val explicitTargets: MutableCollection<ArtifactDesc> = arrayListOf()
+    override var selector: ScenarioSelector = ScenarioSelector.Any
+    override var export: Boolean = false
 }
 
 public fun <TR : Rule> TR.with(body: TR.() -> Unit): TR {
@@ -60,11 +62,13 @@ public fun <T : Rule> T.addToSources(sources: RuleSources, args: Iterable<Any>):
     for (arg in args)
         when (arg) {
             is ArtifactsSet -> sources.artifacts.addAll(arg.members)
+            is Array<Any> -> addToSources(sources, arg.asIterable())
             is Iterable<*> -> addToSources(sources, arg as Iterable<Any>)
             is ArtifactDesc -> sources.artifacts.add(arg)
             is ModuleDependency -> sources.moduleDependencies.add(arg)
             is Module -> sources.modules.add(arg)
             is Rule -> sources.rules.add(arg)
+            is RuleSetDesc -> sources.rules.addAll(arg.rules)
             else -> throw Exception("Unknown source type: $arg")
         }
     return this

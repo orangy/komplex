@@ -5,6 +5,10 @@ import java.util.ArrayList
 import komplex.model.combine
 import komplex.model.ScenarioSelector
 
+
+public open class RuleSetDesc(val rules: Iterable<Rule>) {}
+
+
 public class ModuleRuleSet(val parent: Module) {
     val selectors: MutableList<ScenarioSelector> = arrayListOf()
 
@@ -32,8 +36,19 @@ public class ModuleRuleSet(val parent: Module) {
 
     public fun using<TR : Rule>(rule: TR, body: TR.() -> Unit): TR {
         rule.body() // \todo find out how to write it
-        rules.add(rule)
-        rule.selector = selectors.combine(true)
-        return rule
+        return using(rule)
     }
+
+    public fun using<TR : RuleSetDesc>(ruleSet: TR): TR {
+        rules.addAll(ruleSet.rules)
+        ruleSet.rules.forEach { it.selector = selectors.combine(true) }
+        return ruleSet
+    }
+
+    public fun using<TR : RuleSetDesc>(ruleSet: TR, body: TR.() -> Unit): TR {
+        ruleSet.body() // \todo find out how to write it
+        return using(ruleSet)
+    }
+
+
 }
