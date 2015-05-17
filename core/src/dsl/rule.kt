@@ -89,6 +89,11 @@ public fun <T : Rule> T.into(vararg artifacts: Artifact): T {
 }
 
 // \todo: find better way to export
+public fun <T : Rule> T.export(vararg artifacts: Iterable<Artifact>): T {
+    export = true
+    return into(*artifacts)
+}
+
 public fun <T : Rule> T.export(vararg artifacts: Artifact): T {
     export = true
     return into(*artifacts)

@@ -61,6 +61,7 @@ fun main(args: Array<String>) {
         val bootstrapReflect = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-reflect.jar")
         val bootstrapCompilerJar = file(artifacts.jar, bootstrapCompilerHome / "lib/kotlin-compiler.jar")
         val compilerJar = rootDir / "out/kb/artifacts/kotlin-compiler.jar"
+        val bootstrapCompilerScript = bootstrapCompilerHome / "bin/kotlinc"
 
         val outputCompilerDir = outputDir / "kotlinc"
         val outputCompilerJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler.jar")
@@ -107,6 +108,7 @@ fun main(args: Array<String>) {
                 "js/js.parser",
                 "js/js.serializer").map { folder(artifacts.sources, it) }
 
+
         module("kotlin") {
 
             version("ATTEMPT-0.1")
@@ -114,12 +116,33 @@ fun main(args: Array<String>) {
             depends on children
 
             val prepareDist = module("prepareDist") {
-
-                val target = folder(artifacts.binaries, "out/kb/build.kt")
-                val sources = folder(artifacts.binaries, "compiler/cli/bin")
-                build using(tools.copy) from sources export target
+                build using(tools.copy) with {
+                    from (folder(artifacts.binaries, "compiler/cli/bin"))
+                    export (folder(artifacts.binaries, "out/kb/build.kt"))
+                }
                 build using(tools.copy) from bootstrapRuntime export outputBootstrapRuntime with { makeDirs = true }
                 build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
+            }
+
+            val protobufLite = module("protobufLite") {
+                // choose the right one
+                //val originalProtobuf = library("com.google.protobuf:protobuf-java:2.5.0")
+                val originalProtobuf = file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar")
+                val protobufLite = file(artifacts.jar, libraries.path / "protobuf-2.5.0-lite.jar")
+
+                fun runScript(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
+                    val target = tgts.first() as FileArtifact
+                    target.path.getParent().toFile().mkdirs()
+
+                    val res = run(bootstrapCompilerScript.toString(), "-script", escape4cli(rootDir / "generators/infrastructure/build-protobuf-lite.kts"),
+                                escape4cli(srcs.getPaths().first()),
+                                escape4cli(target.path))
+                    if (res > 0)
+                        throw Exception("Serializing builtins failed with error code $res")
+                    return openFileSet(target).coll
+                }
+
+                build using(tools.custom(::runScript)) from originalProtobuf export protobufLite
             }
 
             val compiler = module("compiler", "Kotlin Compiler") {
@@ -174,7 +197,7 @@ fun main(args: Array<String>) {
 
                 build(jar, test) using tools.copy from makeUncheckedJar export outputCompilerJar
 
-                val makeCheckedJar = build(check) using tools.proguard from jarFile into checkedJarFile with {
+                val makeCheckedJar = build(check) using tools.proguard from makeUncheckedJar into checkedJarFile with {
                     filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
                             "!com/thoughtworks/xstream/converters/reflection/CGLIBEnhancedConverter**",
                             "!com/thoughtworks/xstream/io/xml/Dom4J**",
@@ -410,8 +433,36 @@ fun main(args: Array<String>) {
                     enableInline = true
                     includeRuntime = false
                 }
-
             }
+
+
+            val core = module("core") {
+                build using(tools.kotlin(outputCompilerJar.path)) with {
+                    export (folder(artifacts.binaries, "out/kb/build.ktnew/core"))
+                    from (listOf(
+                        "core/descriptor.loader.java",
+                        "core/descriptors",
+                        "core/descriptors.runtime",
+                        "core/deserialization",
+                        "core/util.runtime").map { files(artifacts.sources, it, "src/**.kt") })
+                    classpath( builtins,
+                               stdlib,
+                               protobufLite,
+                               file(artifacts.jar, "lib/javax.inject.jar"))
+                }
+            }
+
+            val reflection = module("reflection") {
+                build using(tools.kotlin(outputCompilerJar.path)) with {
+                    export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection"))
+                    from (files(artifacts.sources, "libraries/reflection.jvm", "src/**.kt"))
+                    classpath( builtins,
+                               stdlib,
+                               core,
+                               protobufLite)
+                }
+            }
+
             module("all", "Build All") {
                 depends.on (
                         prepareDist,

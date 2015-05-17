@@ -12,6 +12,6 @@ public class ContextEnvironment(val parentContext: ScriptContext?) {
     private var rootDirImpl: Path? = null
     public var rootDir: Path?
         get() = rootDirImpl ?: parentContext?.env?.rootDir
-        set(v: Path?) { rootDirImpl = v }
+        set(v: Path?) { rootDirImpl = v?.toAbsolutePath()?.normalize() }
 }
 
