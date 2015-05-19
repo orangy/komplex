@@ -14,6 +14,8 @@ import komplex.log
 import komplex.utils.BuildDiagnostic
 import java.nio.file.Path
 
+// ----------------------------------
+
 public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 
@@ -57,6 +59,7 @@ public class CopyTool : komplex.model.Tool<CopyToolRule> {
     }
 }
 
+// ----------------------------------
 
 public val komplex.dsl.tools.find: FindInPathsToolRule get() = FindInPathsToolRule()
 
@@ -86,4 +89,41 @@ public class FindInPathsTool : komplex.model.Tool<FindInPathsToolRule> {
         }
         return BuildResult( if (result.isEmpty()) BuildDiagnostic.Fail else BuildDiagnostic.Success, result)
     }
+}
+
+// ----------------------------------
+
+public val komplex.dsl.tools.echo: EchoToolRule get() = EchoToolRule()
+
+
+public class EchoToolRule : komplex.dsl.BasicToolRule<EchoToolRule, EchoTool>(EchoTool()) {
+    // \todo make it an (string) artifact, so checksum could be calculated
+    public var sourceStr: String = ""
+    public var makeDirs: Boolean = false
+    public var charset: String = "UTF-8"
+}
+
+
+// echoes a string to all destinations
+public class EchoTool : komplex.model.Tool<EchoToolRule> {
+    override val name: String = "echo"
+
+    override fun execute(context: BuildContext, cfg: EchoToolRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
+        val result = arrayListOf<Pair<ArtifactDesc, ArtifactData>>()
+        for (destination in tgt) {
+            log.debug("echoing \"${cfg.sourceStr}\" into target $destination")
+            if (destination is FileArtifact) {
+                if (cfg.makeDirs && !destination.path.getParent().toFile().exists()) destination.path.getParent().toFile().mkdirs()
+                destination.path.toFile().writeText(cfg.sourceStr, cfg.charset)
+                result.add(Pair(destination, SimpleFileData(destination.path)))
+            }
+            else throw IllegalArgumentException("$destination is not supported as a destination in echo tool")
+        }
+        return BuildResult( BuildDiagnostic.Success, result)
+    }
+}
+
+public fun EchoToolRule.from(str: String): EchoToolRule {
+    sourceStr = str
+    return this
 }

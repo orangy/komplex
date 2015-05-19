@@ -131,6 +131,8 @@ fun main(args: Array<String>) {
 
             depends on children
 
+            val build_txt = file(artifacts.resources, outputCompilerDir / "build.txt")
+
             val prepareDist = module("prepareDist") {
                 build using(tools.copy) with {
                     from (folder(artifacts.binaries, "compiler/cli/bin"))
@@ -138,6 +140,7 @@ fun main(args: Array<String>) {
                 }
                 build using(tools.copy) from bootstrapRuntime export outputBootstrapRuntime with { makeDirs = true }
                 build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
+                build using(tools.echo) from version export build_txt
             }
 
             val protobufLite = module("protobufLite") {
