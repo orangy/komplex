@@ -22,7 +22,7 @@ public open class ModuleCollection(override val parent: Module? = null) : komple
 }
 
 
-public open class Module(parent1: Module?, override val name: String) : ModuleCollection(parent1), komplex.model.Module {
+public open class Module(parent1: Module?, override val name: String) : ModuleCollection(parent1), komplex.model.Module, GenericSourceType {
     public val moduleName : String get() = name
 
     public open class Metadata : ModuleMetadata {
@@ -31,7 +31,7 @@ public open class Module(parent1: Module?, override val name: String) : ModuleCo
     }
 
     override val metadata: Metadata = Metadata()
-    override val dependencies: Iterable<komplex.model.ModuleDependency> get() = depends.modules
+    override val dependencies: Iterable<komplex.model.ModuleDependency> get() = depends.modules.coll
 
     override val steps: Iterable<Step>
         get() = ruleSets.flatMap { it.rules }

@@ -1,6 +1,7 @@
 
 package komplex.dsl
 
+import komplex.model
 import komplex.model.*
 import java.util.ArrayList
 import komplex.utils.BuildDiagnostic
@@ -14,7 +15,7 @@ public object tools {}
 // or alternatively make rule immutable with copy-on-write behaviour
 
 public data class RuleSources {
-    public val artifacts: MutableCollection<ArtifactDesc> = arrayListOf()
+    public val artifacts: MutableCollection<Artifact> = arrayListOf()
     public val modules: MutableCollection<Module> = arrayListOf()
     public val moduleDependencies: MutableCollection<ModuleDependency> = arrayListOf()
     public val rules: MutableCollection<Rule> = arrayListOf()
@@ -27,10 +28,10 @@ public data class RuleSources {
             rules.filter { scenarios.matches(it.selector) }.flatMap { it.targets }
 }
 
-public trait Rule : Step {
-    public val explicitFroms: RuleSources
-    public val explicitDepends: RuleSources
-    public val explicitTargets: MutableCollection<ArtifactDesc> // filled with "into" and "export"
+public trait Rule : Step, GenericSourceType {
+    internal val explicitFroms: RuleSources
+    internal val explicitDepends: RuleSources
+    internal val explicitTargets: MutableCollection<Artifact> // filled with "into" and "export"
 
     public val fromSources: Iterable<ArtifactDesc> get() = explicitFroms.collect(selector.scenarios)
     public val dependsSources: Iterable<ArtifactDesc> get() = explicitDepends.collect(selector.scenarios)
@@ -46,7 +47,7 @@ public trait Rule : Step {
 public abstract class RuleImpl : Rule {
     override val explicitFroms: RuleSources = RuleSources()
     override val explicitDepends: RuleSources = RuleSources()
-    override val explicitTargets: MutableCollection<ArtifactDesc> = arrayListOf()
+    override val explicitTargets: MutableCollection<Artifact> = arrayListOf()
     override var selector: ScenarioSelector = ScenarioSelector.Any
     override var export: Boolean = false
 }
@@ -56,16 +57,21 @@ public fun <TR : Rule> TR.with(body: TR.() -> Unit): TR {
     return this
 }
 
-public fun <T : Rule> T.addToSources(sources: RuleSources, vararg args: Any): T = addToSources(sources, args.asIterable())
+// the usage of GenericSourceType should improve type safety in script, but prevent using Iterable directly, it should now
+// be wrapped into something "implementing" GenericSourceType, see e.g. ModuleDependencies
+// \todo may be this will not be flexible enough, consider some other variants
 
-public fun <T : Rule> T.addToSources(sources: RuleSources, args: Iterable<Any>): T {
+public fun <T : Rule, S: GenericSourceType> T.addToSources(sources: RuleSources, vararg args: S): T = addToSources(sources, args.asIterable())
+
+public fun <T : Rule, S: GenericSourceType> T.addToSources(sources: RuleSources, args: Iterable<S>): T {
     for (arg in args)
         when (arg) {
             is ArtifactsSet -> sources.artifacts.addAll(arg.members)
-            is Array<Any> -> addToSources(sources, arg.asIterable())
-            is Iterable<*> -> addToSources(sources, arg as Iterable<Any>)
-            is ArtifactDesc -> sources.artifacts.add(arg)
+            is Array<out GenericSourceType> -> addToSources(sources, arg.asIterable())
+            is Iterable<*> -> addToSources(sources, arg as Iterable<GenericSourceType>)
+            is Artifact -> sources.artifacts.add(arg)
             is ModuleDependency -> sources.moduleDependencies.add(arg)
+            is ModuleDependencies -> addToSources(sources, arg.coll as Iterable<ModuleDependency>)
             is Module -> sources.modules.add(arg)
             is Rule -> sources.rules.add(arg)
             is RuleSetDesc -> sources.rules.addAll(arg.rules)
@@ -74,13 +80,11 @@ public fun <T : Rule> T.addToSources(sources: RuleSources, args: Iterable<Any>):
     return this
 }
 
-public fun <T : Rule, S> T.from(args: Iterable<S>): T = addToSources(explicitFroms, args)
-public fun <T : Rule, S> T.from(vararg args: S): T = addToSources(explicitFroms, args.asIterable())
-public fun <T : Rule, S> T.from(vararg args: Iterable<S>): T = addToSources(explicitFroms, args.asIterable())
+public fun <T : Rule, S: GenericSourceType> T.from(args: Iterable<S>): T = addToSources(explicitFroms, args)
+public fun <T : Rule, S: GenericSourceType> T.from(vararg args: S): T = addToSources(explicitFroms, *args)
 
-public fun <T : Rule, S> T.dependsOn(args: Iterable<S>): T = addToSources(explicitDepends, args)
-public fun <T : Rule, S> T.dependsOn(vararg args: S): T = addToSources(explicitDepends, args.asIterable())
-public fun <T : Rule, S> T.dependsOn(vararg args: Iterable<S>): T = addToSources(explicitDepends, args.asIterable())
+public fun <T : Rule, S: GenericSourceType> T.dependsOn(args: Iterable<S>): T = addToSources(explicitDepends, args)
+public fun <T : Rule, S: GenericSourceType> T.dependsOn(vararg args: S): T = addToSources(explicitDepends, *args)
 
 public fun <T : Rule> T.into(vararg artifacts: Iterable<Artifact>): T {
     artifacts.forEach { explicitTargets.addAll(it) }

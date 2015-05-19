@@ -6,7 +6,7 @@ import komplex.model.combine
 import komplex.model.ScenarioSelector
 
 
-public open class RuleSetDesc(val rules: Iterable<Rule>) {}
+public open class RuleSetDesc(val rules: Iterable<Rule>) : GenericSourceType {}
 
 
 public class ModuleRuleSet(val parent: Module) {

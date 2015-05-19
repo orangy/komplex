@@ -1,6 +1,7 @@
 
 package komplex.dsl
 
+import komplex.model
 import komplex.model.ArtifactDesc
 import komplex.model.combine
 import komplex.model.ScenarioSelector
@@ -10,9 +11,12 @@ public class ModuleDependency(
         override val module: Module,
         override var scenarios: komplex.model.Scenarios,
         override var selector: ScenarioSelector
-) : komplex.model.ModuleDependency {
+) : komplex.model.ModuleDependency, GenericSourceType {
     override fun toString(): String = "${module.name} (${selector.scenarios})"
 }
+
+// need it in order to make the collection a GenericSourceType
+public class ModuleDependencies(public val coll: Iterable<model.ModuleDependency>): GenericSourceType {}
 
 
 public open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {
@@ -49,10 +53,10 @@ public class Dependencies(vararg scenarios: ScenarioSelector = arrayOf(ScenarioS
         return group
     }
 
-    public val modules: Iterable<komplex.model.ModuleDependency>
-        get() = groups.flatMap { it.items }
+    public val modules: ModuleDependencies
+        get() = ModuleDependencies(groups.flatMap { it.items })
 
 }
 
 public fun Dependencies.allArtifacts(scenarios: Scenarios = Scenarios.Same): Iterable<ArtifactDesc> =
-        modules.flatMap { it.module.targets(scenarios) }
+        modules.coll.flatMap { it.module.targets(scenarios) }

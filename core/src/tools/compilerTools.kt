@@ -24,10 +24,8 @@ public abstract class RuleWithClasspathImpl : RuleImpl() {
     override val sources: Iterable<ArtifactDesc> get() = super<RuleImpl>.sources + classpathSources
 }
 
-public fun <T : RuleWithClasspathImpl, S> T.classpath(args: Iterable<S>): T = addToSources(explicitClasspath, args)
-public fun <T : RuleWithClasspathImpl, S> T.classpath(vararg args: S): T = addToSources(explicitClasspath, args.asIterable())
-public fun <T : RuleWithClasspathImpl, S> T.classpath(vararg args: Iterable<S>): T = addToSources(explicitClasspath, args.asIterable())
-
+public fun <T : RuleWithClasspathImpl, S: GenericSourceType> T.classpath(args: Iterable<S>): T = addToSources(explicitClasspath, args)
+public fun <T : RuleWithClasspathImpl, S: GenericSourceType> T.classpath(vararg args: S): T = addToSources(explicitClasspath, *args)
 
 
 public abstract class CompilerRule<Config: CompilerRule<Config, T>, T: Tool<Config>> : RuleWithClasspathImpl(), ToolStep<Config, T> {

@@ -50,9 +50,8 @@ class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCom
     }
     public fun from(vararg sourceRootDirs: FolderArtifact): KotlinJavaToolRule = from(sourceRootDirs.asIterable())
 
-    public fun<S> classpath(v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(v); java.classpath(v); return this }
-    public fun<S> classpath(vararg v: S): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
-    public fun<S> classpath(vararg v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
+    public fun<S: GenericSourceType> classpath(v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(v); java.classpath(v); return this }
+    public fun<S: GenericSourceType> classpath(vararg v: S): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
 
     public fun with(body: KotlinJavaToolRule.() -> Unit): KotlinJavaToolRule {
         body()
@@ -349,7 +348,12 @@ fun main(args: Array<String>) {
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
 
-            fun newCompiler() = KotlinJavaToolRule("New compiler", kotlin =
+            fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin =
+                tools.kotlin(outputCompilerJar.path)) with {
+                    kotlin.dependsOn(compiler)
+                }
+
+            fun newJSCompiler() = KotlinJavaToolRule("New JS compiler", kotlin =
                 tools.kotlin(outputCompilerJar.path)) with {
                     kotlin.dependsOn(compiler)
                 }
@@ -432,7 +436,7 @@ fun main(args: Array<String>) {
                     "core/builtins",
                     "core/runtime.jvm").map { folder(artifacts.sources, it) }
 
-                build using newCompiler() with {
+                build using newJVMCompiler() with {
                     from(sources)
                     kotlin.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.kt"))
                     java.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.java"))
@@ -455,7 +459,7 @@ fun main(args: Array<String>) {
 
 
             val core = module("core") {
-                build using newCompiler() with {
+                build using newJVMCompiler() with {
                     kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/core.kt"))
                     java.export (folder(artifacts.binaries, "out/kb/build.ktnew/core.java"))
                     from (listOf(
@@ -472,7 +476,7 @@ fun main(args: Array<String>) {
             }
 
             val reflection = module("reflection") {
-                build using newCompiler() with {
+                build using newJVMCompiler() with {
                     kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.kt"))
                     java.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.java"))
                     from (folder(artifacts.sources, "core/reflection.jvm"))

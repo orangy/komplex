@@ -9,7 +9,9 @@ import komplex.utils.fileSystem
 import komplex.utils.resolvePath
 import java.io.File
 
-public trait Artifact : komplex.model.ArtifactDesc {
+public trait GenericSourceType {}
+
+public trait Artifact : komplex.model.ArtifactDesc, GenericSourceType {
     val `type`: ArtifactType
 }
 
@@ -127,7 +129,7 @@ open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(typ
     override val name: String get() = "$`type` folder $path glob +$included -$excluded"
 }
 
-public open class ArtifactsSet(public val members: Collection<Artifact>) {}
+public open class ArtifactsSet(public val members: Collection<Artifact>): GenericSourceType {}
 
 public fun ScriptContext.artifactsSet(vararg artifacts: Artifact) : ArtifactsSet = ArtifactsSet(artifacts.toArrayList())
 
