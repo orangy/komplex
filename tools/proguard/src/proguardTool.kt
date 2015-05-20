@@ -30,17 +30,26 @@ public class ProGuardRule(proGuardTool: ProGuardTool) : komplex.dsl.BasicToolRul
     // configuration params
     // note: filters are applied to all inputs (injars) for now
     // \todo implement flexible scheme of adding filters to particular inputs, e.g. using specific "from" implementations
-    public val filters: MutableList<String> = arrayListOf()
-    public val options: MutableList<String> = arrayListOf()
+    public val filters: MutableList<() -> String> = arrayListOf()
+    public val options: MutableList<() -> String> = arrayListOf()
 }
 
 public fun ProGuardRule.filters(vararg flt: String): ProGuardRule {
-    this.filters.addAll(flt)
+    flt.forEach { filters add {it} }
+    return this
+}
+
+public fun ProGuardRule.filters(vararg flt: () -> String): ProGuardRule {
+    filters addAll flt
     return this
 }
 
 public fun ProGuardRule.options(vararg opt: String): ProGuardRule {
-    this.options.addAll(opt)
+    opt.forEach { options add {it} }
+    return this
+}
+public fun ProGuardRule.options(vararg opt: () -> String): ProGuardRule {
+    options addAll opt
     return this
 }
 
@@ -74,10 +83,14 @@ public class ProGuardTool : komplex.model.Tool<ProGuardRule> {
         if (sourcePaths.none())
             throw IllegalArgumentException("no sources given for $name")
 
+        // compute it once
+        val filters = cfg.filters.map { it() }
         val filteredSrc = fun (src: Path) = "${escape4cli(src.toString())}" +
-                if (cfg.filters.any()) cfg.filters.map { escape4cli(it) }.joinToString(",","(",")") else ""
+                if (filters.any()) filters.map { escape4cli(it) }.joinToString(",","(",")") else ""
 
-        cfg.options.forEach {
+        // compute it once
+        val options = cfg.options.map { it() }
+        options.forEach {
             if ("(in|out)jars".toRegex(RegexOption.IGNORE_CASE).matcher(it).find())
                 log.warn("using -injars or -outjars in directly in options could lead to undesirable results, use from/into/export outside of options instead")
         }
@@ -89,7 +102,7 @@ public class ProGuardTool : komplex.model.Tool<ProGuardRule> {
                 sourcePaths.flatMap{ listOf("-injars", filteredSrc(it)) } +
                 "-outjars" +
                 "${escape4cli(targetPath.toString())}" +
-                cfg.options.flatMap { it.split("[\\r\\n]".toRegex()).map { it.replaceAll("#.*$","") }.flatMap { it.split("\\s+".toRegex()) } }
+                options.flatMap { it.split("[\\r\\n]+".toRegex()).map { it.replaceAll("#.*$","") }.flatMap { it.split("\\s+".toRegex()) } }
 
         log.debug("proguard params: ${pgcmdline.joinToString("\n  ","\n  ")}")
 
