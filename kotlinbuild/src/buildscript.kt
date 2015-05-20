@@ -40,6 +40,8 @@ fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it
 class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCompilerRule = tools.kotlin, public val java: JavaCompilerRule = tools.javac)
 : komplex.dsl.RuleSetDesc(listOf(kotlin, java)), Named {
 
+    // \todo support skip property (as in javac2)
+    
     init { java.classpath(kotlin) }
 
     public fun from(sourceRootDirs: Iterable<FolderArtifact>): KotlinJavaToolRule {
@@ -90,12 +92,22 @@ fun main(args: Array<String>) {
             return libModule
         }
 
+        fun transformTargets<T: GenericSourceType>(source: T, fn: (ArtifactDesc) -> Artifact ): komplex.dsl.LambdaRule  {
+            // \todo find more generic and safe way of implementing artifact transformation tools
+            fun convert(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> = openFileSet(tgts).coll
+            return tools.custom(::convert) with {
+                from (source)
+                fromSources.forEach { into(fn(it)) }
+            }
+        }
+
         val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
         val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
         val bootstrapRuntime = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-runtime.jar")
         val bootstrapReflect = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-reflect.jar")
         val bootstrapCompilerJar = file(artifacts.jar, bootstrapCompilerHome / "lib/kotlin-compiler.jar")
         val bootstrapCompilerScript = bootstrapCompilerHome / "bin/kotlinc"
+        val ideaSdkDir = rootDir / "ideaSDK"
 
         val uncheckedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-unchecked.jar")
         val checkedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-checked.jar")
@@ -109,6 +121,8 @@ fun main(args: Array<String>) {
         val outputReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect.jar")
         val outputRuntimeSources = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-sources.jar")
         val outputAntToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-ant.jar")
+        val outputMavenToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler-for-maven.jar")
+        val outputForUpsourceJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-for-upsource.jar")
 
         module("kotlin") {
 
@@ -177,10 +191,30 @@ fun main(args: Array<String>) {
             }
 
 
+            fun brandedJarTool() = tools.jar with {
+                dependsOn(readProperties)
+                dependsOn(buildno)
+                from(build_txt, prefix = "META-INF")
+                addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
+                addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
+                addManifestProperty("Implementation-Version", { "${buildno.ref}" })
+            }
+
+
+            val jdkAnnotations = module("jdk-annotations") {
+                build using tools.copy from file(artifacts.jar, "dependencies/annotations/kotlin-jdk-annotations.jar") export folder(artifacts.jar, outputCompilerDir)
+            }
+
+
+            val androidSdkAnnotations = module("android-sdk-annotations") {
+                build using tools.copy from file(artifacts.jar, "dependencies/annotations/kotlin-android-sdk-annotations.jar") export folder(artifacts.jar, outputCompilerDir)
+            }
+
+
             val protobufLite = module("protobufLite") {
                 // choose the right one
                 //val originalProtobuf = library("com.google.protobuf:protobuf-java:2.5.0")
-                val originalProtobuf = file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar")
+                val originalProtobuf = file(artifacts.jar, ideaSdkDir / "lib/protobuf-2.5.0.jar")
                 val protobufLite = file(artifacts.jar, libraries.path / "protobuf-2.5.0-lite.jar")
 
                 fun runScript(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
@@ -197,9 +231,6 @@ fun main(args: Array<String>) {
 
                 build using(tools.custom(::runScript)) from originalProtobuf export protobufLite
             }
-
-
-            val serializedBuiltins = folder(artifacts.binaries, outputDir / "builtins")
 
 
             val serializeBuiltins = module("serialize-builtins") {
@@ -228,69 +259,63 @@ fun main(args: Array<String>) {
                 build using(tools.custom(::serialize)) with {
                     from( folder(artifacts.sources, "core/builtins/native"),
                             folder(artifacts.sources, "core/builtins/src"))
-                    export(serializedBuiltins)
+                    export(folder(artifacts.binaries, outputDir / "builtins"))
                 }
             }
 
 
             val filterSerializedBuiltins = module("filter-serialized-builtins") {
-                // \todo find generic and safe way of implementing artifact transformation tools
-                fun convert(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> = openFileSet(tgts.first()).coll
-                build using tools.custom(::convert) with {
-                    from (serializeBuiltins)
-                    into (files(artifacts.binaries, serializedBuiltins.path, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**"))
-                }
+                build using transformTargets (serializeBuiltins, { files(artifacts.binaries, it as PathBasedArtifact, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**") })
             }
 
+            val compilerClasses = module("compiler-classes") {
 
-            val compiler = module("compiler", "Kotlin Compiler") {
-
-//                depends.on (
-//                        prepareDist,
-//                        library("org.slf4j:slf4j-api:1.7.12"),
-//                        library("org.jetbrains:annotations:13.0")
-//                )
-                // shared settings for all projects
+                // could be partially shared with jar contents
                 val libs = artifactsSet(
                         bootstrapRuntime,
-                        file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
+                        file(artifacts.jar, ideaSdkDir / "lib/protobuf-2.5.0.jar"),
                         file(artifacts.jar, "dependencies/jline.jar"),
                         file(artifacts.jar, "dependencies/cli-parser-1.1.1.jar"),
-                        file(artifacts.jar, "ideaSDK/jps/jps-model.jar"),
-                        files(artifacts.jar, "ideaSDK/core", "*.jar"),
+                        file(artifacts.jar, ideaSdkDir / "jps/jps-model.jar"),
+                        files(artifacts.jar, ideaSdkDir / "core", "*.jar"),
                         files(artifacts.jar, "lib", "*.jar"),
                         files(artifacts.jar, "lib", "**/*.jar")
                 )
-                val jarContent = artifactsSet(
-                        files(artifacts.jar, "lib", "*.jar"),
-                        files(artifacts.jar, "ideaSDK/core", "*.jar").exclude("util.jar"),
-                        file(artifacts.jar, "ideaSDK/jps/jps-model.jar"),
-                        file(artifacts.jar, "ideaSDK/lib/jna-utils.jar"),
-                        file(artifacts.jar, "ideaSDK/lib/oromatcher.jar"),
-                        file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
-                        file(artifacts.jar, "dependencies/jline.jar"),
-                        file(artifacts.jar, "dependencies/cli-parser-1.1.1.jar"),
-                        files(artifacts.sources, "compiler/frontend.java/src", "META-INF/services/**"),
-                        files(artifacts.sources, "compiler/backend/src", "META-INF/services/**"),
-                        files(artifacts.sources, "resources", "kotlinManifest.properties"),
-                        files(artifacts.sources, "idea/src", "META-INF/extensions/common.xml"),
-                        files(artifacts.sources, "idea/src", "META-INF/extensions/kotlin2jvm.xml"),
-                        files(artifacts.sources, "idea/src", "META-INF/extensions/kotlin2js.xml")
-                )
-
-                val classes = build using bootstrapCompiler() with {
+                build using bootstrapCompiler() with {
                     from(compilerSourceRoots)
                     classpath(libs)
-                    kotlin.into(folder(artifacts.binaries, "out/kb/build/compiler.kt"))
-                    java.into(folder(artifacts.binaries, "out/kb/build/compiler.java"))
+                    kotlin.export(folder(artifacts.binaries, "out/kb/build/compiler.kt"))
+                    java.export(folder(artifacts.binaries, "out/kb/build/compiler.java"))
                 }
 
-                val makeUncheckedJar = build(jar, test, check) using tools.jar with {
+           }
+
+            val compiler = module("compiler", "Kotlin Compiler") {
+
+                val jarContent = artifactsSet(
+                        files(artifacts.jar, "lib", "*.jar"),
+                        files(artifacts.jar, ideaSdkDir / "core", "*.jar").exclude("util.jar"),
+                        file(artifacts.jar, ideaSdkDir / "jps/jps-model.jar"),
+                        file(artifacts.jar, ideaSdkDir / "lib/jna-utils.jar"),
+                        file(artifacts.jar, ideaSdkDir / "lib/oromatcher.jar"),
+                        file(artifacts.jar, ideaSdkDir / "lib/protobuf-2.5.0.jar"),
+                        file(artifacts.jar, "dependencies/jline.jar"),
+                        file(artifacts.jar, "dependencies/cli-parser-1.1.1.jar"),
+                        files(artifacts.resources, "compiler/frontend.java/src", "META-INF/services/**"),
+                        files(artifacts.resources, "compiler/backend/src", "META-INF/services/**"),
+                        files(artifacts.resources, "resources", "kotlinManifest.properties"),
+                        files(artifacts.resources, "idea/src", "META-INF/extensions/common.xml"),
+                        files(artifacts.resources, "idea/src", "META-INF/extensions/kotlin2jvm.xml"),
+                        files(artifacts.resources, "idea/src", "META-INF/extensions/kotlin2js.xml")
+                )
+
+                val makeUncheckedJar = build(jar, test, check) using brandedJarTool() with {
                     dependsOn(prepareDist)
                     // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
-                    from(classes, jarContent, filterSerializedBuiltins)
+                    from(compilerClasses, jarContent, filterSerializedBuiltins)
                     into(uncheckedCompilerJar)
                     deflate = true
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
                     addManifestProperty("Class-Path", listOf(outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
                 }
@@ -445,7 +470,7 @@ fun main(args: Array<String>) {
                 }
 
 
-            val compilerSources = module("compiler-sources", "Kotlin Compiler sources") {
+            module("compiler-sources", "Kotlin Compiler sources") {
                 build using tools.jar from compilerSourceRoots export outputCompilerSources with {
                     deflate = true
                 }
@@ -465,17 +490,7 @@ fun main(args: Array<String>) {
             }
 
 
-            fun brandedJarTool() = tools.jar with {
-                dependsOn(readProperties)
-                dependsOn(buildno)
-                from(build_txt, prefix = "META-INF")
-                addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
-                addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
-                addManifestProperty("Implementation-Version", { "${buildno.ref}" })
-            }
-
-
-            val antTools = module("ant-tools", "Kotlin ant tools") {
+            module("ant-tools", "Kotlin ant tools") {
 
                 val antlib = library("org.apache.ant:ant:1.7.1")
 
@@ -500,6 +515,16 @@ fun main(args: Array<String>) {
                 }
             }
 
+
+            module("maven-tools", "Kotlin maven tools") {
+                build using brandedJarTool() with {
+                    from ( compiler,
+                           bootstrapRuntime) // \todo need exclude here, see original build.xml
+                    export (outputMavenToolsJar)
+                    addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
+                }
+            }
 
             val builtins = module("builtins") {
 
@@ -561,7 +586,7 @@ fun main(args: Array<String>) {
             }
 
 
-            val runtime = module("pack-runtime") {
+            module("pack-runtime") {
                 build using brandedJarTool() with {
                     from(builtins, stdlib, filterSerializedBuiltins)
                     export(outputRuntime)
@@ -581,7 +606,7 @@ fun main(args: Array<String>) {
             }
 
 
-            val runtimeSources = module("pack-runtime-sources") {
+            module("pack-runtime-sources") {
                 build using brandedJarTool() with {
                     from (listOf(
                         "core/builtins/native",
@@ -601,14 +626,39 @@ fun main(args: Array<String>) {
                 }
             }
 
-            module("all", "Build All") {
-                depends.on (
-                        prepareDist,
-                        preloader,
-                        serializeBuiltins ,
-                        compiler
-                )
-            }
+
+
+
+//            module("kotlin-for-upsource") {
+//
+//                val classes = build using bootstrapCompiler() with {
+//                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files(artifacts.sources, it, "src/**") })
+//                    classpath (files(artifacts.jar, ideaSdkDir/ "lib", "*.jar"),
+//                               uncheckedCompilerJar)
+//                    kotlin.into(folder(artifacts.binaries, "out/kb/build/4upsource.kt"))
+//                    java.into(folder(artifacts.binaries, "out/kb/build/4upsource.java"))
+//                }
+//
+//                build using brandedJarTool() with {
+//                    // \todo implement filtering of jar content to finish the module (exclude javax stuff)
+//                    from ( classes,
+//                           compilerClasses,
+//                           filterSerializedBuiltins,
+//                           files(artifacts.sources, "idea/idea-analysis/src", "**").exclude("**/*.java", "**/*.kt"),
+//                           files(artifacts.sources, "compiler/frontend.java/src", "META-INF/services/**"),
+//                           files(artifacts.sources, "compiler/backend/src", "META-INF/services/**"),
+//                           files(artifacts.jar, "lib", "*.jar"),
+//                           files(artifacts.jar, "lib", "**/*.jar"),
+//                           outputRuntime,
+//                           outputRuntimeSources,
+//                           outputReflect,
+//                           folder(artifacts.resources, "resources"),
+//                           folder(artifacts.resources, "idea/resources"),
+//                           files(artifacts.sources, "idea/src", "META-INF/**"))
+//                    into (outputForUpsourceJar)
+//                }
+//            }
+
         }
         /// BUILD SCRIPT
     }

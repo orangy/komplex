@@ -83,6 +83,8 @@ public fun ScriptContext.files(type: ArtifactType, base: Path, include: String):
         FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
 public fun ScriptContext.files(type: ArtifactType, base: String, include: String): FileGlobArtifact =
         FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact, include: String): FileGlobArtifact =
+        FileGlobArtifact(`type`, this.resolvePath(base.path)).include(include)
 // context independent variant with path as a base
 public fun files(type: ArtifactType, base: Path, include: String): FileGlobArtifact =
         FileGlobArtifact(`type`, base).include(include)

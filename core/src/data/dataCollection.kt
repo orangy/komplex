@@ -97,7 +97,7 @@ public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
     }
 }
 
-public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
+public fun openFileSet(artifacts: Iterable<komplex.model.ArtifactDesc>,
                        baseDir: Path? = null,
                        options: OpenFileSet = OpenFileSet.Nothing
 ): DataSet<FileData> =
@@ -119,6 +119,10 @@ public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
             else -> throw UnsupportedOperationException("cannot open ${artifacts.firstOrNull()?.name ?: "[]"}... as FileSet")
         }})
 
+public fun openFileSet(vararg artifacts: komplex.model.ArtifactDesc,
+                       baseDir: Path? = null,
+                       options: OpenFileSet = OpenFileSet.Nothing
+): DataSet<FileData> = openFileSet(artifacts.asIterable(), baseDir, options)
 
 public fun openFileSetI(paths: Iterable<Path>): DataSet<FileData> = DataSet( paths.map { SimpleFileData(it) })
 
