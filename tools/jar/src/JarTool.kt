@@ -13,6 +13,7 @@ import komplex.model.BuildContext
 import komplex.model.ArtifactDesc
 import komplex.model.ArtifactData
 import komplex.model.BuildResult
+import komplex.tools.filterIn
 import komplex.utils.findFilesInPath
 import komplex.utils.findGlobFiles
 import komplex.utils.BuildDiagnostic
@@ -36,16 +37,21 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
     override val fromSources: Iterable<ArtifactDesc> get() = super.fromSources + explicitPrefixedFroms.values().flatMap { it.collect(selector.scenarios) }
     // configuration params
     public var deflate : Boolean = false
-    public val manifest: MutableCollection<JarManifestProperty> = arrayListOf()
+    public val manifest: MutableCollection< () -> JarManifestProperty> = arrayListOf()
 }
 
-public fun <S: GenericSourceType> JarPackagerRule.from(args: Iterable<S>, prefix: String? = null): JarPackagerRule =
-        addToSources(if (prefix == null ) explicitFroms else explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), args)
-public fun <S: GenericSourceType> JarPackagerRule.from(vararg args: S, prefix: String? = null): JarPackagerRule =
-        addToSources(if (prefix == null ) explicitFroms else explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), *args)
+public fun <S: GenericSourceType> JarPackagerRule.from(args: Iterable<S>, prefix: String): JarPackagerRule =
+        addToSources(explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), args)
+public fun <S: GenericSourceType> JarPackagerRule.from(vararg args: S, prefix: String): JarPackagerRule =
+        addToSources(explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), *args)
+
+public fun JarPackagerRule.addManifestProperty(name: String, generator: () -> String): JarPackagerRule {
+    manifest.add({ JarManifestProperty(name, generator()) })
+    return this
+}
 
 public fun JarPackagerRule.addManifestProperty(name: String, value: String): JarPackagerRule {
-    manifest.add(JarManifestProperty(name, value))
+    manifest.add({ JarManifestProperty(name, value) })
     return this
 }
 
@@ -151,7 +157,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
         val manifest = Manifest()
         val manifestAttrs = manifest.getMainAttributes()!!
         manifestAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0")
-        cfg.manifest.forEach { manifestAttrs.put(Attributes.Name(it.name), it.value) }
+        cfg.manifest.forEach { val prop = it(); log.debug("adding manifest property ${prop.name} = ${prop.value}"); manifestAttrs.put(Attributes.Name(prop.name), prop.value) }
 
         val targetDesc = tgt.single()
         val targetData =
@@ -177,7 +183,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
 
         fun getPrefix(artifact: ArtifactDesc) = prefixes.get(artifact) ?: ""
 
-        for (sourcePair in src) {
+        for (sourcePair in src.filterIn(cfg.fromSources)) {
             val sourceDesc = sourcePair.first
             when (sourceDesc) {
                 // note: order matters

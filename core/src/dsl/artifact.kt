@@ -144,3 +144,13 @@ public fun ScriptContext.artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
     }})
 
 public fun ScriptContext.artifactsSet(vararg artifacts: Any): ArtifactsSet = artifactsSet(artifacts.asIterable())
+
+
+
+// for reference types
+public open class VariableArtifact<T: Any>(override val type: ArtifactType, public val ref: T) : Artifact {
+    override val name: String = "$`type` var ${ref}"
+}
+
+public fun variable<T: Any>(type: ArtifactType, ref: T) : VariableArtifact<T> = VariableArtifact(type, ref)
+

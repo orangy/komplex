@@ -1,11 +1,14 @@
 package kotlin.buildscript
 
 import komplex.data.OpenFileSet
+import komplex.data.VariableData
 import komplex.data.openFileSet
+import komplex.data.openInputStream
 import komplex.dsl.*
 import komplex.dsl.tools
 import komplex.dsl.Module
 import komplex.tools.jar.jar
+import komplex.tools.jar.from
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
@@ -22,6 +25,7 @@ import komplex.utils.Named
 import komplex.utils.div
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
+import komplex.tools.from
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -128,10 +132,31 @@ fun main(args: Array<String>) {
         module("kotlin") {
 
             version("ATTEMPT-0.1")
+            val buildnoString = "snapshot"
 
             depends on children
 
+            val properties = java.util.Properties()
+
+            val buildno = variable(artifacts.configs, buildnoString)
+
             val build_txt = file(artifacts.resources, outputCompilerDir / "build.txt")
+
+            val readProperties = module("readProperties") {
+
+                fun readProps(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
+                    val target = tgts.first() as VariableArtifact<java.util.Properties>
+                    target.ref.clear()
+                    for (src in srcs)
+                        openFileSet(src).coll.forEach { target.ref.load(openInputStream(it).inputStream) }
+                    return listOf(VariableData(target))
+                }
+
+                build using tools.custom(::readProps) with {
+                    from (file(artifacts.configs, "resources/kotlinManifest.properties"))
+                    export (variable(artifacts.configs, properties))
+                }
+            }
 
             val prepareDist = module("prepareDist") {
                 build using(tools.copy) with {
@@ -140,7 +165,7 @@ fun main(args: Array<String>) {
                 }
                 build using(tools.copy) from bootstrapRuntime export outputBootstrapRuntime with { makeDirs = true }
                 build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
-                build using(tools.echo) from version export build_txt
+                build using(tools.echo) from version!! export build_txt
             }
 
             val protobufLite = module("protobufLite") {
@@ -163,6 +188,39 @@ fun main(args: Array<String>) {
 
                 build using(tools.custom(::runScript)) from originalProtobuf export protobufLite
             }
+
+            val serializedBuiltins = folder(artifacts.binaries, outputDir / "builtins")
+
+            val serializeBuiltins = module("serialize-builtins") {
+
+                fun serialize(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
+                    val classpath = depends.allArtifacts().getPaths(OpenFileSet.FoldersAsLibraries)
+                    val target = tgts.singleDestFolder()
+
+                    val params = arrayListOf( "java", "-Xmx$maxHeapSizeForForkedJvm")
+                    if (classpath.any()) {
+                        params.add("-cp")
+                        params.add(escape4cli(classpath.joinToString(File.pathSeparator)))
+                    }
+                    params.addAll( listOf(
+                            "-cp",
+                            escape4cli(bootstrapCompilerHome / "lib/kotlin-compiler.jar"),
+                            "org.jetbrains.kotlin.serialization.builtins.BuiltinsPackage",
+                            escape4cli(target.path)) +
+                            srcs.getPaths().map { escape4cli(it) })
+                    val res = run(params)
+                    if (res > 0)
+                        throw Exception("Serializing builtins failed with error code $res")
+                    return openFileSet(target).coll
+                }
+
+                build using(tools.custom(::serialize)) with {
+                    from( folder(artifacts.sources, "core/builtins/native"),
+                            folder(artifacts.sources, "core/builtins/src"))
+                    export(serializedBuiltins)
+                }
+            }
+
 
             val compiler = module("compiler", "Kotlin Compiler") {
 
@@ -208,16 +266,20 @@ fun main(args: Array<String>) {
                     java.into(folder(artifacts.binaries, "out/kb/build/compiler.java"))
                 }
 
-                val makeUncheckedJar = build(jar, test) using tools.jar with {
-                    from(classes, jarContent)
+                val makeUncheckedJar = build(jar, test, check) using tools.jar with {
+                    dependsOn(prepareDist, serializeBuiltins)
+                    // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
+                    from(classes, jarContent, files(artifacts.binaries, serializedBuiltins.path, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**"))
                     into(jarFile)
-                    dependsOn(prepareDist)
                     deflate = true
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
                     addManifestProperty("Class-Path", listOf(outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
                 }
 
-                build(jar, test) using tools.copy from makeUncheckedJar export outputCompilerJar
+//                build(jar, test) using tools.copy from makeUncheckedJar export outputCompilerJar
+
+                // now the unchecked jar doesn't run without proguarding it (the same problem exists in the original build system)
+                // \todo find out why how to fix it
 
                 val makeCheckedJar = build(check) using tools.proguard from makeUncheckedJar into checkedJarFile with {
                     filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
@@ -346,7 +408,7 @@ fun main(args: Array<String>) {
                     )
                 }
 
-//                build(check) using tools.copy from makeCheckedJar export outputCompilerJar
+                build(check) using tools.copy from makeCheckedJar export outputCompilerJar
 
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
@@ -368,11 +430,11 @@ fun main(args: Array<String>) {
                 }
             }
 
+            val preloaderJarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
             val preloader = module("preloader", "Preloader") {
 
                 val classes = folder(artifacts.binaries, outputDir / "build.kt/preloader")
                 val sources = folder(artifacts.sources, "compiler/preloader/src")
-                val preloaderJarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
 
                 build using(tools.javac) from sources into classes
 
@@ -395,40 +457,20 @@ fun main(args: Array<String>) {
                 }
 
                 build using(tools.jar) with {
-                    from(classes)
+                    from( classes,
+                          files(artifacts.sources, "ant/src", "**/*.xml"))
+                    from(build_txt, prefix = "META-INF")
+                    dependsOn(readProperties)
+                    dependsOn(buildno)
+
+                    addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
+                    addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler.ant.task")}" })
+                    addManifestProperty("Implementation-Version", { "${buildno.ref}" })
+                    addManifestProperty("Class-Path", listOf(preloaderJarFile, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
+                    
                     export(file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar"))
                     deflate = true
-                }
-            }
-
-
-            val serializeBuiltins = module("serialize-builtins") {
-
-                fun serialize(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> {
-                    val classpath = depends.allArtifacts().getPaths(OpenFileSet.FoldersAsLibraries)
-                    val target = tgts.singleDestFolder()
-
-                    val params = arrayListOf( "java", "-Xmx$maxHeapSizeForForkedJvm")
-                    if (classpath.any()) {
-                        params.add("-cp")
-                        params.add(escape4cli(classpath.joinToString(File.pathSeparator)))
-                    }
-                    params.addAll( listOf(
-                            "-cp",
-                            escape4cli(bootstrapCompilerHome / "lib/kotlin-compiler.jar"),
-                            "org.jetbrains.kotlin.serialization.builtins.BuiltinsPackage",
-                            escape4cli(target.path)) +
-                            srcs.getPaths().map { escape4cli(it) })
-                    val res = run(params)
-                    if (res > 0)
-                        throw Exception("Serializing builtins failed with error code $res")
-                    return openFileSet(target).coll
-                }
-
-                build using(tools.custom(::serialize)) with {
-                    from( folder(artifacts.sources, "core/builtins/native"),
-                          folder(artifacts.sources, "core/builtins/src"))
-                    export(folder(artifacts.binaries, outputDir / "builtins"))
                 }
             }
 
@@ -507,8 +549,8 @@ fun main(args: Array<String>) {
     println("\n--- script ------------------------------")
     println(script.nicePrint(indent))
 
-    //val scenarios = Scenarios.All
-    val scenarios = scenarios(jar)
+    val scenarios = Scenarios.All
+    //val scenarios = scenarios(jar)
     val graph = script.buildGraph()
 
     println("\n--- roots -------------------------------")
