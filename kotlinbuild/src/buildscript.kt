@@ -95,41 +95,20 @@ fun main(args: Array<String>) {
         val bootstrapRuntime = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-runtime.jar")
         val bootstrapReflect = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-reflect.jar")
         val bootstrapCompilerJar = file(artifacts.jar, bootstrapCompilerHome / "lib/kotlin-compiler.jar")
-        val compilerJar = rootDir / "out/kb/artifacts/kotlin-compiler.jar"
         val bootstrapCompilerScript = bootstrapCompilerHome / "bin/kotlinc"
 
+        val uncheckedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-unchecked.jar")
+        val checkedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-checked.jar")
         val outputCompilerDir = outputDir / "kotlinc"
+        val outputPreloaderJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-preloader.jar")
         val outputCompilerJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler.jar")
+        val outputCompilerSources = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler-sources.jar")
         val outputBootstrapRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-internal-bootstrap.jar")
         val outputBootstrapReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect-internal-bootstrap.jar")
         val outputRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime.jar")
         val outputReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect.jar")
-
-        fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
-
-        val compilerSourceRoots = listOf(
-                "core/descriptor.loader.java",
-                "core/descriptors",
-                "core/deserialization",
-                "core/util.runtime",
-                "compiler/backend",
-                "compiler/backend-common",
-                "compiler/builtins-serializer",
-                "compiler/cli",
-                "compiler/cli/cli-common",
-                "compiler/frontend",
-                "compiler/frontend.java",
-                "compiler/light-classes",
-                "compiler/plugin-api",
-                "compiler/serialization",
-                "compiler/util",
-                "js/js.dart-ast",
-                "js/js.translator",
-                "js/js.frontend",
-                "js/js.inliner",
-                "js/js.parser",
-                "js/js.serializer").map { folder(artifacts.sources, it) }
-
+        val outputRuntimeSources = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-sources.jar")
+        val outputAntToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-ant.jar")
 
         module("kotlin") {
 
@@ -143,6 +122,32 @@ fun main(args: Array<String>) {
             val buildno = variable(artifacts.configs, buildnoString)
 
             val build_txt = file(artifacts.resources, outputCompilerDir / "build.txt")
+
+            fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
+
+            val compilerSourceRoots = listOf(
+                    "core/descriptor.loader.java",
+                    "core/descriptors",
+                    "core/deserialization",
+                    "core/util.runtime",
+                    "compiler/backend",
+                    "compiler/backend-common",
+                    "compiler/builtins-serializer",
+                    "compiler/cli",
+                    "compiler/cli/cli-common",
+                    "compiler/frontend",
+                    "compiler/frontend.java",
+                    "compiler/light-classes",
+                    "compiler/plugin-api",
+                    "compiler/serialization",
+                    "compiler/util",
+                    "js/js.dart-ast",
+                    "js/js.translator",
+                    "js/js.frontend",
+                    "js/js.inliner",
+                    "js/js.parser",
+                    "js/js.serializer").map { folder(artifacts.sources, it) }
+
 
             val readProperties = module("readProperties") {
 
@@ -160,6 +165,7 @@ fun main(args: Array<String>) {
                 }
             }
 
+
             val prepareDist = module("prepareDist") {
                 build using(tools.copy) with {
                     from (folder(artifacts.binaries, "compiler/cli/bin"))
@@ -169,6 +175,7 @@ fun main(args: Array<String>) {
                 build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
                 build using(tools.echo) from version!! export build_txt
             }
+
 
             val protobufLite = module("protobufLite") {
                 // choose the right one
@@ -191,7 +198,9 @@ fun main(args: Array<String>) {
                 build using(tools.custom(::runScript)) from originalProtobuf export protobufLite
             }
 
+
             val serializedBuiltins = folder(artifacts.binaries, outputDir / "builtins")
+
 
             val serializeBuiltins = module("serialize-builtins") {
 
@@ -223,6 +232,7 @@ fun main(args: Array<String>) {
                 }
             }
 
+
             val filterSerializedBuiltins = module("filter-serialized-builtins") {
                 // \todo find generic and safe way of implementing artifact transformation tools
                 fun convert(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> = openFileSet(tgts.first()).coll
@@ -241,8 +251,6 @@ fun main(args: Array<String>) {
 //                        library("org.jetbrains:annotations:13.0")
 //                )
                 // shared settings for all projects
-                val jarFile = file(artifacts.jar, compilerJar)
-                val checkedJarFile = file(artifacts.jar, "out/kb/artifacts/checked/kotlin-compiler.jar")
                 val libs = artifactsSet(
                         bootstrapRuntime,
                         file(artifacts.jar, "ideaSDK/lib/protobuf-2.5.0.jar"),
@@ -281,7 +289,7 @@ fun main(args: Array<String>) {
                     dependsOn(prepareDist)
                     // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
                     from(classes, jarContent, filterSerializedBuiltins)
-                    into(jarFile)
+                    into(uncheckedCompilerJar)
                     deflate = true
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
                     addManifestProperty("Class-Path", listOf(outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
@@ -292,7 +300,7 @@ fun main(args: Array<String>) {
                 // now the unchecked jar doesn't run without proguarding it (the same problem exists in the original build system)
                 // \todo find out why how to fix it
 
-                val makeCheckedJar = build(check) using tools.proguard from makeUncheckedJar into checkedJarFile with {
+                val makeCheckedJar = build(check) using tools.proguard from makeUncheckedJar into checkedCompilerJar with {
                     filters("!com/thoughtworks/xstream/converters/extended/ISO8601**",
                             "!com/thoughtworks/xstream/converters/reflection/CGLIBEnhancedConverter**",
                             "!com/thoughtworks/xstream/io/xml/Dom4J**",
@@ -424,24 +432,26 @@ fun main(args: Array<String>) {
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
 
+
             fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin =
                 tools.kotlin(outputCompilerJar.path)) with {
                     kotlin.dependsOn(compiler)
                 }
+
 
             fun newJSCompiler() = KotlinJavaToolRule("New JS compiler", kotlin =
                 tools.kotlin(outputCompilerJar.path)) with {
                     kotlin.dependsOn(compiler)
                 }
 
+
             val compilerSources = module("compiler-sources", "Kotlin Compiler sources") {
-                val jarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-compiler-sources.jar")
-                build using tools.jar from compilerSourceRoots export jarFile with {
+                build using tools.jar from compilerSourceRoots export outputCompilerSources with {
                     deflate = true
                 }
             }
 
-            val preloaderJarFile = file(artifacts.jar, outputDir / "artifacts/kotlin-preloader.jar")
+
             val preloader = module("preloader", "Preloader") {
 
                 val classes = folder(artifacts.binaries, outputDir / "build.kt/preloader")
@@ -449,10 +459,11 @@ fun main(args: Array<String>) {
 
                 build using(tools.javac) from sources into classes
 
-                build using tools.jar from classes export preloaderJarFile with {
+                build using tools.jar from classes export outputPreloaderJar with {
                     deflate = true
                 }
             }
+
 
             fun brandedJarTool() = tools.jar with {
                 dependsOn(readProperties)
@@ -462,6 +473,7 @@ fun main(args: Array<String>) {
                 addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Version", { "${buildno.ref}" })
             }
+
 
             val antTools = module("ant-tools", "Kotlin ant tools") {
 
@@ -481,9 +493,9 @@ fun main(args: Array<String>) {
                           files(artifacts.sources, "ant/src", "**/*.xml"))
 
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler.ant.task")}" })
-                    addManifestProperty("Class-Path", listOf(preloaderJarFile, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
-                    
-                    export(file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar"))
+                    addManifestProperty("Class-Path", listOf(outputPreloaderJar, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
+
+                    export(outputAntToolsJar)
                     deflate = true
                 }
             }
@@ -504,6 +516,7 @@ fun main(args: Array<String>) {
                 }
 
             }
+
 
             val stdlib = module("stdlib") {
 
@@ -534,6 +547,7 @@ fun main(args: Array<String>) {
                 }
             }
 
+
             val reflection = module("reflection") {
                 build using newJVMCompiler() with {
                     kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.kt"))
@@ -546,8 +560,8 @@ fun main(args: Array<String>) {
                 }
             }
 
-            val runtime = module("packRuntime") {
 
+            val runtime = module("pack-runtime") {
                 build using brandedJarTool() with {
                     from(builtins, stdlib, filterSerializedBuiltins)
                     export(outputRuntime)
@@ -563,6 +577,27 @@ fun main(args: Array<String>) {
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.reflect")}" })
                     addManifestProperty("Class-Path", outputRuntime.path.getFileName().toString())
+                }
+            }
+
+
+            val runtimeSources = module("pack-runtime-sources") {
+                build using brandedJarTool() with {
+                    from (listOf(
+                        "core/builtins/native",
+                        "core/builtins/src",
+                        "core/descriptor.loader.java/src",
+                        "core/descriptors/src",
+                        "core/descriptors.runtime/src",
+                        "core/deserialization/src",
+                        "core/reflection.jvm/src",
+                        "core/runtime.jvm/src",
+                        "core/util.runtime/src",
+                        "libraries/stdlib/src").map { files(artifacts.sources, it, "**/*") }
+                    )
+                    export(outputRuntimeSources)
+                    deflate = true
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime.sources")}" })
                 }
             }
 
