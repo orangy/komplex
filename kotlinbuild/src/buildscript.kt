@@ -102,6 +102,8 @@ fun main(args: Array<String>) {
         val outputCompilerJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler.jar")
         val outputBootstrapRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-internal-bootstrap.jar")
         val outputBootstrapReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect-internal-bootstrap.jar")
+        val outputRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime.jar")
+        val outputReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect.jar")
 
         fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
 
@@ -221,6 +223,15 @@ fun main(args: Array<String>) {
                 }
             }
 
+            val filterSerializedBuiltins = module("filter-serialized-builtins") {
+                // \todo find generic and safe way of implementing artifact transformation tools
+                fun convert(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> = openFileSet(tgts.first()).coll
+                build using tools.custom(::convert) with {
+                    from (serializeBuiltins)
+                    into (files(artifacts.binaries, serializedBuiltins.path, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**"))
+                }
+            }
+
 
             val compiler = module("compiler", "Kotlin Compiler") {
 
@@ -267,9 +278,9 @@ fun main(args: Array<String>) {
                 }
 
                 val makeUncheckedJar = build(jar, test, check) using tools.jar with {
-                    dependsOn(prepareDist, serializeBuiltins)
+                    dependsOn(prepareDist)
                     // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
-                    from(classes, jarContent, files(artifacts.binaries, serializedBuiltins.path, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**"))
+                    from(classes, jarContent, filterSerializedBuiltins)
                     into(jarFile)
                     deflate = true
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
@@ -443,6 +454,15 @@ fun main(args: Array<String>) {
                 }
             }
 
+            fun brandedJarTool() = tools.jar with {
+                dependsOn(readProperties)
+                dependsOn(buildno)
+                from(build_txt, prefix = "META-INF")
+                addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
+                addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
+                addManifestProperty("Implementation-Version", { "${buildno.ref}" })
+            }
+
             val antTools = module("ant-tools", "Kotlin ant tools") {
 
                 val antlib = library("org.apache.ant:ant:1.7.1")
@@ -456,17 +476,11 @@ fun main(args: Array<String>) {
                     java.into(folder(artifacts.binaries, "out/kb/build/ant"))
                 }
 
-                build using(tools.jar) with {
+                build using(brandedJarTool()) with {
                     from( classes,
                           files(artifacts.sources, "ant/src", "**/*.xml"))
-                    from(build_txt, prefix = "META-INF")
-                    dependsOn(readProperties)
-                    dependsOn(buildno)
 
-                    addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
-                    addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler.ant.task")}" })
-                    addManifestProperty("Implementation-Version", { "${buildno.ref}" })
                     addManifestProperty("Class-Path", listOf(preloaderJarFile, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
                     
                     export(file(artifacts.jar, "out/kb/artifacts/kotlin-ant.jar"))
@@ -529,6 +543,26 @@ fun main(args: Array<String>) {
                                stdlib,
                                core,
                                protobufLite)
+                }
+            }
+
+            val runtime = module("packRuntime") {
+
+                build using brandedJarTool() with {
+                    from(builtins, stdlib, filterSerializedBuiltins)
+                    export(outputRuntime)
+                    deflate = true
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime")}" })
+                }
+                build using brandedJarTool() with {
+                    from(reflection,
+                         core,
+                         protobufLite,
+                         file(artifacts.jar, "lib/javax.inject.jar"))
+                    export(outputReflect)
+                    deflate = true
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.reflect")}" })
+                    addManifestProperty("Class-Path", outputRuntime.path.getFileName().toString())
                 }
             }
 
