@@ -36,7 +36,15 @@ public fun BuildGraph.build(scenario: Scenarios,
                    log.debug("running ${n.step.name} in module ${n.moduleFlavor.module.name}")
                    val result = n.step.execute(context, artifacts)
                    result.result.forEach { context.artifacts.set(it.first, it.second) }
-                   log.info("${n.step.name} ${if (result.diagnostic != BuildDiagnostic.Success) "failed: ${result.diagnostic.messages}" else "succeeded!"}")
+                   if (result.diagnostic == BuildDiagnostic.Success) {
+                        log.info("${n.step.name} succeeded!")
+                        result.diagnostic.messages.forEach { log.warn("${n.step.name}: $it") }
+                   }
+                   else {
+                       log.info("${n.step.name} failed!")
+                       result.diagnostic.messages.forEach { log.error("${n.step.name}: $it") }
+                   }
+
                    result.diagnostic != BuildDiagnostic.Success
                }
            },

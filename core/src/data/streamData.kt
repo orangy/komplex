@@ -21,14 +21,14 @@ public trait OutputStreamData : komplex.model.ArtifactData {
 }
 
 
-public open class FileInputStreamData(val path: Path) : InputStreamData {
+public open class FileInputStreamData(public val path: Path) : InputStreamData {
     override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
 }
 
-public open class FileOutputStreamData(val path: Path) : OutputStreamData {
+public open class FileOutputStreamData(public val path: Path) : OutputStreamData {
     override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val outputStream: OutputStream
@@ -45,6 +45,7 @@ public fun openInputStream(data: ArtifactData): InputStreamData =
         when (data) {
             is FileArtifact -> openInputStream(data as FileArtifact)
             is FileData -> openInputStream(data as FileData)
+            is FileOutputStreamData -> FileInputStreamData(data.path)
             else -> throw UnsupportedOperationException("Cannot open input strream from '$data'")
         }
 

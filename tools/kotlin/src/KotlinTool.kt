@@ -17,9 +17,9 @@ import komplex.utils
 import komplex.utils.BuildDiagnostic
 
 
-val log = LoggerFactory.getLogger("komplex.tools.kotlin")
+internal val log = LoggerFactory.getLogger("komplex.tools.kotlin")
 
-public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : komplex.tools.CompilerRule<KotlinCompilerRule, Tool<KotlinCompilerRule>>() {
+public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : komplex.tools.JVMCompilerRule<KotlinCompilerRule, Tool<KotlinCompilerRule>>() {
     override val name: String = "Kotlin compiler"
     override val config: KotlinCompilerRule = this
 

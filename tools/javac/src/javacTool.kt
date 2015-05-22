@@ -33,7 +33,7 @@ val log = LoggerFactory.getLogger("komplex.tools.javac")
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class JavaCompilerRule(override val tool: Tool<JavaCompilerRule>) : komplex.tools.CompilerRule<JavaCompilerRule, Tool<JavaCompilerRule>>() {
+public class JavaCompilerRule(override val tool: Tool<JavaCompilerRule>) : komplex.tools.JVMCompilerRule<JavaCompilerRule, Tool<JavaCompilerRule>>() {
     override val name: String = "Java compiler"
     override val config: JavaCompilerRule = this
 

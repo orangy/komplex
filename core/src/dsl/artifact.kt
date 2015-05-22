@@ -78,13 +78,12 @@ public class GlobCollection(val collection: MutableList<String>) {
 }
 
 public fun ScriptContext.files(type: ArtifactType): FileGlobArtifact = FileGlobArtifact(type, this.resolvePath("."))
-public fun ScriptContext.files(type: ArtifactType, include: String): FileGlobArtifact = files(type).include(include)
-public fun ScriptContext.files(type: ArtifactType, base: Path, include: String): FileGlobArtifact =
-        FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
-public fun ScriptContext.files(type: ArtifactType, base: String, include: String): FileGlobArtifact =
-        FileGlobArtifact(`type`, this.resolvePath(base)).include(include)
-public fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact, include: String): FileGlobArtifact =
-        FileGlobArtifact(`type`, this.resolvePath(base.path)).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: Path): FileGlobArtifact = FileGlobArtifact(`type`, this.resolvePath(base))
+public fun ScriptContext.files(type: ArtifactType, base: String): FileGlobArtifact = FileGlobArtifact(`type`, this.resolvePath(base))
+public fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact): FileGlobArtifact = FileGlobArtifact(`type`, this.resolvePath(base.path))
+public fun ScriptContext.files(type: ArtifactType, base: Path, include: String): FileGlobArtifact = files(type, base).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: String, include: String): FileGlobArtifact = files(type, base).include(include)
+public fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact, include: String): FileGlobArtifact = files(type,base).include(include)
 // context independent variant with path as a base
 public fun files(type: ArtifactType, base: Path, include: String): FileGlobArtifact =
         FileGlobArtifact(`type`, base).include(include)

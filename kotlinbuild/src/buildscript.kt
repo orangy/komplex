@@ -9,14 +9,12 @@ import komplex.dsl.tools
 import komplex.dsl.Module
 import komplex.tools.jar.jar
 import komplex.tools.jar.from
-import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.*
 import komplex.tools.jar.addManifestProperty
 import komplex.tools.javac.JavaCompilerRule
 import komplex.tools.javac.javac
-import komplex.tools.kotlin.KotlinCompilerRule
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
@@ -26,6 +24,13 @@ import komplex.utils.div
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import komplex.tools.from
+import komplex.tools.javascript.closureCompiler
+import komplex.tools.javascript.extern
+import komplex.tools.kotlin.KotlinJavaToolRule
+import komplex.tools.kotlin
+import komplex.tools.kotlin.kotlin
+import komplex.tools.kotlin.kotlinjs
+import komplex.tools.kotlin.meta
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -35,35 +40,6 @@ internal val log = LoggerFactory.getLogger("kotlinbuild")
 
 fun run(args: Iterable<String>): Int = runProcess(args, { log.debug(it) }, { log.error(it) })
 fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it) }, { log.error(it) })
-
-// \todo move into separate tool
-class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCompilerRule = tools.kotlin, public val java: JavaCompilerRule = tools.javac)
-: komplex.dsl.RuleSetDesc(listOf(kotlin, java)), Named {
-
-    // \todo support skip property (as in javac2)
-    
-    init { java.classpath(kotlin) }
-
-    public fun from(sourceRootDirs: Iterable<FolderArtifact>): KotlinJavaToolRule {
-        kotlin.with {
-            sourceRoots.addAll( sourceRootDirs.map { (it.path / "src").toString() })
-            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.kt") })
-        }
-        java.with {
-            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.java") })
-        }
-        return this
-    }
-    public fun from(vararg sourceRootDirs: FolderArtifact): KotlinJavaToolRule = from(sourceRootDirs.asIterable())
-
-    public fun<S: GenericSourceType> classpath(v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(v); java.classpath(v); return this }
-    public fun<S: GenericSourceType> classpath(vararg v: S): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
-
-    public fun with(body: KotlinJavaToolRule.() -> Unit): KotlinJavaToolRule {
-        body()
-        return this
-    }
-}
 
 fun main(args: Array<String>) {
 
@@ -123,6 +99,7 @@ fun main(args: Array<String>) {
         val outputAntToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-ant.jar")
         val outputMavenToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler-for-maven.jar")
         val outputForUpsourceJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-for-upsource.jar")
+        val outputJSStdLib = file(artifacts.jar, outputCompilerDir / "lib/kotlin-jslib.jar")
 
         module("kotlin") {
 
@@ -138,6 +115,8 @@ fun main(args: Array<String>) {
             val build_txt = file(artifacts.resources, outputCompilerDir / "build.txt")
 
             fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
+
+            fun bootstrapJSCompiler() = tools.kotlinjs(bootstrapCompilerJar.path)
 
             val compilerSourceRoots = listOf(
                     "core/descriptor.loader.java",
@@ -195,6 +174,7 @@ fun main(args: Array<String>) {
                 dependsOn(readProperties)
                 dependsOn(buildno)
                 from(build_txt, prefix = "META-INF")
+                deflate = true
                 addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Version", { "${buildno.ref}" })
@@ -459,14 +439,13 @@ fun main(args: Array<String>) {
 
 
             fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin =
-                tools.kotlin(outputCompilerJar.path)) with {
+            tools.kotlin(outputCompilerJar.path)) with {
                     kotlin.dependsOn(compiler)
                 }
 
 
-            fun newJSCompiler() = KotlinJavaToolRule("New JS compiler", kotlin =
-                tools.kotlin(outputCompilerJar.path)) with {
-                    kotlin.dependsOn(compiler)
+            fun newJSCompiler() = tools.kotlinjs(outputCompilerJar.path) with {
+                    dependsOn(compiler)
                 }
 
 
@@ -659,6 +638,64 @@ fun main(args: Array<String>) {
 //                }
 //            }
 
+            module("js-stdlib") {
+
+                val builtinsJs = file(artifacts.sources, outputDir / "builtins.js")
+                val stdlibJs = file(artifacts.sources, outputDir / "jslib.js")
+
+                build using newJSCompiler() with {
+                    from (listOf(
+                            "native/kotlin/Iterator.kt",
+                            "native/kotlin/Collections.kt",
+                            "src/kotlin/ExtensionFunctions.kt",
+                            "src/kotlin/Functions.kt",
+                            "src/kotlin/Iterators.kt",
+                            "src/kotlin/Range.kt",
+                            "src/kotlin/FloatingPointConstants.kt"
+                        ).map { file(artifacts.sources, rootDir / "core/builtins" / it)})
+                    into (builtinsJs)
+                    meta (file(artifacts.sources, outputDir / "builtins-meta.js"))
+                    includeStdlib = false
+                }
+
+                build using newJSCompiler() with {
+                    from (files(artifacts.sources, "js/js.libraries", "src/**/*.kt"),
+                          files(artifacts.sources, "core/builtins").include("src/kotlin/reflect/*.kt", "src/kotlin/reflect/**/*.kt"),
+                          files(artifacts.sources, "libraries/stdlib/src", "**/*.kt").exclude(
+                                  "**/*JVM.kt",
+                                  "kotlin/jvm/**",
+                                  "kotlin/beans/**",
+                                  "kotlin/browser/**",
+                                  "kotlin/concurrent/**",
+                                  "kotlin/io/**",
+                                  "kotlin/math/**",
+                                  "kotlin/template/**",
+                                  // Temporary disabled: TODO fix: (84, 27) Unresolved reference: copyOf (_SpecialJVM.kt)
+                                  "kotlin/collections/ImmutableArrayList.kt",
+                                  // TODO fix: AllModules is subclass of ThreadLocal.
+                                  "kotlin/modules/**"))
+                    into (stdlibJs)
+                    meta (file(artifacts.sources, outputDir / "stdlib-meta.js"))
+                    includeStdlib = false
+                }
+
+
+                val compiledJsFiles = build using tools.closureCompiler with {
+                    from (builtinsJs,
+                            stdlibJs,
+                            files(artifacts.sources, "js/js.translator/testData")
+                                    .include("kotlin_lib_ecma5.js", "kotlin_lib.js", "maps.js", "long.js", "export_Kotlin_if_possible.js"))
+                    extern (file(artifacts.sources, "js/js.translator/testData/externs.js"))
+                    into (file(artifacts.sources, outputDir / "kotlin.js"))
+                }
+
+                build using brandedJarTool() with {
+                    from (compiledJsFiles)
+                    export (outputJSStdLib)
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.javascript.stdlib")}" })
+                    addManifestProperty("Specification-Title", { "${properties.get("manifest.spec.title.kotlin.javascript.lib")}" })
+                }
+            }
         }
         /// BUILD SCRIPT
     }

@@ -28,7 +28,7 @@ public fun <T : RuleWithClasspathImpl, S: GenericSourceType> T.classpath(args: I
 public fun <T : RuleWithClasspathImpl, S: GenericSourceType> T.classpath(vararg args: S): T = addToSources(explicitClasspath, *args)
 
 
-public abstract class CompilerRule<Config: CompilerRule<Config, T>, T: Tool<Config>> : RuleWithClasspathImpl(), ToolStep<Config, T> {
+public abstract class JVMCompilerRule<Config: JVMCompilerRule<Config, T>, T: Tool<Config>> : RuleWithClasspathImpl(), ToolStep<Config, T> {
 
 }
 

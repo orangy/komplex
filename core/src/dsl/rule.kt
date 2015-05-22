@@ -134,6 +134,7 @@ public open class BasicToolRule<Config, T: Tool<Config>>(
     override val config: Config = this as Config
 
     override var name: String = tool.name
+    override val sources: Iterable<ArtifactDesc> get() = super<RuleImpl>.sources
 }
 
 
