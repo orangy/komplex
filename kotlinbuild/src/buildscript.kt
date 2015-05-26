@@ -175,9 +175,9 @@ fun main(args: Array<String>) {
 
 
             fun brandedJarTool() = tools.jar with {
-                dependsOn(readProperties)
-                dependsOn(buildno)
-                from(build_txt, prefix = "META-INF")
+                dependsOn (readProperties)
+                dependsOn (buildno)
+                from (build_txt, prefix = "META-INF")
                 deflate = true
                 addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
@@ -266,8 +266,8 @@ fun main(args: Array<String>) {
                         files(artifacts.jar, "lib", "**/*.jar")
                 )
                 build using bootstrapCompiler() with {
-                    from(compilerSourceRoots)
-                    classpath(libs)
+                    from (compilerSourceRoots)
+                    classpath (libs)
                     kotlin.export (folder(artifacts.binaries, "out/kb/build/compiler.kt"))
                     java.export (folder(artifacts.binaries, "out/kb/build/compiler.java"))
                 }
@@ -294,9 +294,9 @@ fun main(args: Array<String>) {
                 )
 
                 val makeUncheckedJar = build(jar, test, check) using brandedJarTool() with {
-                    dependsOn(prepareDist)
+                    dependsOn (prepareDist)
                     // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
-                    from(compilerClasses, jarContent, filterSerializedBuiltins)
+                    from (compilerClasses, jarContent, filterSerializedBuiltins)
                     into (uncheckedCompilerJar)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
@@ -444,12 +444,12 @@ fun main(args: Array<String>) {
 
             fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin =
             tools.kotlin(outputCompilerJar.path)) with {
-                    kotlin.dependsOn(compiler)
+                    kotlin.dependsOn (compiler)
                 }
 
 
             fun newJSCompiler() = tools.kotlinjs(outputCompilerJar.path) with {
-                    dependsOn(compiler)
+                    dependsOn (compiler)
                 }
 
 
@@ -484,7 +484,7 @@ fun main(args: Array<String>) {
                 }
 
                 build using(tools.jar) with {
-                    dependsOn(buildno)
+                    dependsOn (buildno)
                     from (build_txt, prefix = "META-INF")
                     from (classes,
                           files(artifacts.sources, "plugins/android-compiler-plugin/src", "META-INF/services/**"))
@@ -546,6 +546,7 @@ fun main(args: Array<String>) {
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
                 }
             }
+
 
             val builtins = module("builtins") {
 
@@ -609,16 +610,16 @@ fun main(args: Array<String>) {
 
             module("pack-runtime") {
                 build using brandedJarTool() with {
-                    from(builtins, stdlib, filterSerializedBuiltins)
+                    from (builtins, stdlib, filterSerializedBuiltins)
                     export (outputRuntime)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime")}" })
                 }
                 build using brandedJarTool() with {
-                    from(reflection,
-                         core,
-                         protobufLite,
-                         file(artifacts.jar, "lib/javax.inject.jar"))
+                    from (reflection,
+                          core,
+                          protobufLite,
+                          file(artifacts.jar, "lib/javax.inject.jar"))
                     export (outputReflect)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.reflect")}" })
@@ -630,16 +631,16 @@ fun main(args: Array<String>) {
             module("pack-runtime-sources") {
                 build using brandedJarTool() with {
                     from (listOf(
-                        "core/builtins/native",
-                        "core/builtins/src",
-                        "core/descriptor.loader.java/src",
-                        "core/descriptors/src",
-                        "core/descriptors.runtime/src",
-                        "core/deserialization/src",
-                        "core/reflection.jvm/src",
-                        "core/runtime.jvm/src",
-                        "core/util.runtime/src",
-                        "libraries/stdlib/src").map { files(artifacts.sources, it, "**/*") }
+                          "core/builtins/native",
+                          "core/builtins/src",
+                          "core/descriptor.loader.java/src",
+                          "core/descriptors/src",
+                          "core/descriptors.runtime/src",
+                          "core/deserialization/src",
+                          "core/reflection.jvm/src",
+                          "core/runtime.jvm/src",
+                          "core/util.runtime/src",
+                          "libraries/stdlib/src").map { files(artifacts.sources, it, "**/*") }
                     )
                     export (outputRuntimeSources)
                     deflate = true
@@ -648,37 +649,37 @@ fun main(args: Array<String>) {
             }
 
 
+            module("kotlin-for-upsource") {
 
+                val classes = build using bootstrapCompiler() with {
+                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files(artifacts.sources, it, "src/**") })
+                    classpath (files(artifacts.jar, ideaSdkDir/ "lib", "*.jar"),
+                               uncheckedCompilerJar,
+                               bootstrapRuntime)
+                    kotlin.into (folder(artifacts.binaries, "out/kb/build/4upsource.kt"))
+                    java.into (folder(artifacts.binaries, "out/kb/build/4upsource.java"))
+                }
 
-//            module("kotlin-for-upsource") {
-//
-//                val classes = build using bootstrapCompiler() with {
-//                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files(artifacts.sources, it, "src/**") })
-//                    classpath (files(artifacts.jar, ideaSdkDir/ "lib", "*.jar"),
-//                               uncheckedCompilerJar)
-//                    kotlin.into (folder(artifacts.binaries, "out/kb/build/4upsource.kt"))
-//                    java.into (folder(artifacts.binaries, "out/kb/build/4upsource.java"))
-//                }
-//
-//                build using brandedJarTool() with {
-//                    // \todo implement filtering of jar content to finish the module (exclude javax stuff)
-//                    from ( classes,
-//                           compilerClasses,
-//                           filterSerializedBuiltins,
-//                           files(artifacts.sources, "idea/idea-analysis/src", "**").exclude("**/*.java", "**/*.kt"),
-//                           files(artifacts.sources, "compiler/frontend.java/src", "META-INF/services/**"),
-//                           files(artifacts.sources, "compiler/backend/src", "META-INF/services/**"),
-//                           files(artifacts.jar, "lib", "*.jar"),
-//                           files(artifacts.jar, "lib", "**/*.jar"),
-//                           outputRuntime,
-//                           outputRuntimeSources,
-//                           outputReflect,
-//                           folder(artifacts.resources, "resources"),
-//                           folder(artifacts.resources, "idea/resources"),
-//                           files(artifacts.sources, "idea/src", "META-INF/**"))
-//                    into (outputForUpsourceJar)
-//                }
-//            }
+                build using brandedJarTool() with {
+                    // \todo implement filtering of jar content to finish the module (exclude javax stuff)
+                    from (classes,
+                          compilerClasses,
+                          filterSerializedBuiltins,
+                          files(artifacts.sources, "idea/idea-analysis/src", "**").exclude("**/*.java", "**/*.kt"),
+                          files(artifacts.sources, "compiler/frontend.java/src", "META-INF/services/**"),
+                          files(artifacts.sources, "compiler/backend/src", "META-INF/services/**"),
+                          files(artifacts.jar, "lib", "*.jar"),
+                          files(artifacts.jar, "lib", "**/*.jar"),
+                          outputRuntime,
+                          outputRuntimeSources,
+                          outputReflect,
+                          folder(artifacts.resources, "resources"),
+                          folder(artifacts.resources, "idea/resources"),
+                          files(artifacts.sources, "idea/src", "META-INF/**"))
+                    into (outputForUpsourceJar)
+                }
+            }
+
 
             val kjsBuiltinsSources = artifactsSet( listOf(
                     "native/kotlin/Iterator.kt",
@@ -706,6 +707,7 @@ fun main(args: Array<String>) {
                             "kotlin/collections/ImmutableArrayList.kt",
                             // TODO fix: AllModules is subclass of ThreadLocal.
                             "kotlin/modules/**"))
+
 
             module("js-stdlib") {
 
