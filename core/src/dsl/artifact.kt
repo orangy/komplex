@@ -71,6 +71,9 @@ public open class FolderArtifact(override val type: ArtifactType, ipath: Path) :
     override val name: String = "$`type` folder ${path}"
 }
 
+public fun FolderArtifact.div(p: Path): Path = path.resolve(p)
+public fun FolderArtifact.div(p: String): Path = path.resolve(p)
+
 public class GlobCollection(val collection: MutableList<String>) {
     public fun path(value: String) {
         collection.add(value)

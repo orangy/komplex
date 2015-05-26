@@ -194,7 +194,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 is FolderArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
                 is FileArtifact ->
                     if (sourceDesc.type == komplex.dsl.artifacts.jar) addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)
-                    else add(prefixes.get(sourceDesc), sourceDesc.path.getParent(), sourceDesc.path, openInputStream(sourcePair.second!!), jarStream, cfg.deflate, entries)
+                    else add(prefixes.get(sourceDesc), sourceDesc.path.getParent(), sourceDesc.path, openInputStream(openFileSet(sourcePair).coll.single()), jarStream, cfg.deflate, entries)
                 else -> throw IllegalArgumentException("$sourceDesc is not supported in $name")
             }
         }

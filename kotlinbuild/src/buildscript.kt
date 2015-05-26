@@ -73,7 +73,7 @@ fun main(args: Array<String>) {
             fun convert(srcs: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgts: Iterable<ArtifactDesc>): Iterable<ArtifactData> = openFileSet(tgts).coll
             return tools.custom(::convert) with {
                 from (source)
-                fromSources.forEach { into(fn(it)) }
+                fromSources.forEach { into (fn(it)) }
             }
         }
 
@@ -88,18 +88,22 @@ fun main(args: Array<String>) {
         val uncheckedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-unchecked.jar")
         val checkedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-checked.jar")
         val outputCompilerDir = outputDir / "kotlinc"
-        val outputPreloaderJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-preloader.jar")
-        val outputCompilerJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler.jar")
-        val outputCompilerSources = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler-sources.jar")
-        val outputBootstrapRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-internal-bootstrap.jar")
-        val outputBootstrapReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect-internal-bootstrap.jar")
-        val outputRuntime = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime.jar")
-        val outputReflect = file(artifacts.jar, outputCompilerDir / "lib/kotlin-reflect.jar")
-        val outputRuntimeSources = file(artifacts.jar, outputCompilerDir / "lib/kotlin-runtime-sources.jar")
-        val outputAntToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-ant.jar")
-        val outputMavenToolsJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-compiler-for-maven.jar")
-        val outputForUpsourceJar = file(artifacts.jar, outputCompilerDir / "lib/kotlin-for-upsource.jar")
-        val outputJSStdLib = file(artifacts.jar, outputCompilerDir / "lib/kotlin-jslib.jar")
+        val outputCompilerLibsFolder = folder(artifacts.jar, outputCompilerDir / "lib")
+        
+        val outputPreloaderJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-preloader.jar")
+        val outputCompilerJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-compiler.jar")
+        val outputCompilerSources = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-compiler-sources.jar")
+        val outputBootstrapRuntime = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-runtime-internal-bootstrap.jar")
+        val outputBootstrapReflect = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-reflect-internal-bootstrap.jar")
+        val outputRuntime = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-runtime.jar")
+        val outputReflect = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-reflect.jar")
+        val outputRuntimeSources = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-runtime-sources.jar")
+        val outputAntToolsJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-ant.jar")
+        val outputMavenToolsJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-compiler-for-maven.jar")
+        val outputForUpsourceJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-for-upsource.jar")
+        val outputJSStdLib = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-jslib.jar")
+        val outputJSStdLibSources = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-jslib-sources.jar")
+        val outputAndroidCompilerPlugin = file(artifacts.jar, outputCompilerLibsFolder / "android-compiler-plugin.jar")
 
         module("kotlin") {
 
@@ -237,9 +241,9 @@ fun main(args: Array<String>) {
                 }
 
                 build using(tools.custom(::serialize)) with {
-                    from( folder(artifacts.sources, "core/builtins/native"),
+                    from (folder(artifacts.sources, "core/builtins/native"),
                             folder(artifacts.sources, "core/builtins/src"))
-                    export(folder(artifacts.binaries, outputDir / "builtins"))
+                    export (folder(artifacts.binaries, outputDir / "builtins"))
                 }
             }
 
@@ -264,8 +268,8 @@ fun main(args: Array<String>) {
                 build using bootstrapCompiler() with {
                     from(compilerSourceRoots)
                     classpath(libs)
-                    kotlin.export(folder(artifacts.binaries, "out/kb/build/compiler.kt"))
-                    java.export(folder(artifacts.binaries, "out/kb/build/compiler.java"))
+                    kotlin.export (folder(artifacts.binaries, "out/kb/build/compiler.kt"))
+                    java.export (folder(artifacts.binaries, "out/kb/build/compiler.java"))
                 }
 
            }
@@ -293,7 +297,7 @@ fun main(args: Array<String>) {
                     dependsOn(prepareDist)
                     // \todo implement derived artifact dependency support (files from serializedBuiltins in this case
                     from(compilerClasses, jarContent, filterSerializedBuiltins)
-                    into(uncheckedCompilerJar)
+                    into (uncheckedCompilerJar)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
@@ -469,27 +473,65 @@ fun main(args: Array<String>) {
             }
 
 
+            module("android-compiler-plugin") {
+
+                val classes = build using tools.kotlin(bootstrapCompilerJar.path) with {
+                    from (files(artifacts.sources, "plugins/android-compiler-plugin", "src/**/*.kt" ))
+                    classpath (file(artifacts.jar, ideaSdkDir / "core/intellij-core.jar"),
+                               compiler,
+                               bootstrapRuntime)
+                    into (folder(artifacts.binaries, "out/kb/build.kt/android-plugin"))
+                }
+
+                build using(tools.jar) with {
+                    dependsOn(buildno)
+                    from (build_txt, prefix = "META-INF")
+                    from (classes,
+                          files(artifacts.sources, "plugins/android-compiler-plugin/src", "META-INF/services/**"))
+
+                    export (outputAndroidCompilerPlugin)
+                    deflate = true
+                }
+            }
+
+
+            module("sdk-annotations") {
+                build using tools.copy with {
+                    from (file(artifacts.jar, "dependencies/annotations/kotlin-jdk-annotations.jar"))
+                    export (file(artifacts.jar, outputCompilerLibsFolder / "kotlin-jdk-annotations.jar"))
+                }
+            }
+
+
+            module("android-annotations") {
+                build using tools.copy with {
+                    from (file(artifacts.jar, "dependencies/annotations/kotlin-android-sdk-annotations.jar"))
+                    export (file(artifacts.jar, outputCompilerLibsFolder / "kotlin-android-sdk-annotations.jar"))
+                }
+            }
+            
+            
             module("ant-tools", "Kotlin ant tools") {
 
                 val antlib = library("org.apache.ant:ant:1.7.1")
 
                 val classes = build using bootstrapCompiler() with {
-                    from(listOf(folder(artifacts.sources, rootDir / "ant" )))
-                    classpath( bootstrapRuntime,
+                    from (folder(artifacts.sources, rootDir / "ant" ))
+                    classpath (bootstrapRuntime,
                                antlib,
                                preloader)
-                    kotlin.into(folder(artifacts.binaries, "out/kb/build.kt/ant"))
-                    java.into(folder(artifacts.binaries, "out/kb/build/ant"))
+                    kotlin.into (folder(artifacts.binaries, "out/kb/build.kt/ant"))
+                    java.into (folder(artifacts.binaries, "out/kb/build/ant"))
                 }
 
                 build using(brandedJarTool()) with {
-                    from( classes,
+                    from (classes,
                           files(artifacts.sources, "ant/src", "**/*.xml"))
 
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler.ant.task")}" })
                     addManifestProperty("Class-Path", listOf(outputPreloaderJar, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
 
-                    export(outputAntToolsJar)
+                    export (outputAntToolsJar)
                     deflate = true
                 }
             }
@@ -497,8 +539,8 @@ fun main(args: Array<String>) {
 
             module("maven-tools", "Kotlin maven tools") {
                 build using brandedJarTool() with {
-                    from ( compiler,
-                           bootstrapRuntime) // \todo need exclude here, see original build.xml
+                    from (compiler,
+                          bootstrapRuntime) // \todo need exclude here, see original build.xml
                     export (outputMavenToolsJar)
                     addManifestProperty("Main-Class", "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler")}" })
@@ -512,9 +554,9 @@ fun main(args: Array<String>) {
                     "core/runtime.jvm").map { folder(artifacts.sources, it) }
 
                 build using newJVMCompiler() with {
-                    from(sources)
-                    kotlin.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.kt"))
-                    java.export(folder(artifacts.binaries, "out/kb/build.ktnew/builtins.java"))
+                    from (sources)
+                    kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/builtins.kt"))
+                    java.export (folder(artifacts.binaries, "out/kb/build.ktnew/builtins.java"))
                     kotlin.enableInline = true
                     kotlin.includeRuntime = false
                 }
@@ -525,9 +567,9 @@ fun main(args: Array<String>) {
             val stdlib = module("stdlib") {
 
                 build using tools.kotlin(outputCompilerJar.path) with {
-                    from( files(artifacts.sources, "libraries/stdlib", "src/**.kt"))
-                    classpath( builtins)
-                    export( folder(artifacts.binaries, "out/kb/build.ktnew/stdlib.kt"))
+                    from (files(artifacts.sources, "libraries/stdlib", "src/**.kt"))
+                    classpath (builtins)
+                    export ( folder(artifacts.binaries, "out/kb/build.ktnew/stdlib.kt"))
                     enableInline = true
                     includeRuntime = false
                 }
@@ -544,7 +586,7 @@ fun main(args: Array<String>) {
                         "core/descriptors.runtime",
                         "core/deserialization",
                         "core/util.runtime").map { folder(artifacts.sources, it) })
-                    classpath( builtins,
+                    classpath (builtins,
                                stdlib,
                                protobufLite,
                                file(artifacts.jar, "lib/javax.inject.jar"))
@@ -557,7 +599,7 @@ fun main(args: Array<String>) {
                     kotlin.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.kt"))
                     java.export (folder(artifacts.binaries, "out/kb/build.ktnew/reflection.java"))
                     from (folder(artifacts.sources, "core/reflection.jvm"))
-                    classpath( builtins,
+                    classpath (builtins,
                                stdlib,
                                core,
                                protobufLite)
@@ -568,7 +610,7 @@ fun main(args: Array<String>) {
             module("pack-runtime") {
                 build using brandedJarTool() with {
                     from(builtins, stdlib, filterSerializedBuiltins)
-                    export(outputRuntime)
+                    export (outputRuntime)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime")}" })
                 }
@@ -577,7 +619,7 @@ fun main(args: Array<String>) {
                          core,
                          protobufLite,
                          file(artifacts.jar, "lib/javax.inject.jar"))
-                    export(outputReflect)
+                    export (outputReflect)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.reflect")}" })
                     addManifestProperty("Class-Path", outputRuntime.path.getFileName().toString())
@@ -599,7 +641,7 @@ fun main(args: Array<String>) {
                         "core/util.runtime/src",
                         "libraries/stdlib/src").map { files(artifacts.sources, it, "**/*") }
                     )
-                    export(outputRuntimeSources)
+                    export (outputRuntimeSources)
                     deflate = true
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime.sources")}" })
                 }
@@ -614,8 +656,8 @@ fun main(args: Array<String>) {
 //                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files(artifacts.sources, it, "src/**") })
 //                    classpath (files(artifacts.jar, ideaSdkDir/ "lib", "*.jar"),
 //                               uncheckedCompilerJar)
-//                    kotlin.into(folder(artifacts.binaries, "out/kb/build/4upsource.kt"))
-//                    java.into(folder(artifacts.binaries, "out/kb/build/4upsource.java"))
+//                    kotlin.into (folder(artifacts.binaries, "out/kb/build/4upsource.kt"))
+//                    java.into (folder(artifacts.binaries, "out/kb/build/4upsource.java"))
 //                }
 //
 //                build using brandedJarTool() with {
@@ -638,62 +680,78 @@ fun main(args: Array<String>) {
 //                }
 //            }
 
+            val kjsBuiltinsSources = artifactsSet( listOf(
+                    "native/kotlin/Iterator.kt",
+                    "native/kotlin/Collections.kt",
+                    "src/kotlin/ExtensionFunctions.kt",
+                    "src/kotlin/Functions.kt",
+                    "src/kotlin/Iterators.kt",
+                    "src/kotlin/Range.kt",
+                    "src/kotlin/FloatingPointConstants.kt"
+                ).map { file(artifacts.sources, rootDir / "core/builtins" / it) } )
+
+            val kjsStdlibSources = artifactsSet(
+                    files(artifacts.sources, "js/js.libraries", "src/**/*.kt"),
+                    files(artifacts.sources, "core/builtins").include("src/kotlin/reflect/*.kt", "src/kotlin/reflect/**/*.kt"),
+                    files(artifacts.sources, "libraries/stdlib/src", "**/*.kt").exclude(
+                            "**/*JVM.kt",
+                            "kotlin/jvm/**",
+                            "kotlin/beans/**",
+                            "kotlin/browser/**",
+                            "kotlin/concurrent/**",
+                            "kotlin/io/**",
+                            "kotlin/math/**",
+                            "kotlin/template/**",
+                            // Temporary disabled: TODO fix: (84, 27) Unresolved reference: copyOf (_SpecialJVM.kt)
+                            "kotlin/collections/ImmutableArrayList.kt",
+                            // TODO fix: AllModules is subclass of ThreadLocal.
+                            "kotlin/modules/**"))
+
             module("js-stdlib") {
 
                 val builtinsJs = file(artifacts.sources, outputDir / "builtins.js")
                 val stdlibJs = file(artifacts.sources, outputDir / "jslib.js")
+                val stdlibJsMeta = file(artifacts.sources, outputDir / "stdlib-meta.js")
 
                 build using newJSCompiler() with {
-                    from (listOf(
-                            "native/kotlin/Iterator.kt",
-                            "native/kotlin/Collections.kt",
-                            "src/kotlin/ExtensionFunctions.kt",
-                            "src/kotlin/Functions.kt",
-                            "src/kotlin/Iterators.kt",
-                            "src/kotlin/Range.kt",
-                            "src/kotlin/FloatingPointConstants.kt"
-                        ).map { file(artifacts.sources, rootDir / "core/builtins" / it)})
+                    from (kjsBuiltinsSources)
                     into (builtinsJs)
                     meta (file(artifacts.sources, outputDir / "builtins-meta.js"))
                     includeStdlib = false
                 }
 
                 build using newJSCompiler() with {
-                    from (files(artifacts.sources, "js/js.libraries", "src/**/*.kt"),
-                          files(artifacts.sources, "core/builtins").include("src/kotlin/reflect/*.kt", "src/kotlin/reflect/**/*.kt"),
-                          files(artifacts.sources, "libraries/stdlib/src", "**/*.kt").exclude(
-                                  "**/*JVM.kt",
-                                  "kotlin/jvm/**",
-                                  "kotlin/beans/**",
-                                  "kotlin/browser/**",
-                                  "kotlin/concurrent/**",
-                                  "kotlin/io/**",
-                                  "kotlin/math/**",
-                                  "kotlin/template/**",
-                                  // Temporary disabled: TODO fix: (84, 27) Unresolved reference: copyOf (_SpecialJVM.kt)
-                                  "kotlin/collections/ImmutableArrayList.kt",
-                                  // TODO fix: AllModules is subclass of ThreadLocal.
-                                  "kotlin/modules/**"))
+                    from (kjsStdlibSources)
                     into (stdlibJs)
-                    meta (file(artifacts.sources, outputDir / "stdlib-meta.js"))
+                    meta (stdlibJsMeta)
                     includeStdlib = false
                 }
 
-
                 val compiledJsFiles = build using tools.closureCompiler with {
                     from (builtinsJs,
-                            stdlibJs,
-                            files(artifacts.sources, "js/js.translator/testData")
+                          stdlibJs,
+                          files(artifacts.sources, "js/js.translator/testData")
                                     .include("kotlin_lib_ecma5.js", "kotlin_lib.js", "maps.js", "long.js", "export_Kotlin_if_possible.js"))
                     extern (file(artifacts.sources, "js/js.translator/testData/externs.js"))
                     into (file(artifacts.sources, outputDir / "kotlin.js"))
                 }
 
                 build using brandedJarTool() with {
-                    from (compiledJsFiles)
+                    from (compiledJsFiles, stdlibJsMeta, kjsStdlibSources)
                     export (outputJSStdLib)
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.javascript.stdlib")}" })
                     addManifestProperty("Specification-Title", { "${properties.get("manifest.spec.title.kotlin.javascript.lib")}" })
+                }
+            }
+
+
+            module("js-stdlib-sources") {
+
+                build using brandedJarTool() with {
+                    from (kjsBuiltinsSources)
+                    from (kjsStdlibSources)
+                    export (outputJSStdLibSources)
+                    addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime.sources")}" })
                 }
             }
         }
