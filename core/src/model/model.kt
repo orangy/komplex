@@ -10,7 +10,6 @@ import komplex.utils.plus
 public trait ArtifactDesc : Named {}
 
 public trait ArtifactData {
-    public val sourcesHash: ByteArray?
     public val hash: ByteArray
 }
 

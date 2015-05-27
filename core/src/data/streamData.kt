@@ -22,14 +22,12 @@ public trait OutputStreamData : komplex.model.ArtifactData {
 
 
 public open class FileInputStreamData(public val path: Path) : InputStreamData {
-    override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
 }
 
 public open class FileOutputStreamData(public val path: Path) : OutputStreamData {
-    override val sourcesHash: ByteArray? = null
     override val hash: ByteArray by Delegates.lazy { fileHash(path) }
     override val outputStream: OutputStream
         get() {

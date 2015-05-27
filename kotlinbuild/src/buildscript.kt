@@ -32,7 +32,7 @@ import komplex.tools.kotlin.kotlin
 import komplex.tools.kotlin.kotlinjs
 import komplex.tools.kotlin.meta
 import org.slf4j.LoggerFactory
-import java.io.File
+import java.io.*
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -166,7 +166,8 @@ fun main(args: Array<String>) {
             val prepareDist = module("prepareDist") {
                 build using(tools.copy) with {
                     from (folder(artifacts.binaries, "compiler/cli/bin"))
-                    export (folder(artifacts.binaries, "out/kb/build.kt"))
+                    export (folder(artifacts.binaries, outputCompilerDir / "bin"))
+                    makeDirs = true
                 }
                 build using(tools.copy) from bootstrapRuntime export outputBootstrapRuntime with { makeDirs = true }
                 build using(tools.copy) from bootstrapReflect export outputBootstrapReflect with { makeDirs = true }
@@ -182,16 +183,6 @@ fun main(args: Array<String>) {
                 addManifestProperty("Built-By", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Vendor", { "${properties.get("manifest.impl.vendor")}" })
                 addManifestProperty("Implementation-Version", { "${buildno.ref}" })
-            }
-
-
-            val jdkAnnotations = module("jdk-annotations") {
-                build using tools.copy from file(artifacts.jar, "dependencies/annotations/kotlin-jdk-annotations.jar") export folder(artifacts.jar, outputCompilerDir)
-            }
-
-
-            val androidSdkAnnotations = module("android-sdk-annotations") {
-                build using tools.copy from file(artifacts.jar, "dependencies/annotations/kotlin-android-sdk-annotations.jar") export folder(artifacts.jar, outputCompilerDir)
             }
 
 
@@ -561,7 +552,6 @@ fun main(args: Array<String>) {
                     kotlin.enableInline = true
                     kotlin.includeRuntime = false
                 }
-
             }
 
 
@@ -777,7 +767,53 @@ fun main(args: Array<String>) {
     println(graph.nicePrint(indent, scenarios))
 
     println("\n--- build -------------------------------")
-    graph.build(scenarios)
+
+    val cachePath = (rootDir / "out/kb/cache")
+    val cacheFile = (cachePath / "source-hashes.cache").toFile()
+    val useDetailedCashe = true
+    val detailedCacheFile = (cachePath / "detailed-source-hashes.cache").toFile()
+    fun makeContext(): GraphBuildContext {
+        if (cacheFile.exists()) {
+            try {
+                val strm = ObjectInputStream(BufferedInputStream(FileInputStream(cacheFile)))
+                val detHashes =
+                        if (useDetailedCashe)
+                            if (detailedCacheFile.exists()) ObjectInputStream(BufferedInputStream(FileInputStream(detailedCacheFile))).readObject() as? MutableMap<String, ByteArray?>? ?: hashMapOf()
+                            else hashMapOf()
+                        else null
+                return GraphBuildContext(scenarios, graph, strm.readObject() as MutableMap<String, ByteArray>, detHashes)
+            }
+            catch (e: Exception) {
+                log.error("Failed to read source hashes: " + e.getMessage())
+            }
+        }
+        else
+            log.error("Source hashes not found, running full build")
+        return GraphBuildContext(scenarios, graph)
+    }
+
+    val context = makeContext()
+    graph.build(scenarios, context)
+
+    try {
+        if (!cachePath.toFile().exists())
+            cachePath.toFile().mkdirs()
+        else if (cacheFile.exists())
+            cacheFile.delete()
+        val strm = ObjectOutputStream(BufferedOutputStream(FileOutputStream(cacheFile)))
+        strm.writeObject(context.sourceHashes)
+        strm.flush()
+        if (useDetailedCashe && context.detailedHashes != null) {
+            if (detailedCacheFile.exists())
+                detailedCacheFile.delete()
+            val detstrm = ObjectOutputStream(BufferedOutputStream(FileOutputStream(detailedCacheFile)))
+            detstrm.writeObject(context.detailedHashes)
+            detstrm.flush()
+        }
+    }
+    catch (e: Exception) {
+        log.error("Failed to write source hashes: " + e.getMessage())
+    }
 
     println("\n-- done. --------------------------------")
 }

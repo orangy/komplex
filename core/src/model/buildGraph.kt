@@ -133,7 +133,7 @@ public class BuildGraph() {
                         .map { getProducingNode(it, scenarios) }
                         .filterNotNull()
                         .distinct()
-                log.trace("prev nodes for $node($scenarios): ${prev.joinToString(", ", "(", ")")}")
+                //log.trace("prev nodes for $node($scenarios): ${prev.joinToString(", ", "(", ")")}")
                 prev
             }
             else {
@@ -186,7 +186,7 @@ public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> {
             val areSourcesProduced = sources(it, scenario).any { producers.contains(it, scenario) }
             if (log.isTraceEnabled() && areSourcesProduced)
                 log.trace("filtered out $it from roots because of produced source artifacts ${
-                sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
+                    sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
             !areSourcesProduced
         } else false
     }
