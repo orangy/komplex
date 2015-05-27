@@ -20,7 +20,7 @@ public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 
 public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
-    public var makeDirs: Boolean = false
+    public var makeDirs: Boolean = true
 }
 
 
@@ -99,7 +99,7 @@ public val komplex.dsl.tools.echo: EchoToolRule get() = EchoToolRule()
 public class EchoToolRule : komplex.dsl.BasicToolRule<EchoToolRule, EchoTool>(EchoTool()) {
     // \todo make it an (string) artifact, so checksum could be calculated
     public var sourceStr: String = ""
-    public var makeDirs: Boolean = false
+    public var makeDirs: Boolean = true
     public var charset: String = "UTF-8"
 }
 

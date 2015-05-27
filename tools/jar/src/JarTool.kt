@@ -37,6 +37,7 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
     override val fromSources: Iterable<ArtifactDesc> get() = super.fromSources + explicitPrefixedFroms.values().flatMap { it.collect(selector.scenarios) }
     // configuration params
     public var deflate : Boolean = false
+    public var makeDirs: Boolean = true
     public val manifest: MutableCollection< () -> JarManifestProperty> = arrayListOf()
 }
 
@@ -164,15 +165,17 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 when (targetDesc) {
                     is FileArtifact -> {
                         log.info("$name to ${targetDesc.path}")
-                        openOutputStream(targetDesc)
+                        getFile(targetDesc)
                     }
                     is FolderArtifact -> {
                         log.info("$name to ${targetDesc.path}")
-                        FileOutputStreamData(targetDesc.path.resolve("${context.module.name}.jar")!!)
+                        SimpleFileData(targetDesc.path.resolve("${context.module.name}.jar")!!)
                     }
                     else -> throw IllegalArgumentException("$targetDesc is not supported in $name")
                 }
-        var jarStream = JarOutputStream(targetData.outputStream, manifest)
+        if (cfg.makeDirs && targetData is FileData && !targetData.path.getParent().toFile().exists())
+            targetData.path.getParent().toFile().mkdirs()
+        var jarStream = JarOutputStream(FileOutputStream(targetData.path.toFile()), manifest)
         //jarStream.setMethod()
         jarStream.setMethod(if (cfg.deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
 

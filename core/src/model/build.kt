@@ -47,14 +47,14 @@ public fun BuildGraph.build(scenario: Scenarios,
         } else {
             log.info("running ${n.step.name} in module ${n.moduleFlavor.module.name}")
             if (context.detailedHashes != null) {
-                log.trace("Hashes mismatch for the following sources (actual vs expected):")
+                log.debug("Hashes mismatch for the following sources (actual vs expected):")
                 for (it in artifacts) {
                     val name = it.getKey().name
                     val actual = it.getValue()
                     val expected = context.detailedHashes.get(name)
                     fun hashStr(hash: ByteArray?, valName: String) = when { hash == null -> "null"; hash.size() == 0 -> "[]"; else -> "[${hash.toHexString()}]" }
-                    if (log.isTraceEnabled() && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
-                        log.trace("    $name: ${hashStr(actual?.hash, "x")} != ${hashStr(expected, "y")}")
+                    if (log.isDebugEnabled() && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
+                        log.debug("    $name: ${hashStr(actual?.hash, "x")} != ${hashStr(expected, "y")}")
                     context.detailedHashes?.put(name, actual?.hash)
                 }
             }

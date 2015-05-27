@@ -9,7 +9,9 @@ import java.nio.file.Path
 import java.io.FileOutputStream
 import java.io.BufferedOutputStream
 import komplex.model.ArtifactData
+import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.security.MessageDigest
 import kotlin.properties.Delegates
 
 public trait InputStreamData : komplex.model.ArtifactData {
@@ -27,12 +29,35 @@ public open class FileInputStreamData(public val path: Path) : InputStreamData {
         get() = BufferedInputStream(FileInputStream(path.toFile()))
 }
 
+
+class BufferedOutputStreamWithHash(strm: OutputStream): BufferedOutputStream(strm) {
+    val digest = MessageDigest.getInstance("SHA-1")
+    public val hash: ByteArray get() = digest.digest()
+
+    override fun write(b: Int) {
+        super.write(b)
+        digest.update(ByteBuffer.allocate(4).putInt(b).array())
+    }
+
+    override fun write(b: ByteArray?, off: Int, len: Int) {
+        super.write(b, off, len)
+        digest.update(b, off, len)
+    }
+
+    override fun write(b: ByteArray?) {
+        super.write(b)
+        digest.update(b)
+    }
+
+}
+
+
 public open class FileOutputStreamData(public val path: Path) : OutputStreamData {
-    override val hash: ByteArray by Delegates.lazy { fileHash(path) }
-    override val outputStream: OutputStream
+    override val hash: ByteArray get() = outputStream.hash
+    override val outputStream: BufferedOutputStreamWithHash
         get() {
             path.getParent()?.let { Files.createDirectories(it) }
-            return BufferedOutputStream(FileOutputStream(path.toFile()))
+            return BufferedOutputStreamWithHash(FileOutputStream(path.toFile()))
         }
 }
 

@@ -108,7 +108,7 @@ fun main(args: Array<String>) {
         module("kotlin") {
 
             version("ATTEMPT-0.1")
-            val buildnoString = "snapshot"
+            val buildnoString = "snapshot.07"
 
             depends on children
 
