@@ -84,6 +84,7 @@ public data class BuildResult(public val diagnostic: BuildDiagnostic,
 
 public fun BuildResult.plus(other: BuildResult): BuildResult = BuildResult(diagnostic.plus(other.diagnostic), result + other.result)
 
+
 // build step, tied to single scenario in order to build fixed relationships in graph
 public trait Step : Named {
     public val selector: ScenarioSelector // determines if the step should be selected for execution for given scenario(s)
@@ -92,12 +93,17 @@ public trait Step : Named {
     public val export: Boolean // defines if step targets are local or exported from the module
     public val targets: Iterable<ArtifactDesc> // produced artifacts
 
-    // \todo add configure method (e.g. auto target generation)
+    // intended to be called after creation and manual configuration, but before validation, could be used for automated configuration, e.g. target choosing
+    public open fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic = BuildDiagnostic.Success
 
+    // validates step before usage, intended to be called after configuration
     public open fun validate(): BuildDiagnostic {
+        val msgs = arrayListOf<String>()
         val intersection = sources.intersect(targets)
-        return if (intersection.none()) BuildDiagnostic.Success
-        else BuildDiagnostic.Fail("Invalid step '$name': both sources and targets contain (${intersection.map { it.name }.joinToString(", ")})")
+        if (intersection.any())
+            msgs.add("both sources and targets contain (${intersection.map { it.name }.joinToString(", ")})")
+        if (export && targets.none()) msgs.add("public step should have targets")
+        return if (msgs.any()) BuildDiagnostic.Fail(msgs) else BuildDiagnostic.Success
     }
 
     public fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?> = hashMapOf()) : BuildResult

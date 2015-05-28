@@ -52,23 +52,35 @@ public trait FileArtifact : PathBasedArtifact { }
 public fun ScriptContext.file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
 public fun ScriptContext.file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
 
+
 public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : FileArtifact {
     init { assert(ipath.toFile().isFile(), "Expecting a file at '$ipath'") }
     override var basePath: Path = ipath.getParent().toAbsolutePath().normalize()
     override var relPath = basePath.relativize(ipath.toAbsolutePath().normalize())
-    override val name: String = "$`type` file ${path}"
+    override val name: String get() = "$`type` file ${path}"
+
+    override fun equals(other: Any?): Boolean = path.equals((other as? SimpleFileArtifact)?.path)
+    override fun hashCode(): Int = 1783 * path.hashCode()
 }
+
 
 public trait FileSetArtifact : PathBasedArtifact {}
 
 public fun ScriptContext.folder(type: ArtifactType, path: Path): FolderArtifact =  FolderArtifact(`type`, this.resolvePath(path))
 public fun ScriptContext.folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(`type`, this.resolvePath(path))
 
-public open class FolderArtifact(override val type: ArtifactType, ipath: Path) : FileSetArtifact {
+public abstract class AbstractFolderBasedArtifact(override val type: ArtifactType, ipath: Path) : FileSetArtifact {
     init { assert(ipath.toFile().isDirectory(), "Expecting a directory at '$ipath'") }
     override var basePath: Path = ipath.toAbsolutePath().normalize()
     override var relPath = Paths.get(".")
+}
+
+
+public class FolderArtifact(type: ArtifactType, ipath: Path) : AbstractFolderBasedArtifact(type, ipath) {
     override val name: String = "$`type` folder ${path}"
+
+    override fun equals(other: Any?): Boolean = path.equals((other as? FolderArtifact)?.path)
+    override fun hashCode(): Int = 887 * path.hashCode()
 }
 
 public fun FolderArtifact.div(p: Path): Path = path.resolve(p)
@@ -91,9 +103,14 @@ public fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact, incl
 public fun files(type: ArtifactType, base: Path, include: String): FileGlobArtifact =
         FileGlobArtifact(`type`, base).include(include)
 
-open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(type, base) {
+public class FileGlobArtifact(type: ArtifactType, base: Path) : AbstractFolderBasedArtifact(type, base) {
     var included = arrayListOf<String>()
     var excluded = arrayListOf<String>()
+
+    override fun equals(other: Any?): Boolean = super.equals(other) &&
+            included.equals((other as? FileGlobArtifact)?.included) &&
+            excluded.equals((other as? FileGlobArtifact)?.excluded)
+    override fun hashCode(): Int = 1013 * path.hashCode() + 1009 * included.hashCode() + 239 * excluded.hashCode()
 
     public fun invoke(body: FileGlobArtifact.() -> Unit) {
         this.body()
@@ -135,7 +152,10 @@ open class FileGlobArtifact(type: ArtifactType, base: Path) : FolderArtifact(typ
     override val name: String get() = "$`type` folder $path glob +$included -$excluded"
 }
 
-public open class ArtifactsSet(public val members: Collection<Artifact>): GenericSourceType {}
+public class ArtifactsSet(public val members: Collection<Artifact>): GenericSourceType {
+    override fun equals(other: Any?): Boolean = members.toHashSet().equals((other as? ArtifactsSet)?.members?.toHashSet())
+    override fun hashCode(): Int = members.fold(0, { r, a -> r + 17 * a.hashCode() })
+}
 
 public fun ScriptContext.artifactsSet(vararg artifacts: Artifact) : ArtifactsSet = ArtifactsSet(artifacts.toArrayList())
 
@@ -152,8 +172,10 @@ public fun ScriptContext.artifactsSet(vararg artifacts: Any): ArtifactsSet = art
 
 
 // for reference types
-public open class VariableArtifact<T: Any>(override val type: ArtifactType, public val ref: T) : Artifact {
+public class VariableArtifact<T: Any>(override val type: ArtifactType, public val ref: T) : Artifact {
     override val name: String = "$`type` var ${ref}"
+    override fun equals(other: Any?): Boolean = ref.equals((other as? VariableArtifact<T>)?.ref)
+    override fun hashCode(): Int = ref.hashCode()
 }
 
 public fun variable<T: Any>(type: ArtifactType, ref: T) : VariableArtifact<T> = VariableArtifact(type, ref)

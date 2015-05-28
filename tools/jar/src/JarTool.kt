@@ -9,14 +9,14 @@ import org.slf4j.LoggerFactory
 import kotlin.properties.Delegates
 import komplex.dsl
 import komplex.dsl.*
-import komplex.model.BuildContext
-import komplex.model.ArtifactDesc
-import komplex.model.ArtifactData
-import komplex.model.BuildResult
+import komplex.model.*
+import komplex.model.Module
+import komplex.tools.configureSingleFileTarget
 import komplex.tools.filterIn
 import komplex.utils.findFilesInPath
 import komplex.utils.findGlobFiles
 import komplex.utils.BuildDiagnostic
+import komplex.utils.plus
 import java.nio.file.Paths
 import java.util.*
 import java.util.zip.ZipEntry
@@ -30,6 +30,10 @@ public data class JarManifestProperty(public val name: String, public val value:
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
 public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRule<JarPackagerRule, komplex.model.Tool<JarPackagerRule>>(jarPackager) {
+
+    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic =
+            super.configure(module, scenarios) +
+            configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
 
     // this is not very flexible and quite expensive scheme
     // \todo implement generic sources/target pairs within the same rule and ability to assign attributes to targets
@@ -192,8 +196,10 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 // note: order matters
                 // \todo consider redesign dispatching so order is not important any more
                 is FileGlobArtifact ->
-                    if (sourceDesc.type == komplex.dsl.artifacts.jar) addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)
-                    else komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
+                    if (sourceDesc.type == komplex.dsl.artifacts.jar)
+                        addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)
+                    else
+                        komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
                 is FolderArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
                 is FileArtifact ->
                     if (sourceDesc.type == komplex.dsl.artifacts.jar) addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)

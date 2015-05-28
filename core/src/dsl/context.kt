@@ -1,17 +1,35 @@
 package komplex.dsl
 
 import java.nio.file.Path
+import kotlin.reflect
+import kotlin.reflect.KClass
 
 public trait ScriptContext {
     val env: ContextEnvironment
 }
 
-public class ContextEnvironment(val parentContext: ScriptContext?) {
+class ContextVarDelegate<T: Any>(val prepare: ((T) -> T)? = null) {
+    private var v: T? = null
+    fun get(thisRef: Any?, prop: PropertyMetadata): T? {
 
-    // \todo write generic property for that
-    private var rootDirImpl: Path? = null
-    public var rootDir: Path?
-        get() = rootDirImpl ?: parentContext?.env?.rootDir
-        set(v: Path?) { rootDirImpl = v?.toAbsolutePath()?.normalize() }
+        val thisRefCtx = thisRef as ContextEnvironment
+        if (v != null) return v
+        val parent = thisRefCtx?.parentContext?.env
+        if (parent != null) {
+            val value = ContextEnvironment::class.properties.first { it.name == prop.name }.get(parent)
+            if (value != null) return value as? T? ?: throw Exception("Invalid property $prop = $value")
+        }
+        return null
+    }
+
+    fun set(thisRef: Any?, prop: PropertyMetadata, value: T?) {
+        v = if (value != null && prepare != null) prepare!!(value) else value
+    }
 }
 
+
+public class ContextEnvironment(val parentContext: ScriptContext?) {
+    public var rootDir: Path? by ContextVarDelegate<Path>({ it.toAbsolutePath().normalize() })
+    public var defaultTargetDir: Path? by ContextVarDelegate<Path>({ it.toAbsolutePath().normalize() })
+    public var tempDir: Path? by ContextVarDelegate<Path>({ it.toAbsolutePath().normalize() })
+}

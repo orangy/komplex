@@ -2,6 +2,7 @@
 package komplex.model
 
 import komplex.*
+import komplex.dsl.FolderArtifact
 import komplex.utils.*
 import java.util.HashSet
 import java.util.HashMap
@@ -36,20 +37,30 @@ public class BuildGraph() {
     // multiple artifact consuming nodes
     val consumers: HashMap<ArtifactDesc, ArrayList<BuildGraphNode>> = hashMapOf()
 
+
     // \todo add rule validation and autoconfiguration (a.g. automatic target)
     protected fun add(node: BuildGraphNode) {
+
+        val configured = node.step.configure(node.moduleFlavor.module, node.moduleFlavor.scenarios)
+        if (configured.status != BuildDiagnostic.Status.Succeeded)
+            throw Exception("Failed to configure $node: " + configured.messages.joinToString("\n  "))
+
         val valid = node.step.validate()
         if (valid.status != BuildDiagnostic.Status.Succeeded)
-            throw Exception(valid.messages.joinToString("\n"))
+            throw Exception("Failed to validate $node: " + valid.messages.joinToString("\n  "))
+
         val srcs = node.step.sources.toArrayList()
         val tgts = node.step.targets.toArrayList()
         // skip steps without inputs and outputs
         if (!srcs.isEmpty() || !tgts.isEmpty()) {
             nodes.add(node)
+
             for (tgt in tgts) {
-                val n = producers.getOrPut(tgt, { node } )
-                if (n != node)
+                // \todo MT-safety, if needed
+                val n = producers.get(tgt)
+                if (n != null)
                     throw Exception("Error cannot add $node, because $n produces the same artifact $tgt")
+                producers.put(tgt, node)
             }
             for (it in srcs) {
                 val lst = consumers.get(it)
@@ -58,6 +69,7 @@ public class BuildGraph() {
             }
         }
     }
+
 
     public fun add(module: Module, scenarios: Scenarios = Scenarios.Same, selector: ScenarioSelector = ScenarioSelector.Any): BuildGraph {
 
@@ -92,6 +104,7 @@ public class BuildGraph() {
         return this
     }
 
+
     private fun isSelected(producingNode: BuildGraphNode, scenarios: Scenarios): Boolean {
         // check match with module and node selectors
         val moduleSel = moduleSelectors.get(producingNode.moduleFlavor ?:
@@ -104,13 +117,16 @@ public class BuildGraph() {
         return false;
     }
 
+
     public fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
         val producingNode = producers.get(it)// ?: throw Exception("incosistent graph: missing producer for $it")
         return if (producingNode != null && isSelected(producingNode, scenarios)) producingNode else null
     }
 
+
     public fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
         consumers.get(it)?.filter { isSelected(it, scenarios) } ?: listOf()
+
 
     // filtered inputs
     public fun sources(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
@@ -118,6 +134,7 @@ public class BuildGraph() {
                 // all node sources are required
                 node.step.sources
             else listOf()
+
 
     // filtered outputs
     public fun targets(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =

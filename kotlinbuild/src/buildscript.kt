@@ -88,7 +88,8 @@ fun main(args: Array<String>) {
         val uncheckedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-unchecked.jar")
         val checkedCompilerJar = file(artifacts.jar, "out/kb/artifacts/kotlin-compiler-checked.jar")
         val outputCompilerDir = outputDir / "kotlinc"
-        val outputCompilerLibsFolder = folder(artifacts.jar, outputCompilerDir / "lib")
+        val outputCompilerLibsDir = outputCompilerDir / "lib"
+        val outputCompilerLibsFolder = folder(artifacts.jar, outputCompilerLibsDir)
         
         val outputPreloaderJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-preloader.jar")
         val outputCompilerJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-compiler.jar")
@@ -109,6 +110,9 @@ fun main(args: Array<String>) {
 
             version("ATTEMPT-0.1")
             val buildnoString = "snapshot.07"
+
+            env.tempDir = outputDir / "tmp"
+            env.defaultTargetDir = outputCompilerLibsDir
 
             depends on children
 
@@ -259,8 +263,9 @@ fun main(args: Array<String>) {
                 build using bootstrapCompiler() with {
                     from (compilerSourceRoots)
                     classpath (libs)
-                    kotlin.export (folder(artifacts.binaries, "out/kb/build/compiler.kt"))
-                    java.export (folder(artifacts.binaries, "out/kb/build/compiler.java"))
+                    export = true
+                    //kotlin.export (folder(artifacts.binaries, "out/kb/build/compiler.kt"))
+                    //java.export (folder(artifacts.binaries, "out/kb/build/compiler.java"))
                 }
 
            }

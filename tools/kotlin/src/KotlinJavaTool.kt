@@ -16,7 +16,7 @@ class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCom
 
     init { java.classpath(kotlin) }
 
-    public fun from(sourceRootDirs: Iterable<FolderArtifact>): KotlinJavaToolRule {
+    public fun from(sourceRootDirs: Iterable<AbstractFolderBasedArtifact>): KotlinJavaToolRule {
         kotlin.with {
             sourceRoots.addAll( sourceRootDirs.map { (it.path / "src").toString() })
             from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.kt") })
@@ -35,4 +35,8 @@ class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCom
         body()
         return this
     }
+
+    public var export: Boolean
+        get() = java.export || kotlin.export
+        set(v: Boolean) { java.export = v; kotlin.export = v }
 }
