@@ -23,6 +23,7 @@ public class NamedArtifactType(val name: String) : ArtifactType {
 }
 
 public object artifacts {
+    public val unspecified: ArtifactType = NamedArtifactType("?")
     public val sources: ArtifactType = NamedArtifactType("src")
     public val resources: ArtifactType = NamedArtifactType("res")
     public val binaries: ArtifactType = NamedArtifactType("bin")

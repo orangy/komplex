@@ -8,13 +8,12 @@ import java.nio.file.Path
 import org.slf4j.LoggerFactory
 import kotlin.properties.Delegates
 import komplex.dsl
-import komplex.model.BuildContext
-import komplex.model.ArtifactDesc
-import komplex.model.ArtifactData
-import komplex.model.BuildResult
 import komplex.dsl.FileArtifact
 import komplex.dsl.FolderArtifact
 import komplex.dsl.FileGlobArtifact
+import komplex.dsl.artifacts
+import komplex.model.*
+import komplex.tools.configureSingleFileTarget
 import komplex.utils.*
 import java.nio.file.Paths
 import java.util.regex.Pattern
@@ -32,6 +31,10 @@ public class ProGuardRule(proGuardTool: ProGuardTool) : komplex.dsl.BasicToolRul
     // \todo implement flexible scheme of adding filters to particular inputs, e.g. using specific "from" implementations
     public val filters: MutableList<() -> String> = arrayListOf()
     public val options: MutableList<() -> String> = arrayListOf()
+
+    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic =
+            super.configure(module, scenarios) +
+                    configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
 }
 
 public fun ProGuardRule.filters(vararg flt: String): ProGuardRule {

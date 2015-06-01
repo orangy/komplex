@@ -13,12 +13,13 @@ import komplex.data.openInputStream
 import komplex.data.openOutputStream
 import komplex.dsl.*
 import komplex.model.ArtifactData
+import komplex.model.Scenarios
+import komplex.tools.configureSingleFileTarget
+import komplex.tools.configureSingleTempFileTarget
 import komplex.utils
 import komplex.tools.filterIn
 import komplex.tools.getPaths
-import komplex.utils.LogLevel
-import komplex.utils.LogOutputStream
-import komplex.utils.escape4cli
+import komplex.utils.*
 import org.slf4j.LoggerFactory
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
@@ -36,6 +37,10 @@ public class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.
     public val externSources: Iterable<ArtifactDesc> get() = explicitExterns.collect(selector.scenarios)
 
     override val sources: Iterable<ArtifactDesc> get() = super.sources + externSources
+
+    override fun configure(module: komplex.model.Module, scenarios: Scenarios): BuildDiagnostic =
+            super.configure(module, scenarios) +
+                    configureSingleTempFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.${name.replace(' ','_')}.js" })
 }
 
 public fun <S: GenericSourceType> ClosureCompilerRule.extern(args: Iterable<S>): ClosureCompilerRule = addToSources(explicitExterns, args)

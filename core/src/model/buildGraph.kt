@@ -3,6 +3,7 @@ package komplex.model
 
 import komplex.*
 import komplex.dsl.FolderArtifact
+import komplex.tools.CopyToolRule
 import komplex.utils.*
 import java.util.HashSet
 import java.util.HashMap
@@ -41,6 +42,8 @@ public class BuildGraph() {
     // \todo add rule validation and autoconfiguration (a.g. automatic target)
     protected fun add(node: BuildGraphNode) {
 
+        if (node.step is CopyToolRule)
+            log.debug("found!")
         val configured = node.step.configure(node.moduleFlavor.module, node.moduleFlavor.scenarios)
         if (configured.status != BuildDiagnostic.Status.Succeeded)
             throw Exception("Failed to configure $node: " + configured.messages.joinToString("\n  "))

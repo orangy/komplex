@@ -40,7 +40,7 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
     internal val explicitPrefixedFroms: MutableMap<String, RuleSources> = hashMapOf()
     override val fromSources: Iterable<ArtifactDesc> get() = super.fromSources + explicitPrefixedFroms.values().flatMap { it.collect(selector.scenarios) }
     // configuration params
-    public var deflate : Boolean = false
+    public var deflate : Boolean = true
     public var makeDirs: Boolean = true
     public val manifest: MutableCollection< () -> JarManifestProperty> = arrayListOf()
 }
@@ -72,7 +72,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                else path
     }
 
-    private fun addDirs(prefix: String?, root: Path, sourcePath: Path, target: JarOutputStream, deflate: Boolean, entries: MutableSet<String>) {
+    private fun addDirs(prefix: String?, root: Path, sourcePath: Path, target: JarOutputStream, entries: MutableSet<String>) {
         if (!root.equals(sourcePath)) {
             val entry = JarEntry( prefixPath(prefix, root.relativize(sourcePath)).toString() + "/")
             if (entries.add(entry.getName())) {
@@ -80,13 +80,13 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 target.putNextEntry(entry)
                 target.closeEntry()
             }
-            addDirs(prefix, root, sourcePath.getParent(), target, deflate, entries)
+            addDirs(prefix, root, sourcePath.getParent(), target, entries)
         }
     }
 
     // \todo add compression support
-    private fun add(prefix: String?, root: Path, sourcePath: Path, sourceData: InputStreamData, target: JarOutputStream, deflate: Boolean, entries: MutableSet<String>) {
-        addDirs(prefix, root, sourcePath.getParent(), target, deflate, entries)
+    private fun add(prefix: String?, root: Path, sourcePath: Path, sourceData: InputStreamData, target: JarOutputStream, entries: MutableSet<String>) {
+        addDirs(prefix, root, sourcePath.getParent(), target, entries)
         val entry = JarEntry( prefixPath(prefix, root.relativize(sourcePath)).toString())
         //entry.setMethod(if (deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
         //entry.setTime(source.lastModified())
@@ -112,7 +112,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
     }
 
     // \todo add compression support
-    private fun addFromJar(prefix: String?, sourceJar: JarInputStream, target: JarOutputStream, deflate: Boolean, entries: MutableSet<String>) {
+    private fun addFromJar(prefix: String?, sourceJar: JarInputStream, target: JarOutputStream, entries: MutableSet<String>) {
         val buffer = ByteArray(1024)
         while (true) {
             var entry: ZipEntry = sourceJar.getNextEntry() ?: break
@@ -134,9 +134,8 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 log.trace("  ${entry.getName()}")
                 target.putNextEntry(entry)
                 if (!entry.isDirectory()) {
-                    var count = 0
                     while (true) {
-                        count = sourceJar.read(buffer)
+                        val count = sourceJar.read(buffer)
                         if (count < 0) break
                         target.write(buffer, 0, count)
                     }
@@ -148,12 +147,12 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
         }
     }
 
-    private fun addFromJars(prefix: String?, sourcePair: Pair<ArtifactDesc, ArtifactData?>, jarStream: JarOutputStream, deflate: Boolean, entries: HashSet<String>) {
+    private fun addFromJars(prefix: String?, sourcePair: Pair<ArtifactDesc, ArtifactData?>, jarStream: JarOutputStream, entries: HashSet<String>) {
         log.trace("Adding entries from jar(s) ${sourcePair.first.name}")
         val fs = openFileSet(sourcePair)
         for (file in fs.coll) {
             log.trace("Adding entries from jar file ${file.path}")
-            addFromJar(prefix, JarInputStream(openInputStream(file).inputStream), jarStream, deflate, entries)
+            addFromJar(prefix, JarInputStream(openInputStream(file).inputStream), jarStream, entries)
         }
     }
 
@@ -180,7 +179,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
         if (cfg.makeDirs && targetData is FileData && !targetData.path.getParent().toFile().exists())
             targetData.path.getParent().toFile().mkdirs()
         var jarStream = JarOutputStream(FileOutputStream(targetData.path.toFile()), manifest)
-        //jarStream.setMethod()
+        // \todo fix stored method
         jarStream.setMethod(if (cfg.deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
 
         val entries = hashSetOf<String>()
@@ -197,13 +196,13 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 // \todo consider redesign dispatching so order is not important any more
                 is FileGlobArtifact ->
                     if (sourceDesc.type == komplex.dsl.artifacts.jar)
-                        addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)
+                        addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, entries)
                     else
-                        komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
-                is FolderArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, cfg.deflate, entries) }
+                        komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, entries) }
+                is FolderArtifact -> komplex.data.openFileSet(sourcePair).coll.forEach { add(prefixes.get(sourceDesc), sourceDesc.path, it.path, openInputStream(it), jarStream, entries) }
                 is FileArtifact ->
-                    if (sourceDesc.type == komplex.dsl.artifacts.jar) addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, cfg.deflate, entries)
-                    else add(prefixes.get(sourceDesc), sourceDesc.path.getParent(), sourceDesc.path, openInputStream(openFileSet(sourcePair).coll.single()), jarStream, cfg.deflate, entries)
+                    if (sourceDesc.type == komplex.dsl.artifacts.jar) addFromJars(prefixes.get(sourceDesc), sourcePair, jarStream, entries)
+                    else add(prefixes.get(sourceDesc), sourceDesc.path.getParent(), sourceDesc.path, openInputStream(openFileSet(sourcePair).coll.single()), jarStream, entries)
                 else -> throw IllegalArgumentException("$sourceDesc is not supported in $name")
             }
         }

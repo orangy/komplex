@@ -438,8 +438,7 @@ fun main(args: Array<String>) {
             }
 
 
-            fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin =
-            tools.kotlin(outputCompilerJar.path)) with {
+            fun newJVMCompiler() = KotlinJavaToolRule("New JVM compiler", kotlin = tools.kotlin(outputCompilerJar.path)) with {
                     kotlin.dependsOn (compiler)
                 }
 
@@ -449,9 +448,10 @@ fun main(args: Array<String>) {
                 }
 
 
-            module("compiler-sources", "Kotlin Compiler sources") {
-                build using tools.jar from compilerSourceRoots export outputCompilerSources with {
-                    deflate = true
+            module("kotlin-compiler-sources", "Kotlin Compiler sources") {
+                build using tools.jar with {
+                    from (compilerSourceRoots)
+                    export = true
                 }
             }
 

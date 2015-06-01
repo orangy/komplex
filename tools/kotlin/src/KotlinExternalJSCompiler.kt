@@ -1,10 +1,6 @@
 package komplex.tools.kotlin
 
 import com.sun.tools.javac.resources.compiler
-import komplex.dsl.Artifact
-import komplex.dsl.FileArtifact
-import komplex.dsl.FolderArtifact
-import komplex.dsl.RuleImpl
 import komplex.model
 import komplex.model.*
 import komplex.tools.filterIn
@@ -13,9 +9,9 @@ import komplex.utils
 import komplex.tools.kotlin.KotlinCompiler
 import komplex.tools.kotlin.KotlinCompilerRule
 import komplex.tools.kotlin.log
-import komplex.utils.escape4cli
-import komplex.utils.runProcess
 import komplex.data.openFileSet
+import komplex.dsl.*
+import komplex.utils.*
 import java.io.File
 import java.nio.file.Path
 import java.util.*
@@ -27,6 +23,21 @@ public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<
     override val targets: Iterable<ArtifactDesc> get() = explicitTargets + explicitMetaTargets
     public var includeStdlib: Boolean = true
     public var main: String = ""
+
+    override fun configure(module: komplex.model.Module, scenarios: Scenarios): BuildDiagnostic {
+        var ret = super.configure(module, scenarios)
+        val dslModule = module as komplex.dsl.Module
+        if (explicitTargets.none() || explicitMetaTargets.none()) {
+            val tempDir = dslModule.env.tempDir
+            if (tempDir != null) {
+                val stepTempDir = tempDir / (module.name + "." + name.replace(' ', '_'))
+                if (explicitTargets.none()) into(dslModule.file(artifacts.sources, stepTempDir / "out.js"))
+                if (explicitMetaTargets.none()) into(dslModule.file(artifacts.sources, stepTempDir / "meta.js"))
+            }
+            else ret = ret + BuildDiagnostic.Fail("Cannot auto configure targets: tempDir is not defined")
+        }
+        return ret
+    }
 }
 
 public fun KotlinJSRule.meta(vararg artifacts: Iterable<Artifact>): KotlinJSRule {

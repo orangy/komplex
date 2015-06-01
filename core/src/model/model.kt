@@ -94,6 +94,7 @@ public trait Step : Named {
     public val targets: Iterable<ArtifactDesc> // produced artifacts
 
     // intended to be called after creation and manual configuration, but before validation, could be used for automated configuration, e.g. target choosing
+    // \todo consider making it a method returning final immutable step
     public open fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic = BuildDiagnostic.Success
 
     // validates step before usage, intended to be called after configuration
@@ -127,26 +128,3 @@ public fun ModuleDependency.targets(tgtScenarios: Scenarios): Iterable<ArtifactD
         module.targets(scenarios.resolve(tgtScenarios))
     else listOf()
 
-/*
-public fun <A> extractArtifacts(vararg args: A): Iterable<ArtifactDesc> =
-    when (args.first()) {
-        is ArtifactDesc -> args.map { it as ArtifactDesc }
-        // now ignoring the selector
-        // \todo "lift" selectors to the result (return artifacts grouped by selector)
-        is ExplicitDependency<*> -> args.map { (it as ExplicitDependency<ArtifactDesc>).reference }
-        else -> throw IllegalArgumentException("Cannot extract Artifacts from $args")
-    }
-*/
-/*
-public fun <A> (vararg artifacts: Iterable<A>): T {
-    val sample = artifacts.firstOrNull { it.any() }?.first()
-    when {
-        sample is Artifact -> artifacts.forEach { explicitSources.addAll(it as Iterable<Artifact>) }
-    // now ignoring the selector
-    // \todo "lift" the selector to the rule somehow
-        sample is ExplicitDependency<*> ->
-            artifacts.forEach { it.map { (it as ExplicitDependency<Artifact>).reference }.forEach { explicitSources.add(it) } }
-    }
-    return this
-}
-*/

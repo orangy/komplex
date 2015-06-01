@@ -2,16 +2,14 @@
 package komplex.tools
 
 import komplex.data.*
-import komplex.model.BuildContext
-import komplex.model.ArtifactDesc
-import komplex.model.ArtifactData
-import komplex.model.BuildResult
+import komplex.dsl.*
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import komplex.dsl.FileArtifact
-import komplex.dsl.FolderArtifact
 import komplex.log
+import komplex.model.*
+import komplex.model.Module
 import komplex.utils.BuildDiagnostic
+import komplex.utils.plus
 import java.nio.file.Path
 
 // ----------------------------------
@@ -20,6 +18,37 @@ public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 
 public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
+
+    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic {
+        val guessedType = (sources.firstOrNull() as? Artifact?)?.type ?: artifacts.unspecified
+        val dslModule = module as komplex.dsl.Module
+        var res = super.configure(module, scenarios)
+        if (explicitTargets.none()) {
+            if (dslModule.env.defaultTargetDir != null) explicitTargets.add(dslModule.folder(guessedType, dslModule.env.defaultTargetDir!!))
+            else res = res + BuildDiagnostic.Fail("Cannot auto configure target folder: defaultTargetDir is not defined")
+        }
+        // if copying files to directories, replace each directory target with individual targets, so conflicts
+        // could be avoided automatically (or detected if file names clash)
+        if (explicitTargets.any() && sources.all { it is FileArtifact }) {
+            val newTargets = arrayListOf<Artifact>()
+            for (tgt in explicitTargets)
+                when (tgt) {
+                    is FolderArtifact ->
+                        for (src in sources)
+                            when (src) {
+                                is FileArtifact -> newTargets.add(dslModule.file(src.type, tgt.path.resolve(src.path.getFileName())))
+                                else -> throw Exception("unexpected source for copy: $src") // \todo - find out more valid cases
+                            }
+                    else -> newTargets.add(tgt)
+                }
+            explicitTargets.clear()
+            explicitTargets.addAll(newTargets)
+            // effectively noop, see comment above
+            res = res + BuildDiagnostic.Success
+        }
+        return res
+    }
+
     public var makeDirs: Boolean = true
 }
 

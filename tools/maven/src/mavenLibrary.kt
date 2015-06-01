@@ -21,11 +21,17 @@ public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
         artifacts.jar -> ".jar"
         else -> ""
     } */
+
+    override fun equals(other: Any?): Boolean = targetName().equals((other as? MavenLibraryArtifact)?.targetName())
+    override fun hashCode(): Int = 2539 * targetName().hashCode()
 }
 
 public data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryArtifact) : dsl.Artifact {
     override val type: ArtifactType get() = sourceArtifact.type
     override val name: String get() = sourceArtifact.name
+
+    override fun equals(other: Any?): Boolean = sourceArtifact.equals((other as? MavenResolvedLibraryArtifact)?.sourceArtifact)
+    override fun hashCode(): Int = 3347 * sourceArtifact.hashCode()
 }
 
 public class MavenLibraryModule(public val library: MavenLibraryArtifact, public val target: dsl.FolderArtifact)
