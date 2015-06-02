@@ -33,7 +33,7 @@ public trait Module : ModuleCollection, Named {
                 })} +
         steps.filter { scenarios.matches(it.selector) }.flatMap { it.sources }
 
-    public fun targets(scenarios: Scenarios): Iterable<ArtifactDesc> =
+    public fun targets(scenarios: Scenarios = Scenarios.Default_): Iterable<ArtifactDesc> =
         children.flatMap { it.targets( if (scenarios == Scenarios.Default_) defaultScenario else scenarios) } +
         steps.filter { scenarios.matches(it.selector) && it.export }.flatMap {
             it.targets }
