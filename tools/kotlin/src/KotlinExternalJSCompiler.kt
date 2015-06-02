@@ -24,8 +24,8 @@ public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<
     public var includeStdlib: Boolean = true
     public var main: String = ""
 
-    override fun configure(module: komplex.model.Module, scenarios: Scenarios): BuildDiagnostic {
-        var ret = super.configure(module, scenarios)
+    override fun configure(): BuildDiagnostic {
+        var ret = super.configure()
         val dslModule = module as komplex.dsl.Module
         if (explicitTargets.none() || explicitMetaTargets.none()) {
             val tempDir = dslModule.env.tempDir
@@ -34,7 +34,7 @@ public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<
                 if (explicitTargets.none()) into(dslModule.file(artifacts.sources, stepTempDir / "out.js"))
                 if (explicitMetaTargets.none()) into(dslModule.file(artifacts.sources, stepTempDir / "meta.js"))
             }
-            else ret = ret + BuildDiagnostic.Fail("Cannot auto configure targets: tempDir is not defined")
+            else ret = ret + BuildDiagnostic.Fail("$name (${module.fullName}) Cannot auto configure targets: tempDir is not defined")
         }
         return ret
     }

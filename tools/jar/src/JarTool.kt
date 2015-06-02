@@ -31,8 +31,8 @@ public data class JarManifestProperty(public val name: String, public val value:
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
 public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRule<JarPackagerRule, komplex.model.Tool<JarPackagerRule>>(jarPackager) {
 
-    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic =
-            super.configure(module, scenarios) +
+    override fun configure(): BuildDiagnostic =
+            super.configure() +
             configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
 
     // this is not very flexible and quite expensive scheme

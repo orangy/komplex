@@ -17,7 +17,6 @@ import kotlin.platform.platformName
 // \todo validate each use on addition
 
 public abstract class RuleWithClasspathImpl : RuleImpl() {
-
     public val explicitClasspath: RuleSources = RuleSources()
 
     public val classpathSources: Iterable<ArtifactDesc> get() = explicitClasspath.collect(selector.scenarios)
@@ -31,8 +30,8 @@ public fun <T : RuleWithClasspathImpl, S: GenericSourceType> T.classpath(vararg 
 
 public abstract class JVMCompilerRule<Config: JVMCompilerRule<Config, T>, T: Tool<Config>> : RuleWithClasspathImpl(), ToolStep<Config, T> {
 
-    override fun configure(module: komplex.model.Module, scenarios: Scenarios): BuildDiagnostic =
-            super<RuleWithClasspathImpl>.configure(module, scenarios) +
+    override fun configure(): BuildDiagnostic =
+            super<RuleWithClasspathImpl>.configure() +
                     // \todo generic and robust conversion to file-name friendly string, also in other places
                     configureSingleTempFolderTarget(module as komplex.dsl.Module, artifacts.binaries, { "${module.name}.${name.replace(' ', '_')}" })
 }

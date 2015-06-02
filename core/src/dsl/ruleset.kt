@@ -31,6 +31,8 @@ public class ModuleRuleSet(val parent: Module) {
     public fun using<TR : Rule>(rule: TR): TR {
         rules.add(rule)
         rule.selector = selectors.combine(true)
+        rule.module = parent
+        parent.addConfigurable(rule)
         return rule
     }
 
@@ -40,8 +42,7 @@ public class ModuleRuleSet(val parent: Module) {
     }
 
     public fun using<TR : RuleSetDesc>(ruleSet: TR): TR {
-        rules.addAll(ruleSet.rules)
-        ruleSet.rules.forEach { it.selector = selectors.combine(true) }
+        ruleSet.rules.forEach { using(it) }
         return ruleSet
     }
 

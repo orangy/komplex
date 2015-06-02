@@ -39,18 +39,7 @@ public class BuildGraph() {
     val consumers: HashMap<ArtifactDesc, ArrayList<BuildGraphNode>> = hashMapOf()
 
 
-    // \todo add rule validation and autoconfiguration (a.g. automatic target)
     protected fun add(node: BuildGraphNode) {
-
-        if (node.step is CopyToolRule)
-            log.debug("found!")
-        val configured = node.step.configure(node.moduleFlavor.module, node.moduleFlavor.scenarios)
-        if (configured.status != BuildDiagnostic.Status.Succeeded)
-            throw Exception("Failed to configure $node: " + configured.messages.joinToString("\n  "))
-
-        val valid = node.step.validate()
-        if (valid.status != BuildDiagnostic.Status.Succeeded)
-            throw Exception("Failed to validate $node: " + valid.messages.joinToString("\n  "))
 
         val srcs = node.step.sources.toArrayList()
         val tgts = node.step.targets.toArrayList()

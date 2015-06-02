@@ -208,7 +208,7 @@ fun main(args: Array<String>) {
                     return openFileSet(target).coll
                 }
 
-                build using(tools.custom(::runScript)) from originalProtobuf export protobufLite
+                build using(tools.custom(::runScript)) from originalProtobuf into protobufLite
             }
 
 
@@ -238,7 +238,7 @@ fun main(args: Array<String>) {
                 build using(tools.custom(::serialize)) with {
                     from (folder(artifacts.sources, "core/builtins/native"),
                             folder(artifacts.sources, "core/builtins/src"))
-                    export (folder(artifacts.binaries, outputDir / "builtins"))
+                    into (folder(artifacts.binaries, outputDir / "builtins"))
                 }
             }
 
@@ -432,7 +432,7 @@ fun main(args: Array<String>) {
                     )
                 }
 
-                build(check) using tools.copy from makeCheckedJar export outputCompilerJar
+                build(check) using tools.copy from makeCheckedJar into outputCompilerJar
 
                 default(jar) // default build scenario, '*'/null if not specified (means - all)
             }
@@ -449,23 +449,18 @@ fun main(args: Array<String>) {
 
 
             module("kotlin-compiler-sources", "Kotlin Compiler sources") {
-                build using tools.jar with {
-                    from (compilerSourceRoots)
-                    export = true
-                }
+                build using tools.jar from (compilerSourceRoots)
             }
 
 
-            val preloader = module("preloader", "Preloader") {
+            val preloader = module("kotlin-preloader", "Preloader") {
 
                 val classes = folder(artifacts.binaries, outputDir / "build.kt/preloader")
                 val sources = folder(artifacts.sources, "compiler/preloader/src")
 
                 build using(tools.javac) from sources into classes
 
-                build using tools.jar from classes export outputPreloaderJar with {
-                    deflate = true
-                }
+                build using tools.jar from classes
             }
 
 

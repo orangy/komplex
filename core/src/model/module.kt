@@ -1,7 +1,9 @@
 
 package komplex.model
 
+import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
+import komplex.utils.plus
 
 public trait ModuleCollection {
     public val parent: Module?
@@ -14,7 +16,7 @@ public trait ModuleMetadata {}
 
 public trait Module : ModuleCollection, Named {
     public val metadata: ModuleMetadata
-    public val dependencies: Iterable<ModuleDependency>
+    public val dependencies: Iterable<ConditionalModuleDependency>
     public val steps: Iterable<Step>
     public val defaultScenario: Scenarios get() = Scenarios.All
     public val fullName: String get() = sequence(this, { it.parent }).toList().reverse().map { it.name }.joinToString(".")

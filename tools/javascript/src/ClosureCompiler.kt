@@ -38,8 +38,8 @@ public class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.
 
     override val sources: Iterable<ArtifactDesc> get() = super.sources + externSources
 
-    override fun configure(module: komplex.model.Module, scenarios: Scenarios): BuildDiagnostic =
-            super.configure(module, scenarios) +
+    override fun configure(): BuildDiagnostic =
+            super.configure() +
                     configureSingleTempFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.${name.replace(' ','_')}.js" })
 }
 

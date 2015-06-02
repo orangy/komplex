@@ -14,6 +14,23 @@ public object tools {}
 // \todo optimize with separating Step and Rule, so rule could be mutable, but converted into immutable Step then added to the graph,
 // or alternatively make rule immutable with copy-on-write behaviour
 
+public trait Configurable {
+    public var configured: Boolean
+    // intended to be called after creation and manual configuration, but before validation, could be used for automated configuration, e.g. target choosing
+    // \todo consider making it a method returning final immutable step
+    public open fun configure(): BuildDiagnostic {
+        configured = true
+        return BuildDiagnostic.Success
+    }
+}
+
+
+public trait Validable {
+    // validates step before usage, intended to be called after configuration
+    public open fun validate(): BuildDiagnostic = BuildDiagnostic.Success
+}
+
+
 public data class RuleSources {
     public val artifacts: MutableCollection<Artifact> = arrayListOf()
     public val modules: MutableCollection<Module> = arrayListOf()
@@ -28,7 +45,10 @@ public data class RuleSources {
             rules.filter { scenarios.matches(it.selector) }.flatMap { it.targets }
 }
 
-public trait Rule : Step, GenericSourceType {
+
+public trait Rule : Step, GenericSourceType, Configurable, Validable {
+
+    public var module: Module
     internal val explicitFroms: RuleSources
     internal val explicitDepends: RuleSources
     internal val explicitTargets: MutableCollection<Artifact> // filled with "into" and "export"
@@ -41,21 +61,38 @@ public trait Rule : Step, GenericSourceType {
     override val sources: Iterable<ArtifactDesc> get() = fromSources + dependsSources
     override var export: Boolean
     override val targets: Iterable<ArtifactDesc> get() = explicitTargets
+
+    // validates step before usage, intended to be called after configuration
+    override  fun validate(): BuildDiagnostic {
+        val msgs = arrayListOf<String>()
+        val intersection = sources.intersect(targets)
+        if (intersection.any())
+            msgs.add("$name (${module.fullName}) both sources and targets contain (${intersection.map { it.name }.joinToString(", ")})")
+        if (export && targets.none()) msgs.add("$name (${module.fullName}) export step should have targets")
+        return if (msgs.any()) BuildDiagnostic.Fail(msgs) else BuildDiagnostic.Success
+    }
 }
 
 
 public abstract class RuleImpl : Rule {
+    private var module_: Module? = null
+    override var module: Module
+        get() = module_!!
+        set(v: Module) { if (module_!=null) throw Exception("Module ${module_!!.fullName} already set for $name"); module_ = v }
     override val explicitFroms: RuleSources = RuleSources()
     override val explicitDepends: RuleSources = RuleSources()
     override val explicitTargets: MutableCollection<Artifact> = arrayListOf()
     override var selector: ScenarioSelector = ScenarioSelector.Any
     override var export: Boolean = false
+    override var configured: Boolean = false
 }
+
 
 public fun <TR : Rule> TR.with(body: TR.() -> Unit): TR {
     body()
     return this
 }
+
 
 // the usage of GenericSourceType should improve type safety in script, but prevent using Iterable directly, it should now
 // be wrapped into something "implementing" GenericSourceType, see e.g. ModuleDependencies

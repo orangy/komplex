@@ -11,12 +11,12 @@ public class ModuleDependency(
         override val module: Module,
         override var scenarios: komplex.model.Scenarios,
         override var selector: ScenarioSelector
-) : komplex.model.ModuleDependency, GenericSourceType {
+) : komplex.model.ConditionalModuleDependency, GenericSourceType {
     override fun toString(): String = "${module.name} (${selector.scenarios})"
 }
 
 // need it in order to make the collection a GenericSourceType
-public class ModuleDependencies(public val coll: Iterable<model.ModuleDependency>): GenericSourceType {}
+public class ModuleDependencies(public val coll: Iterable<model.ConditionalModuleDependency>): GenericSourceType {}
 
 
 public open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {

@@ -38,6 +38,7 @@ public fun Step.nicePrint(indent: IndentLn, moduleName: String = "", printInsOut
         indent.toString() +
         (if (moduleName.length() > 0) "[$moduleName] " else "") +
         name +
+        (if (export) " - export - " else "") +
         "(${selector.nicePrint(SpaceIndent())})" +
         (if (printInsOuts)
             nicePrintPins(indent, sources, "from:") + nicePrintPins(indent, targets, "to:")

@@ -19,13 +19,13 @@ public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
 
-    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic {
+    override fun configure(): BuildDiagnostic {
         val guessedType = (sources.firstOrNull() as? Artifact?)?.type ?: artifacts.unspecified
         val dslModule = module as komplex.dsl.Module
-        var res = super.configure(module, scenarios)
+        var res = super.configure()
         if (explicitTargets.none()) {
             if (dslModule.env.defaultTargetDir != null) explicitTargets.add(dslModule.folder(guessedType, dslModule.env.defaultTargetDir!!))
-            else res = res + BuildDiagnostic.Fail("Cannot auto configure target folder: defaultTargetDir is not defined")
+            else res = res + BuildDiagnostic.Fail("$name (${module.fullName}) Cannot auto configure target folder: defaultTargetDir is not defined")
         }
         // if copying files to directories, replace each directory target with individual targets, so conflicts
         // could be avoided automatically (or detected if file names clash)

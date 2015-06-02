@@ -32,8 +32,8 @@ public class ProGuardRule(proGuardTool: ProGuardTool) : komplex.dsl.BasicToolRul
     public val filters: MutableList<() -> String> = arrayListOf()
     public val options: MutableList<() -> String> = arrayListOf()
 
-    override fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic =
-            super.configure(module, scenarios) +
+    override fun configure(): BuildDiagnostic =
+            super.configure() +
                     configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
 }
 

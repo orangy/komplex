@@ -93,37 +93,23 @@ public trait Step : Named {
     public val export: Boolean // defines if step targets are local or exported from the module
     public val targets: Iterable<ArtifactDesc> // produced artifacts
 
-    // intended to be called after creation and manual configuration, but before validation, could be used for automated configuration, e.g. target choosing
-    // \todo consider making it a method returning final immutable step
-    public open fun configure(module: Module, scenarios: Scenarios): BuildDiagnostic = BuildDiagnostic.Success
-
-    // validates step before usage, intended to be called after configuration
-    public open fun validate(): BuildDiagnostic {
-        val msgs = arrayListOf<String>()
-        val intersection = sources.intersect(targets)
-        if (intersection.any())
-            msgs.add("both sources and targets contain (${intersection.map { it.name }.joinToString(", ")})")
-        if (export && targets.none()) msgs.add("public step should have targets")
-        return if (msgs.any()) BuildDiagnostic.Fail(msgs) else BuildDiagnostic.Success
-    }
-
     public fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?> = hashMapOf()) : BuildResult
             = BuildResult(BuildDiagnostic.Success)
 }
 
 
-public trait ModuleDependency {
+public trait ConditionalModuleDependency {
     public val module: Module
     public val selector: ScenarioSelector
     public val scenarios: Scenarios // referenced module build scenario
 }
 
-public fun ModuleDependency.sources(srcScenarios: Scenarios): Iterable<ArtifactDesc> =
+public fun ConditionalModuleDependency.sources(srcScenarios: Scenarios): Iterable<ArtifactDesc> =
     if (srcScenarios.matches(selector))
         module.sources(scenarios.resolve(srcScenarios))
     else listOf()
 
-public fun ModuleDependency.targets(tgtScenarios: Scenarios): Iterable<ArtifactDesc> =
+public fun ConditionalModuleDependency.targets(tgtScenarios: Scenarios): Iterable<ArtifactDesc> =
     if (tgtScenarios.matches(selector))
         module.targets(scenarios.resolve(tgtScenarios))
     else listOf()
