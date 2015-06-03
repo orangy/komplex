@@ -4,14 +4,13 @@ package komplex.tools
 import komplex.data.OpenFileSet
 import komplex.data.openFileSet
 import komplex.dsl.*
-import komplex.dsl.Module
-import komplex.dsl.ModuleDependency
-import komplex.model.*
+import komplex.model.ArtifactData
+import komplex.model.ArtifactDesc
+import komplex.model.Tool
+import komplex.model.ToolStep
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
 import java.nio.file.Path
-import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.platform.platformName
 
 // \todo validate each use on addition
@@ -33,7 +32,7 @@ public abstract class JVMCompilerRule<Config: JVMCompilerRule<Config, T>, T: Too
     override fun configure(): BuildDiagnostic =
             super<RuleWithClasspathImpl>.configure() +
                     // \todo generic and robust conversion to file-name friendly string, also in other places
-                    configureSingleTempFolderTarget(module as komplex.dsl.Module, artifacts.binaries, { "${module.name}.${name.replace(' ', '_')}" })
+                    configureSingleTempFolderTarget(module, artifacts.binaries, { "${module.name}.${name.replace(' ', '_')}" })
 }
 
 platformName("getPaths_Pairs_of_ArtifactDesc_ArtifactData")

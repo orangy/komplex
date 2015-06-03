@@ -1,10 +1,8 @@
 package komplex.dsl
 
 import java.nio.file.Path
-import kotlin.reflect
-import kotlin.reflect.KClass
 
-public trait ScriptContext {
+public interface ScriptContext {
     val env: ContextEnvironment
 }
 
@@ -14,7 +12,7 @@ class ContextVarDelegate<T: Any>(val prepare: ((T) -> T)? = null) {
 
         val thisRefCtx = thisRef as ContextEnvironment
         if (v != null) return v
-        val parent = thisRefCtx?.parentContext?.env
+        val parent = thisRefCtx.parentContext?.env
         if (parent != null) {
             val value = ContextEnvironment::class.properties.first { it.name == prop.name }.get(parent)
             if (value != null) return value as? T? ?: throw Exception("Invalid property $prop = $value")

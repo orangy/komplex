@@ -5,10 +5,8 @@ import komplex.dsl.FileArtifact
 import komplex.dsl.FileGlobArtifact
 import komplex.dsl.FolderArtifact
 import komplex.model.ArtifactData
-import komplex.model.ArtifactDesc
 import komplex.utils.findFilesInPath
 import komplex.utils.findGlobFiles
-import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.MessageDigest
@@ -20,7 +18,7 @@ public fun fileHash(path: Path): ByteArray {
     return digest.digest()
 }
 
-public trait FileData : komplex.model.ArtifactData {
+public interface FileData : komplex.model.ArtifactData {
     public val path: Path
 }
 
@@ -51,7 +49,7 @@ private fun collectFiles(paths: Iterable<Path>): Iterable<FileData> =
 
 
 public enum class OpenFileSet {
-    Nothing
+    Nothing,
     FoldersAsLibraries
 }
 
@@ -62,13 +60,14 @@ public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
     val fst = pair.first
     val snd = pair.second
     return when (snd) {
-        is DataSet<*> -> if (snd.coll.isEmpty() || snd.coll.first() !is FileData ||
+        is DataSet<*> ->
+            if (snd.coll.isEmpty() || snd.coll.first() !is FileData ||
                 // special treatment of folders as libraries
                 // \todo find better solution, e.g. dispatching by artifact type and separate functions like openLibrariesSet
                 (options == OpenFileSet.FoldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binaries))
-            openFileSet(fst, baseDir = baseDir, options = options)
-        else
-            adaptToDataCollection(snd as DataCollection<FileData>)
+                    openFileSet(fst, baseDir = baseDir, options = options)
+            else
+                adaptToDataCollection(snd as DataCollection<FileData>)
         is FileData -> adaptToDataCollection(snd)
         else -> openFileSet(fst, baseDir = baseDir, options = options)
     }

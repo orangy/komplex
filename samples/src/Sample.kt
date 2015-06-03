@@ -1,13 +1,14 @@
 package komplex.sample
 
 import komplex.dsl.*
-import komplex.dsl.tools
-import komplex.dsl.Module
+import komplex.model.GraphBuildContext
+import komplex.model.Scenarios
+import komplex.model.build
+import komplex.model.nicePrint
+import komplex.tools.classpath
 import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
-import komplex.model.*
-import komplex.tools.classpath
 import komplex.utils
 
 fun main(args: Array<String>) {

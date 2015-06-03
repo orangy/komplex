@@ -1,18 +1,12 @@
 
 package komplex.model
 
-import komplex.model.ArtifactDesc
-import komplex.model.ArtifactData
-import komplex.model.Step
-import komplex.model.Scenarios
-import komplex.model.BuildContext
-import komplex.model.BuildResult
 import komplex.utils.BuildDiagnostic
-import kotlin.properties.Delegates
 import komplex.utils.Named
+import kotlin.properties.Delegates
 
 
-public trait LambdaStep : Step {
+public interface LambdaStep : Step {
     public val func: (Iterable<Pair<ArtifactDesc, ArtifactData?>>, Iterable<ArtifactDesc>) -> Iterable<ArtifactData>
 
     public override fun execute(context: BuildContext, artifacts: Map<ArtifactDesc, ArtifactData?>) : BuildResult {
@@ -29,7 +23,7 @@ public trait LambdaStep : Step {
 }
 
 
-public trait Tool<Config> : Named {
+public interface Tool<Config> : Named {
     public fun execute(context: BuildContext,
                        cfg: Config,
                        src: Iterable<Pair<ArtifactDesc, ArtifactData?>>,
@@ -38,7 +32,7 @@ public trait Tool<Config> : Named {
 }
 
 
-public trait ToolStep<Config, T: Tool<Config>> : Step {
+public interface ToolStep<Config, T: Tool<Config>> : Step {
     public val tool: T
     public val config: Config
 

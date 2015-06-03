@@ -2,7 +2,6 @@ package komplex.data
 
 import komplex.dsl.VariableArtifact
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 import kotlin.properties.Delegates
 
 

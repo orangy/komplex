@@ -7,10 +7,10 @@ import java.io.IOException
 // taken from http://stackoverflow.com/questions/11187461/redirect-system-out-and-system-err-to-slf4j
 
 public enum class LogLevel {
-    ERROR
-    WARNING
-    INFO
-    DEBUG
+    ERROR,
+    WARNING,
+    INFO,
+    DEBUG,
     TRACE
 }
 

@@ -1,28 +1,17 @@
 package komplex.tools.javac
 
-import java.lang
-import java.io.*
-import java.nio.file.Paths
-import java.nio.file.Path
-import org.slf4j.LoggerFactory
-import kotlin.properties.Delegates
-import komplex.model
-import komplex.dsl
-import komplex.tools
 import komplex.data
 import komplex.data.OpenFileSet
-import komplex.data.openFileSet
-import komplex.model.ArtifactData
-import komplex.model.ArtifactDesc
+import komplex.dsl
+import komplex.model
 import komplex.model.Tool
-import komplex.model.ToolStep
 import komplex.tools.filterIn
 import komplex.tools.getPaths
 import komplex.utils
 import komplex.utils.escape4cli
-import java.net.URI
-import java.nio.channels.FileChannel
-import java.util.*
+import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.InputStream
 import javax.tools.*
 
 

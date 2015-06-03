@@ -1,13 +1,13 @@
 
 package komplex.model
 
-import komplex.*
-import komplex.dsl.FolderArtifact
-import komplex.tools.CopyToolRule
-import komplex.utils.*
-import java.util.HashSet
-import java.util.HashMap
+import komplex.log
+import komplex.utils.graphDFS
+import komplex.utils.makeVisitedTraversalChecker
+import komplex.utils.subgraphDFS
 import java.util.ArrayList
+import java.util.HashMap
+import java.util.HashSet
 import kotlin.platform.platformName
 
 public data class ModuleFlavor(public val module: Module,
@@ -99,8 +99,7 @@ public class BuildGraph() {
 
     private fun isSelected(producingNode: BuildGraphNode, scenarios: Scenarios): Boolean {
         // check match with module and node selectors
-        val moduleSel = moduleSelectors.get(producingNode.moduleFlavor ?:
-                throw Exception("incosistent graph: missing module for node $producingNode"))
+        val moduleSel = moduleSelectors.get(producingNode.moduleFlavor)
         if (!scenarios.matches(moduleSel))
             log.trace("skipping $producingNode because it's module selector $moduleSel doesn't match with $scenarios")
         else if (!scenarios.matches(producingNode.step.selector))

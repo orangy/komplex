@@ -1,16 +1,12 @@
 package komplex.tools.kotlin
 
-import com.sun.tools.javac.resources.compiler
 import komplex.dsl.FolderArtifact
 import komplex.utils
-import komplex.tools.kotlin.KotlinCompiler
-import komplex.tools.kotlin.KotlinCompilerRule
-import komplex.tools.kotlin.log
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import java.io.File
 import java.nio.file.Path
-import java.util.*
+import java.util.ArrayList
 
 public fun komplex.dsl.tools.kotlin(compilerCmd: Iterable<String>): KotlinCompilerRule =
         KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinExternalCompiler>("Kotlin compiler", { KotlinExternalCompiler(compilerCmd) } ))

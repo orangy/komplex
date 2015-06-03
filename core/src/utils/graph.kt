@@ -1,10 +1,9 @@
 
 package komplex.utils
 
-import org.slf4j.LoggerFactory
-import java.util.HashSet
+import komplex.log
 import java.util.ArrayDeque
-import komplex.*
+import java.util.HashSet
 
 // generic traverse checker with generators
 public class TraversedChecker<Node>() {

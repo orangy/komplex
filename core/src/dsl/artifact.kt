@@ -1,21 +1,17 @@
 
 package komplex.dsl
 
-import komplex.model.ArtifactData
+import komplex.utils.resolvePath
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.SortedSet
-import komplex.utils.fileSystem
-import komplex.utils.resolvePath
-import java.io.File
 
-public trait GenericSourceType {}
+public interface GenericSourceType {}
 
-public trait Artifact : komplex.model.ArtifactDesc, GenericSourceType {
+public interface Artifact : komplex.model.ArtifactDesc, GenericSourceType {
     val `type`: ArtifactType
 }
 
-public trait ArtifactType {
+public interface ArtifactType {
 }
 
 public class NamedArtifactType(val name: String) : ArtifactType {
@@ -31,7 +27,7 @@ public object artifacts {
     public val configs: ArtifactType = NamedArtifactType("cfg")
 }
 
-public trait PathBasedArtifact : Artifact {
+public interface PathBasedArtifact : Artifact {
     // storing path in two parts, base and relative, allowing to rebase with base setter
     var basePath: Path
     var relPath: Path
@@ -48,7 +44,7 @@ public trait PathBasedArtifact : Artifact {
 public fun<A: PathBasedArtifact> A.base(p: Path): A { this.base = p.toAbsolutePath().normalize(); return this }
 public fun<A: PathBasedArtifact> A.base(p: String): A = this.base(Paths.get(p))
 
-public trait FileArtifact : PathBasedArtifact { }
+public interface FileArtifact : PathBasedArtifact { }
 
 public fun ScriptContext.file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
 public fun ScriptContext.file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(`type`, this.resolvePath(path))
@@ -65,7 +61,7 @@ public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : 
 }
 
 
-public trait FileSetArtifact : PathBasedArtifact {}
+public interface FileSetArtifact : PathBasedArtifact {}
 
 public fun ScriptContext.folder(type: ArtifactType, path: Path): FolderArtifact =  FolderArtifact(`type`, this.resolvePath(path))
 public fun ScriptContext.folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(`type`, this.resolvePath(path))

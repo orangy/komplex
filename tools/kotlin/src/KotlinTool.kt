@@ -1,20 +1,17 @@
 package komplex.tools.kotlin
 
-import org.slf4j.LoggerFactory
-import java.nio.file.Path
-import komplex.data.openFileSet
-import komplex.dsl.FolderArtifact
 import komplex.data
 import komplex.data.OpenFileSet
+import komplex.dsl.FolderArtifact
 import komplex.model
-import komplex.model.ArtifactData
-import komplex.model.ArtifactDesc
 import komplex.model.Tool
 import komplex.tools.filterIn
 import komplex.tools.getPaths
 import komplex.tools.singleDestFolder
 import komplex.utils
 import komplex.utils.BuildDiagnostic
+import org.slf4j.LoggerFactory
+import java.nio.file.Path
 
 
 internal val log = LoggerFactory.getLogger("komplex.tools.kotlin")

@@ -1,19 +1,17 @@
 
 package komplex.model
 
-import org.slf4j.LoggerFactory
 import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
-import komplex.*
 import komplex.utils.plus
 
-public trait ArtifactDesc : Named {}
+public interface ArtifactDesc : Named {}
 
-public trait ArtifactData {
+public interface ArtifactData {
     public val hash: ByteArray
 }
 
-public trait Scenario {}
+public interface Scenario {}
 
 public open class Scenarios(public val items: Iterable<Scenario> = listOf(), override val name: String = "" ) : Named {
     public fun combine(other: Scenarios): Scenarios = when {
@@ -71,7 +69,7 @@ public fun Scenarios.resolve(current: Scenarios, default: Scenarios = Scenarios.
     }
 
 
-public trait BuildContext{
+public interface BuildContext{
     public val scenario: Scenarios
     public val module: Module
 }
@@ -86,7 +84,7 @@ public fun BuildResult.plus(other: BuildResult): BuildResult = BuildResult(diagn
 
 
 // build step, tied to single scenario in order to build fixed relationships in graph
-public trait Step : Named {
+public interface Step : Named {
     public val selector: ScenarioSelector // determines if the step should be selected for execution for given scenario(s)
     public val sources: Iterable<ArtifactDesc> // consumed artifacts
     // \todo consider having separate property for exported targets, instead of the flag
@@ -98,7 +96,7 @@ public trait Step : Named {
 }
 
 
-public trait ConditionalModuleDependency {
+public interface ConditionalModuleDependency {
     public val module: Module
     public val selector: ScenarioSelector
     public val scenarios: Scenarios // referenced module build scenario

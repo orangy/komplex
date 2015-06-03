@@ -1,26 +1,21 @@
 
 package komplex.tools.maven
 
-import java.nio.file.Path
+import com.jcabi.aether.Aether
+import komplex.data.openFileSetI
+import komplex.dsl.tools
+import komplex.model.ArtifactData
+import komplex.model.ArtifactDesc
+import komplex.model.BuildContext
+import komplex.model.BuildResult
+import komplex.utils.BuildDiagnostic
+import org.slf4j.LoggerFactory
+import org.sonatype.aether.repository.RemoteRepository
+import org.sonatype.aether.util.artifact.DefaultArtifact
+import org.sonatype.aether.util.artifact.JavaScopes
+import java.io.File
 import java.nio.file.Paths
 import java.util.Arrays
-import java.io.File
-import com.jcabi.aether.Aether
-import org.sonatype.aether.util.artifact.DefaultArtifact
-import org.sonatype.aether.repository.RemoteRepository
-import org.sonatype.aether.util.artifact.JavaScopes
-import org.apache.maven.project.MavenProject
-import org.slf4j.LoggerFactory
-import komplex.tools
-import kotlin.properties.Delegates
-import komplex.dsl.tools
-import komplex.model.BuildContext
-import komplex.model.ArtifactDesc
-import komplex.model.ArtifactData
-import komplex.model.BuildResult
-import komplex.model.Scenarios
-import komplex.utils.BuildDiagnostic
-import komplex.data.openFileSetI
 
 public val tools.maven: MavenResolverRule
     get() = MavenResolverRule(komplex.model.LazyTool<MavenResolverRule, MavenResolver>("maven", { MavenResolver()} ))

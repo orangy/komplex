@@ -1,20 +1,18 @@
 
 package komplex.model
 
-import komplex.utils.BuildDiagnostic
 import komplex.utils.Named
-import komplex.utils.plus
 
-public trait ModuleCollection {
+public interface ModuleCollection {
     public val parent: Module?
     public val children: Iterable<Module>
 }
 
 
-public trait ModuleMetadata {}
+public interface ModuleMetadata {}
 
 
-public trait Module : ModuleCollection, Named {
+public interface Module : ModuleCollection, Named {
     public val metadata: ModuleMetadata
     public val dependencies: Iterable<ConditionalModuleDependency>
     public val steps: Iterable<Step>

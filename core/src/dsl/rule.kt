@@ -1,11 +1,8 @@
 
 package komplex.dsl
 
-import komplex.model
 import komplex.model.*
-import java.util.ArrayList
 import komplex.utils.BuildDiagnostic
-import komplex.utils.plus
 
 // rules in fact
 public object tools {}
@@ -14,7 +11,7 @@ public object tools {}
 // \todo optimize with separating Step and Rule, so rule could be mutable, but converted into immutable Step then added to the graph,
 // or alternatively make rule immutable with copy-on-write behaviour
 
-public trait Configurable {
+public interface Configurable {
     public var configured: Boolean
     // intended to be called after creation and manual configuration, but before validation, could be used for automated configuration, e.g. target choosing
     // \todo consider making it a method returning final immutable step
@@ -25,7 +22,7 @@ public trait Configurable {
 }
 
 
-public trait Validable {
+public interface Validable {
     // validates step before usage, intended to be called after configuration
     public open fun validate(): BuildDiagnostic = BuildDiagnostic.Success
 }
@@ -46,7 +43,7 @@ public data class RuleSources {
 }
 
 
-public trait Rule : Step, GenericSourceType, Configurable, Validable {
+public interface Rule : Step, GenericSourceType, Configurable, Validable {
 
     public var module: Module
     internal val explicitFroms: RuleSources

@@ -1,14 +1,11 @@
 package komplex.tools.maven
 
-import java.nio.file.Path
 import komplex.dsl
 import komplex.dsl.ArtifactType
-import kotlin.properties.Delegates
-import komplex.dsl.from
 import komplex.dsl.FolderArtifact
+import komplex.dsl.from
 import komplex.dsl.into
-import komplex.model.ArtifactDesc
-import komplex.model.Scenarios
+import kotlin.properties.Delegates
 
 public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
     override val type = dsl.artifacts.jar

@@ -1,29 +1,28 @@
 package komplex.tools.javascript
 
-import com.google.javascript.jscomp.*
+import com.google.javascript.jscomp.CompilationLevel
 import com.google.javascript.jscomp.Compiler
-import komplex.model.ArtifactDesc
-import komplex.model.Tool
-import komplex.model
-import komplex.dsl
-import komplex.tools
-import komplex.data
+import com.google.javascript.jscomp.CompilerOptions
+import com.google.javascript.jscomp.SourceFile
 import komplex.data.openFileSet
 import komplex.data.openInputStream
 import komplex.data.openOutputStream
+import komplex.dsl
 import komplex.dsl.*
-import komplex.model.ArtifactData
-import komplex.model.Scenarios
-import komplex.tools.configureSingleFileTarget
+import komplex.model
+import komplex.model.ArtifactDesc
+import komplex.model.Tool
 import komplex.tools.configureSingleTempFileTarget
-import komplex.utils
 import komplex.tools.filterIn
 import komplex.tools.getPaths
-import komplex.utils.*
+import komplex.utils
+import komplex.utils.BuildDiagnostic
+import komplex.utils.LogLevel
+import komplex.utils.LogOutputStream
+import komplex.utils.plus
 import org.slf4j.LoggerFactory
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
-import java.util.*
 
 val log = LoggerFactory.getLogger("komplex.tools.js")
 
@@ -40,7 +39,7 @@ public class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.
 
     override fun configure(): BuildDiagnostic =
             super.configure() +
-                    configureSingleTempFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.${name.replace(' ','_')}.js" })
+                    configureSingleTempFileTarget(module, artifacts.jar, { "${module.name}.${name.replace(' ','_')}.js" })
 }
 
 public fun <S: GenericSourceType> ClosureCompilerRule.extern(args: Iterable<S>): ClosureCompilerRule = addToSources(explicitExterns, args)

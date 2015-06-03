@@ -1,22 +1,22 @@
 
 package komplex.tools.proguard
 
-import komplex.data.*
-import java.io.*
-import java.nio.file.Files
-import java.nio.file.Path
-import org.slf4j.LoggerFactory
-import kotlin.properties.Delegates
 import komplex.dsl
 import komplex.dsl.FileArtifact
-import komplex.dsl.FolderArtifact
 import komplex.dsl.FileGlobArtifact
 import komplex.dsl.artifacts
-import komplex.model.*
+import komplex.model.ArtifactData
+import komplex.model.ArtifactDesc
+import komplex.model.BuildContext
+import komplex.model.BuildResult
 import komplex.tools.configureSingleFileTarget
-import komplex.utils.*
+import komplex.utils.BuildDiagnostic
+import komplex.utils.escape4cli
+import komplex.utils.plus
+import komplex.utils.runProcess
+import org.slf4j.LoggerFactory
+import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Pattern
 import kotlin.text.RegexOption
 
 public val komplex.dsl.tools.proguard: ProGuardRule get() = ProGuardRule(ProGuardTool())
@@ -34,7 +34,7 @@ public class ProGuardRule(proGuardTool: ProGuardTool) : komplex.dsl.BasicToolRul
 
     override fun configure(): BuildDiagnostic =
             super.configure() +
-                    configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
+                    configureSingleFileTarget(module, artifacts.jar, { "${module.name}.jar" })
 }
 
 public fun ProGuardRule.filters(vararg flt: String): ProGuardRule {
@@ -94,7 +94,7 @@ public class ProGuardTool : komplex.model.Tool<ProGuardRule> {
         // compute it once
         val options = cfg.options.map { it() }
         options.forEach {
-            if ("(in|out)jars".toRegex(RegexOption.IGNORE_CASE).matcher(it).find())
+            if ("(in|out)jars".toRegex(RegexOption.IGNORE_CASE).hasMatch(it))
                 log.warn("using -injars or -outjars in directly in options could lead to undesirable results, use from/into/export outside of options instead")
         }
 
@@ -105,7 +105,7 @@ public class ProGuardTool : komplex.model.Tool<ProGuardRule> {
                 sourcePaths.flatMap{ listOf("-injars", filteredSrc(it)) } +
                 "-outjars" +
                 "${escape4cli(targetPath.toString())}" +
-                options.flatMap { it.split("[\\r\\n]+".toRegex()).map { it.replaceAll("#.*$","") }.flatMap { it.split("\\s+".toRegex()) } }
+                options.flatMap { it.split("[\\r\\n]+".toRegex()).map { it.replace("#.*$","") }.flatMap { it.split("\\s+".toRegex()) } }
 
         log.debug("proguard params: ${pgcmdline.joinToString("\n  ","\n  ")}")
 

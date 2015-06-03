@@ -1,20 +1,14 @@
 package komplex.launcher
 
 
-import org.jetbrains.kotlin.cli.jvm.compiler.*
-import org.jetbrains.kotlin.config.*
-import com.intellij.openapi.util.*
-import org.jetbrains.kotlin.utils.*
-import org.jetbrains.kotlin.cli.jvm.*
-import org.jetbrains.kotlin.cli.common.messages.*
-import org.jetbrains.kotlin.cli.common.*
-import org.jetbrains.kotlin.cli.common.arguments.*
-import java.io.File
+import com.intellij.openapi.util.Disposer
 import com.sampullara.cli.Args
-import org.jetbrains.kotlin.cli.jvm.config.JVMConfigurationKeys
-import org.jetbrains.kotlin.codegen.*
-import org.jetbrains.kotlin.parsing.JetScriptDefinition
-import java.net.*
+import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.messages.MessageCollectorPlainTextToStream
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.utils.KotlinPaths
+import org.jetbrains.kotlin.utils.PathUtil
+import java.io.File
 
 class ScriptingHost {
     fun run(args: Array<String>) {

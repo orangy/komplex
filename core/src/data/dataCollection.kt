@@ -1,18 +1,11 @@
 package komplex.data
 
-import komplex.dsl.ArtifactType
-import komplex.dsl.FolderArtifact
 import komplex.dsl.VariableArtifact
 import komplex.model.ArtifactData
-import komplex.model.nicePrint
-import java.util.HashSet
-import komplex.utils.findFilesInPath
-import java.nio.file.Path
-import komplex.utils.findGlobFiles
-import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.Arrays
 import java.util.Comparator
+import java.util.HashSet
 import kotlin.properties.Delegates
 
 public fun ByteArray.hashEquals(other: ByteArray): Boolean = Arrays.equals(this, other)
@@ -38,7 +31,7 @@ public fun mergeHashes(artifacts: Iterable<ArtifactData?>): ByteArray {
 }
 
 
-public trait DataCollection<Data: ArtifactData> : ArtifactData {
+public interface DataCollection<Data: ArtifactData> : ArtifactData {
     public val coll: Iterable<Data>
 }
 

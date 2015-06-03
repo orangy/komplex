@@ -1,8 +1,8 @@
 
 package komplex.model
 
-import komplex.*
 import komplex.data.*
+import komplex.log
 import komplex.utils.BuildDiagnostic
 import komplex.utils.toHexString
 
@@ -52,7 +52,11 @@ public fun BuildGraph.build(scenario: Scenarios,
                     val name = it.getKey().name
                     val actual = it.getValue()
                     val expected = context.detailedHashes.get(name)
-                    fun hashStr(hash: ByteArray?, valName: String) = when { hash == null -> "null"; hash.size() == 0 -> "[]"; else -> "[${hash.toHexString()}]" }
+                    fun hashStr(hash: ByteArray?, valName: String) = when {
+                        hash == null -> "null"
+                        hash.size() == 0 -> "[]"
+                        else -> valName // "[${hash.toHexString()}]"
+                    }
                     if (log.isDebugEnabled() && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
                         log.debug("    $name: ${hashStr(actual?.hash, "x")} != ${hashStr(expected, "y")}")
                     context.detailedHashes?.put(name, actual?.hash)

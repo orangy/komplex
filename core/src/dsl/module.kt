@@ -2,13 +2,15 @@
 package komplex.dsl
 
 import komplex.log
-import komplex.model.*
+import komplex.model.ModuleMetadata
+import komplex.model.ScenarioSelector
+import komplex.model.Scenarios
+import komplex.model.Step
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
-import java.nio.file.Path
 
 
-public trait ConfigurablesCollection {
+public interface ConfigurablesCollection {
 
     // filled with configurables (steps and submodules) in the order of adding.
     // NOTE - order is important for proper dependency-related configuration, so separate collection is used

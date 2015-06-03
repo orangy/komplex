@@ -1,9 +1,8 @@
 
 package komplex.dsl
 
-import java.util.ArrayList
-import komplex.model.combine
 import komplex.model.ScenarioSelector
+import komplex.model.combine
 
 
 public open class RuleSetDesc(val rules: Iterable<Rule>) : GenericSourceType {}

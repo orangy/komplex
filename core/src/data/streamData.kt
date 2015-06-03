@@ -1,24 +1,19 @@
 package komplex.data
 
-import java.io.InputStream
-import java.io.OutputStream
 import komplex.dsl.FileArtifact
-import java.io.FileInputStream
-import java.io.BufferedInputStream
-import java.nio.file.Path
-import java.io.FileOutputStream
-import java.io.BufferedOutputStream
 import komplex.model.ArtifactData
+import java.io.*
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.properties.Delegates
 
-public trait InputStreamData : komplex.model.ArtifactData {
+public interface InputStreamData : komplex.model.ArtifactData {
     public val inputStream: InputStream
 }
 
-public trait OutputStreamData : komplex.model.ArtifactData {
+public interface OutputStreamData : komplex.model.ArtifactData {
     public val outputStream: OutputStream
 }
 

@@ -1,10 +1,9 @@
 
 package komplex.dsl
 
-import komplex.model.combine
-import java.util.ArrayList
 import komplex.model.ScenarioSelector
 import komplex.model.Scenarios
+import komplex.model.combine
 
 public data class Scenario(val name: String) : komplex.model.Scenario {
     override fun toString(): String {

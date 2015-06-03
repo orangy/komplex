@@ -1,12 +1,12 @@
 
 package komplex.utils
 
-public trait IndentLn {
+public interface IndentLn {
     public fun inc(count: Int = 1): IndentLn
     public override fun toString(): String
 }
 
-public trait NicePrintable {
+public interface NicePrintable {
     public fun nicePrint(indent: IndentLn): String
 }
 

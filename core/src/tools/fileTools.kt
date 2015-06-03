@@ -1,16 +1,20 @@
 
 package komplex.tools
 
-import komplex.data.*
+import komplex.data.SimpleFileData
+import komplex.data.openFileSet
+import komplex.data.openInputStream
 import komplex.dsl.*
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import komplex.log
-import komplex.model.*
-import komplex.model.Module
+import komplex.model.ArtifactData
+import komplex.model.ArtifactDesc
+import komplex.model.BuildContext
+import komplex.model.BuildResult
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 // ----------------------------------
 
@@ -21,10 +25,9 @@ public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(Co
 
     override fun configure(): BuildDiagnostic {
         val guessedType = (sources.firstOrNull() as? Artifact?)?.type ?: artifacts.unspecified
-        val dslModule = module as komplex.dsl.Module
         var res = super.configure()
         if (explicitTargets.none()) {
-            if (dslModule.env.defaultTargetDir != null) explicitTargets.add(dslModule.folder(guessedType, dslModule.env.defaultTargetDir!!))
+            if (module.env.defaultTargetDir != null) explicitTargets.add(module.folder(guessedType, module.env.defaultTargetDir!!))
             else res = res + BuildDiagnostic.Fail("$name (${module.fullName}) Cannot auto configure target folder: defaultTargetDir is not defined")
         }
         // if copying files to directories, replace each directory target with individual targets, so conflicts
@@ -36,7 +39,7 @@ public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(Co
                     is FolderArtifact ->
                         for (src in sources)
                             when (src) {
-                                is FileArtifact -> newTargets.add(dslModule.file(src.type, tgt.path.resolve(src.path.getFileName())))
+                                is FileArtifact -> newTargets.add(module.file(src.type, tgt.path.resolve(src.path.getFileName())))
                                 else -> throw Exception("unexpected source for copy: $src") // \todo - find out more valid cases
                             }
                     else -> newTargets.add(tgt)

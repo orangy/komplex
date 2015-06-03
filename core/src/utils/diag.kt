@@ -4,14 +4,14 @@ package komplex.utils
 import java.io.PrintStream
 
 
-public trait Named {
+public interface Named {
     public val name: String
     override fun toString(): String = name
 }
 
-public trait BuildDiagnostic {
+public interface BuildDiagnostic {
     public enum class Status {
-        Succeeded
+        Succeeded,
         Failed
     }
     public val status : Status

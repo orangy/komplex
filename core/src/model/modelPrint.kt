@@ -2,8 +2,6 @@
 package komplex.model
 
 import komplex.utils.IndentLn
-import komplex.utils.Named
-import komplex.dsl.Artifact
 import komplex.utils.SpaceIndent
 
 public fun BuildGraphNode.nicePrint(indent: IndentLn, graph: BuildGraph? = null, scenario: Scenarios = Scenarios.All): String =

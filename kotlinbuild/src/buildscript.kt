@@ -5,35 +5,29 @@ import komplex.data.VariableData
 import komplex.data.openFileSet
 import komplex.data.openInputStream
 import komplex.dsl.*
-import komplex.dsl.tools
 import komplex.dsl.Module
-import komplex.tools.jar.jar
-import komplex.tools.jar.from
-import komplex.tools.maven.maven
 import komplex.model.*
 import komplex.tools.*
 import komplex.tools.jar.addManifestProperty
-import komplex.tools.javac.JavaCompilerRule
+import komplex.tools.jar.from
+import komplex.tools.jar.jar
 import komplex.tools.javac.javac
+import komplex.tools.javascript.closureCompiler
+import komplex.tools.javascript.extern
+import komplex.tools.kotlin.KotlinJavaToolRule
+import komplex.tools.kotlin.kotlin
+import komplex.tools.kotlin.kotlinjs
+import komplex.tools.kotlin.meta
+import komplex.tools.maven.maven
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
 import komplex.utils
-import komplex.utils.Named
 import komplex.utils.div
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
-import komplex.tools.from
-import komplex.tools.javascript.closureCompiler
-import komplex.tools.javascript.extern
-import komplex.tools.kotlin.KotlinJavaToolRule
-import komplex.tools.kotlin
-import komplex.tools.kotlin.kotlin
-import komplex.tools.kotlin.kotlinjs
-import komplex.tools.kotlin.meta
 import org.slf4j.LoggerFactory
 import java.io.*
-import java.nio.file.Path
 import java.nio.file.Paths
 
 internal val log = LoggerFactory.getLogger("kotlinbuild")
@@ -329,8 +323,8 @@ fun main(args: Array<String>) {
                            -dontwarn com.intellij.util.CompressionUtil
                            -dontwarn com.intellij.util.SnappyInitializer
                            -dontwarn net.sf.cglib.**
-                           -dontwarn org.objectweb.asm.** # this is ASM3, the old version that we do not use
-                           """)
+                           -dontwarn org.objectweb.asm.**""" //  # this is ASM3, the old version that we do not use
+                    )
 
                     options("""
                            -libraryjars '${javaHome / "lib/rt.jar"}'

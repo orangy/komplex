@@ -3,8 +3,6 @@ package komplex.tools.kotlin
 import komplex.dsl.*
 import komplex.tools.classpath
 import komplex.tools.javac.javac
-import komplex.tools.kotlin.KotlinCompilerRule
-import komplex.tools.kotlin.kotlin
 import komplex.utils.Named
 import komplex.utils.div
 

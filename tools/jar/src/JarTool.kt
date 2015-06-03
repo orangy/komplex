@@ -1,24 +1,22 @@
 package komplex.tools.jar
 
 import komplex.data.*
-import java.io.*
-import java.util.jar.*
-import java.nio.file.Files
-import java.nio.file.Path
-import org.slf4j.LoggerFactory
-import kotlin.properties.Delegates
 import komplex.dsl
 import komplex.dsl.*
-import komplex.model.*
-import komplex.model.Module
+import komplex.model.ArtifactData
+import komplex.model.ArtifactDesc
+import komplex.model.BuildContext
+import komplex.model.BuildResult
 import komplex.tools.configureSingleFileTarget
 import komplex.tools.filterIn
-import komplex.utils.findFilesInPath
-import komplex.utils.findGlobFiles
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
+import org.slf4j.LoggerFactory
+import java.io.FileOutputStream
+import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.*
+import java.util.HashSet
+import java.util.jar.*
 import java.util.zip.ZipEntry
 
 public val komplex.dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
@@ -33,7 +31,7 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
 
     override fun configure(): BuildDiagnostic =
             super.configure() +
-            configureSingleFileTarget(module as dsl.Module, artifacts.jar, { "${module.name}.jar" })
+            configureSingleFileTarget(module, artifacts.jar, { "${module.name}.jar" })
 
     // this is not very flexible and quite expensive scheme
     // \todo implement generic sources/target pairs within the same rule and ability to assign attributes to targets
