@@ -10,6 +10,7 @@ import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
 import komplex.utils
+import java.nio.file.Paths
 
 fun main(args: Array<String>) {
     val script = script {
@@ -26,6 +27,11 @@ fun main(args: Array<String>) {
             return libModule
         }
 
+        val slf4j = library("org.slf4j:slf4j-api:1.7.9")
+        val kotlinCompiler = library("org.jetbrains.kotlin:kotlin-compiler:0.12.213")
+        val kotlinRuntime = library("org.jetbrains.kotlin:kotlin-runtime:0.12.213")
+        val kotlinRreflect = library("org.jetbrains.kotlin:kotlin-reflect:0.12.213")
+
         fun Module.shared() {
             version("SNAPSHOT-0.1")
 
@@ -36,41 +42,39 @@ fun main(args: Array<String>) {
 
             depends on children
 
-            build using(tools.kotlin) from sources into binaries with {
-                classpath(depends.modules, file(artifacts.jar, "lib/kotlin-runtime.jar"))
+            build using(tools.kotlin(Paths.get("lib/kotlin-compiler.jar"))) from sources into binaries with {
+                depends.on( kotlinRuntime, kotlinRreflect)
+                classpath(depends.modules)
                 enableInline = true
             }
 
-            build(jar, test) using tools.jar from binaries export jarFile
+            build(jar, test) using tools.jar from binaries into jarFile
 
-            build(publish) {
-                using(tools.jar) {
-                    from(binaries)
-                    into(jarFile)
-                    deflate = true
-                }
-                /*
-                using(tools.publish) {
-                    from(jarFile)
-                }
-                */
-            }
+//            build(publish) {
+//                using(tools.jar) {
+//                    from(binaries)
+//                    into(jarFile)
+//                    deflate = true
+//                }
+//                using(tools.publish) {
+//                    from(jarFile)
+//                }
+//            }
 
             default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
         module("komplex") {
+
             val core = module("core", "Komplex Core") {
-                depends.on(
-                    library("org.slf4j:slf4j-api:1.7.9")
-                )
+                depends.on( slf4j )
                 shared()
             }
 
             val toolsJar = module("tools/jar", "Komplex jar tool") {
                 depends.on(
-                    core, // reference to project by name
-                    library("org.slf4j:slf4j-api:1.7.9")
+                        core, // reference to project by name
+                        slf4j
                 )
                 shared()
             }
@@ -78,45 +82,55 @@ fun main(args: Array<String>) {
                 depends.on(
                         core,
                         library("net.sf.proguard:proguard-base:5.2.1"),
-                        library("org.slf4j:slf4j-api:1.7.9")
+                        slf4j
                 )
                 shared()
             }
             val toolsJavac = module("tools/javac", "Komplex Java Compiler tool") {
                 depends.on(
                         core,
-                        library("org.jetbrains.kotlin:kotlin-runtime:0.11.91"),
-                        library("org.slf4j:slf4j-api:1.7.9")
+                        kotlinRuntime,
+                        slf4j
+                )
+                shared()
+            }
+            val toolsJavascript = module("tools/javascript", "Komplex JavaScript tool") {
+                depends.on(
+                        core,
+                        kotlinRuntime,
+                        library("com.google.javascript:closure-compiler:v20150505"),
+                        slf4j
                 )
                 shared()
             }
             val toolsKotlin = module("tools/kotlin", "Komplex Kotlin Compiler tool") {
                 depends.on(
-                    core,
-                    library("org.jetbrains.kotlin:kotlin-compiler:0.11.91"),
-                    library("org.jetbrains.kotlin:kotlin-runtime:0.11.91"),
-                    library("org.slf4j:slf4j-api:1.7.9")
+                        core,
+                        toolsJavac,
+                        kotlinCompiler,
+                        kotlinRuntime,
+                        slf4j
                 )
                 shared()
             }
             val repoMaven = module("tools/maven", "Komplex Maven Resolver tool") {
                 depends.on(
-                    core,
-                    library("com.jcabi:jcabi-aether:0.10.1"),
-                    library("org.apache.maven:maven-core:3.2.5"),
-                    library("org.slf4j:slf4j-api:1.7.9")
+                        core,
+                        library("com.jcabi:jcabi-aether:0.10.1"),
+                        library("org.apache.maven:maven-core:3.2.5"),
+                        slf4j
                 )
                 shared()
             }
 
             module("samples", "Komplex Samples") {
                 depends.on(
-                    core,
-                    toolsJar,
-                    toolsKotlin,
-                    repoMaven,
-                    library("org.slf4j:slf4j-api:1.7.9"),
-                    library("org.slf4j:slf4j-simple:1.7.9")
+                        core,
+                        toolsJar,
+                        toolsKotlin,
+                        repoMaven,
+                        slf4j,
+                        library("org.slf4j:slf4j-simple:1.7.9")
                 )
                 shared()
             }
@@ -135,29 +149,15 @@ fun main(args: Array<String>) {
     }
 
     // kbuild script.build -t publish -t src
-/*
-    script.prepare()
-    val plan = script.plan(script.findModule("spek-tests")!!, Scenario("publish"))
-    plan.print("")
-*/
+
     println("\n--- script ------------------------------")
     println(script.nicePrint(utils.TwoSpaceIndentLn()))
-//    script.build("publish")
     val graph = script.buildGraph()
-//    println("graph targets:")
-//    graph.targets().forEach { it.print("    ") }
-//    println()
-//    println("graph:")
-//    graph.print()
     println("\n--- plan --------------------------------")
     println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
     println("\n--- build -------------------------------")
     graph.build(Scenarios.All)
     println("\n--- build 2 - partial -------------------")
     graph.build(Scenarios.All, GraphBuildContext(Scenarios.All, graph))
-//    println("\n--- min rebuild plan --------------------")
-//    graph.printPartialBuildPlan(sources = hashSetOf(graph.roots().first()))
-//    println("\n--- target build plan -------------------")
-//    graph.printPartialBuildPlan(targets = listOf(graph.leafs().first()))
     println("\n-- done. --------------------------------")
 }
