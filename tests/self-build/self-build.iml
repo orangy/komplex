@@ -7,9 +7,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="core" />
-    <orderEntry type="library" name="org.slf4j:slf4j-api:1.7.9" level="project" />
-    <orderEntry type="library" exported="" name="com.jcabi:jcabi-aether:0.10.1" level="project" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
+    <orderEntry type="library" name="junit:junit:4.12" level="project" />
+    <orderEntry type="module" module-name="samples" scope="RUNTIME" />
   </component>
 </module>

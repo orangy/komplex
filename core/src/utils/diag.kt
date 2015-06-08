@@ -28,7 +28,7 @@ public interface BuildDiagnostic {
 }
 
 
-public class FailBuildDiagnostic(override val messages: Iterable<String> = listOf()) : BuildDiagnostic {
+public data class FailBuildDiagnostic(override val messages: Iterable<String> = listOf()) : BuildDiagnostic {
     override val status : BuildDiagnostic.Status = BuildDiagnostic.Status.Failed
 }
 

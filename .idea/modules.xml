@@ -7,12 +7,14 @@
       <module fileurl="file://$PROJECT_DIR$/tools/javac/javac.iml" filepath="$PROJECT_DIR$/tools/javac/javac.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/tools/javascript/javascript.iml" filepath="$PROJECT_DIR$/tools/javascript/javascript.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/komplex.iml" filepath="$PROJECT_DIR$/komplex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tests/komplex-tests/komplex-tests.iml" filepath="$PROJECT_DIR$/tests/komplex-tests/komplex-tests.iml" group="tests" />
       <module fileurl="file://$PROJECT_DIR$/tools/kotlin/kotlin.iml" filepath="$PROJECT_DIR$/tools/kotlin/kotlin.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/kotlinbuild/kotlinbuild.iml" filepath="$PROJECT_DIR$/kotlinbuild/kotlinbuild.iml" />
       <module fileurl="file://$PROJECT_DIR$/launcher/launcher.iml" filepath="$PROJECT_DIR$/launcher/launcher.iml" />
       <module fileurl="file://$PROJECT_DIR$/tools/maven/maven.iml" filepath="$PROJECT_DIR$/tools/maven/maven.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/tools/proguard/proguard.iml" filepath="$PROJECT_DIR$/tools/proguard/proguard.iml" group="tools" />
       <module fileurl="file://$PROJECT_DIR$/samples/samples.iml" filepath="$PROJECT_DIR$/samples/samples.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tests/self-build/self-build.iml" filepath="$PROJECT_DIR$/tests/self-build/self-build.iml" group="tests" />
     </modules>
   </component>
 </project>
