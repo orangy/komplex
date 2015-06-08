@@ -4,7 +4,6 @@ import komplex.dsl.*
 import komplex.tools.classpath
 import komplex.tools.javac.javac
 import komplex.utils.Named
-import komplex.utils.div
 
 // \todo move into separate tool
 class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCompilerRule/* = tools.kotlin*/, public val java: komplex.tools.javac.JavaCompilerRule = tools.javac)

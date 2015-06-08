@@ -23,7 +23,6 @@ import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
 import komplex.utils
-import komplex.utils.div
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import org.slf4j.LoggerFactory
@@ -73,9 +72,9 @@ fun main(args: Array<String>) {
 
         val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
         val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
-        val bootstrapRuntime = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-runtime.jar")
-        val bootstrapReflect = file(artifacts.jar, bootstrapHome / "Kotlin/lib/kotlin-reflect.jar")
-        val bootstrapCompilerJar = file(artifacts.jar, bootstrapCompilerHome / "lib/kotlin-compiler.jar")
+        val bootstrapRuntime = file % bootstrapHome / "Kotlin/lib/kotlin-runtime".jar
+        val bootstrapReflect = file % bootstrapHome / "Kotlin/lib/kotlin-reflect".jar
+        val bootstrapCompilerJar = file % bootstrapCompilerHome / "lib/kotlin-compiler".jar
         val bootstrapCompilerScript = bootstrapCompilerHome / "bin/kotlinc"
         val ideaSdkDir = rootDir / "ideaSDK"
 
@@ -85,10 +84,10 @@ fun main(args: Array<String>) {
         val outputCompilerLibsDir = outputCompilerDir / "lib"
         val outputCompilerLibsFolder = folder(artifacts.jar, outputCompilerLibsDir)
         
-        val outputPreloaderJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-preloader.jar")
-        val outputCompilerJar = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-compiler.jar")
-        val outputBootstrapRuntime = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-runtime-internal-bootstrap.jar")
-        val outputBootstrapReflect = file(artifacts.jar, outputCompilerLibsFolder / "kotlin-reflect-internal-bootstrap.jar")
+        val outputPreloaderJar = file % outputCompilerLibsFolder / "kotlin-preloader".jar
+        val outputCompilerJar = file % outputCompilerLibsFolder / "kotlin-compiler".jar
+        val outputBootstrapRuntime = file % outputCompilerLibsFolder / "kotlin-runtime-internal-bootstrap".jar
+        val outputBootstrapReflect = file % outputCompilerLibsFolder / "kotlin-reflect-internal-bootstrap".jar
 
         module("kotlin") {
 

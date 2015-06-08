@@ -2,7 +2,6 @@ package komplex.tools
 
 import komplex.dsl.*
 import komplex.utils.BuildDiagnostic
-import komplex.utils.div
 import java.nio.file.Path
 
 fun<R: Rule> R.configureSingleInto(base: Path?, fn: (p: Path) -> Artifact): Boolean {
