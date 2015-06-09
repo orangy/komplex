@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects
-            val sources = files(artifacts.sources).include("$moduleName/src/**/*.kt", "$moduleName/src/*.kt")
+            val sources = files(artifacts.sources, ".", "$moduleName/src/**/*.kt", "$moduleName/src/*.kt")
             val binaries = folder(artifacts.binaries, "out/sample/$moduleName")
             val jarFile = file(artifacts.jar, "out/artifacts/sample/$moduleName.jar")
 

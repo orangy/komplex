@@ -76,9 +76,12 @@ public class GlobCollection(val collection: MutableList<String>) {
     }
 }
 
-public class FileGlobArtifact(type: ArtifactType, base: Path) : AbstractFolderBasedArtifact(type, base) {
-    var included = arrayListOf<String>()
-    var excluded = arrayListOf<String>()
+
+public class FileGlobArtifact(type: ArtifactType,
+                              base: Path,
+                              public val included: Iterable<String>,
+                              public val excluded: Iterable<String>)
+: AbstractFolderBasedArtifact(type, base) {
 
     override fun equals(other: Any?): Boolean = super.equals(other) &&
             included.equals((other as? FileGlobArtifact)?.included) &&
@@ -89,46 +92,15 @@ public class FileGlobArtifact(type: ArtifactType, base: Path) : AbstractFolderBa
         this.body()
     }
 
-    public fun append(files: FileGlobArtifact): FileGlobArtifact {
-        included.addAll(files.included)
-        excluded.addAll(files.excluded)
-        return this
-    }
-
-    public fun include(vararg glob: String): FileGlobArtifact {
-        included.addAll(glob)
-        return this
-    }
-
-    public fun all(): FileGlobArtifact {
-        included.add("**")
-        return this
-    }
-
-    public fun exclude(vararg glob: String): FileGlobArtifact {
-        excluded.addAll(glob)
-        return this
-    }
-
-    public fun include(body: GlobCollection.() -> Unit): FileGlobArtifact {
-        val collection = GlobCollection(included)
-        collection.body()
-        return this
-    }
-
-    public fun exclude(body: GlobCollection.() -> Unit): FileGlobArtifact {
-        val collection = GlobCollection(excluded)
-        collection.body()
-        return this
-    }
-
     override val name: String get() = "$`type` folder $path glob +$included -$excluded"
 }
+
 
 public class ArtifactsSet(public val members: Collection<Artifact>): GenericSourceType {
     override fun equals(other: Any?): Boolean = members.toHashSet().equals((other as? ArtifactsSet)?.members?.toHashSet())
     override fun hashCode(): Int = members.fold(0, { r, a -> r + 17 * a.hashCode() })
 }
+
 
 public fun ScriptContext.artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
     ArtifactsSet(artifacts.flatMap { when (it) {
