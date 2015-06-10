@@ -105,9 +105,9 @@ fun main(args: Array<String>) {
 
             val properties = java.util.Properties()
 
-            val buildno = variable(artifacts.configs, buildnoString)
+            val buildno = variable(artifacts.config, buildnoString)
 
-            val build_txt = file % outputCompilerDir / "build.txt".resource
+            val build_txt = file % outputCompilerDir / "build.txt".res
 
             fun bootstrapCompiler() = KotlinJavaToolRule("Boostrap compiler", kotlin = tools.kotlin(bootstrapCompilerJar.path))
 
@@ -133,7 +133,7 @@ fun main(args: Array<String>) {
                     "js/js.frontend",
                     "js/js.inliner",
                     "js/js.parser",
-                    "js/js.serializer").map { folder.source % it }
+                    "js/js.serializer").map { folder.src % it }
 
 
             val readProperties = module("readProperties") {
@@ -146,8 +146,8 @@ fun main(args: Array<String>) {
                             openFileSet(src).coll.forEach { target.ref.load(openInputStream(it).inputStream) }
                         listOf(VariableData(target))
                     }
-                    from (file % "resources/kotlinManifest.properties".config)
-                    into (variable(artifacts.configs, properties))
+                    from (file % "resources/kotlinManifest.properties".cfg)
+                    into (variable(artifacts.config, properties))
                 }
             }
 
@@ -216,15 +216,15 @@ fun main(args: Array<String>) {
                             throw Exception("Serializing builtins failed with error code $res")
                         openFileSet(target).coll
                     }
-                    from (folder(artifacts.sources, "core/builtins/native"),
-                            folder(artifacts.sources, "core/builtins/src"))
-                    into (folder(artifacts.binaries, outputDir / "builtins"))
+                    from (folder(artifacts.source, "core/builtins/native"),
+                            folder(artifacts.source, "core/builtins/src"))
+                    into (folder(artifacts.binary, outputDir / "builtins"))
                 }
             }
 
 
             val filterSerializedBuiltins = module("filter-serialized-builtins") {
-                build using transformTargets (serializeBuiltins, { files(artifacts.binaries, it as PathBasedArtifact, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**") })
+                build using transformTargets (serializeBuiltins, { files(artifacts.binary, it as PathBasedArtifact, "kotlin/**").exclude("kotlin/internal/**", "kotlin/reflect/**") })
             }
 
 
@@ -259,10 +259,10 @@ fun main(args: Array<String>) {
                                 "lib/protobuf-2.5.0.jar",
                         files.jar % "." + "dependencies/jline.jar" +
                                           "dependencies/cli-parser-1.1.1.jar",
-                        files.resource % "compiler/frontend.java/src" + "META-INF/services/**",
-                        files.resource % "compiler/backend/src" + "META-INF/services/**",
-                        files.resource % "resources" + "kotlinManifest.properties",
-                        files.resource % "idea/src" + "META-INF/extensions/common.xml" +
+                        files.res % "compiler/frontend.java/src" + "META-INF/services/**",
+                        files.res % "compiler/backend/src" + "META-INF/services/**",
+                        files.res % "resources" + "kotlinManifest.properties",
+                        files.res % "idea/src" + "META-INF/extensions/common.xml" +
                                                       "META-INF/extensions/kotlin2jvm.xml" +
                                                       "META-INF/extensions/kotlin2js.xml"
                 )
@@ -433,7 +433,7 @@ fun main(args: Array<String>) {
 
             val preloader = module("kotlin-preloader", "Preloader") {
 
-                val sources = folder.source % "compiler/preloader/src"
+                val sources = folder.src % "compiler/preloader/src"
 
                 var classes = build using(tools.javac) from sources
 
@@ -444,7 +444,7 @@ fun main(args: Array<String>) {
             module("android-compiler-plugin") {
 
                 val classes = build using tools.kotlin(bootstrapCompilerJar.path) with {
-                    from (files.source % "plugins/android-compiler-plugin" + "src/**/*.kt")
+                    from (files.src % "plugins/android-compiler-plugin" + "src/**/*.kt")
                     classpath (file % ideaSdkDir / "core/intellij-core".jar,
                                compiler,
                                bootstrapRuntime)
@@ -454,7 +454,7 @@ fun main(args: Array<String>) {
                     dependsOn (buildno)
                     from (build_txt, prefix = "META-INF")
                     from (classes,
-                          files.source % "plugins/android-compiler-plugin/src" + "META-INF/services/**")
+                          files.src % "plugins/android-compiler-plugin/src" + "META-INF/services/**")
                 }
             }
 
@@ -474,7 +474,7 @@ fun main(args: Array<String>) {
                 val antlib = library("org.apache.ant:ant:1.7.1")
 
                 val classes = build using bootstrapCompiler() with {
-                    from (folder.source % "ant")
+                    from (folder.src % "ant")
                     classpath (bootstrapRuntime,
                                antlib,
                                preloader)
@@ -482,7 +482,7 @@ fun main(args: Array<String>) {
 
                 build using(brandedJarTool()) with {
                     from (classes,
-                          files.source % "ant/src" + "**/*.xml")
+                          files.src % "ant/src" + "**/*.xml")
 
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.compiler.ant.task")}" })
                     addManifestProperty("Class-Path", listOf(outputPreloaderJar, outputBootstrapRuntime, outputBootstrapReflect).map { it.path.getFileName() }.joinToString(" "))
@@ -504,7 +504,7 @@ fun main(args: Array<String>) {
 
                 val sources = listOf(
                     "core/builtins",
-                    "core/runtime.jvm").map { folder.source % it }
+                    "core/runtime.jvm").map { folder.src % it }
 
                 build using newJVMCompiler() with {
                     from (sources)
@@ -518,7 +518,7 @@ fun main(args: Array<String>) {
             val stdlib = module("stdlib") {
 
                 build using tools.kotlin(outputCompilerJar.path) with {
-                    from (files.source % "libraries/stdlib" + "src/**.kt")
+                    from (files.src % "libraries/stdlib" + "src/**.kt")
                     classpath (builtins)
                     enableInline = true
                     includeRuntime = false
@@ -534,7 +534,7 @@ fun main(args: Array<String>) {
                         "core/descriptors",
                         "core/descriptors.runtime",
                         "core/deserialization",
-                        "core/util.runtime").map { folder.source % it })
+                        "core/util.runtime").map { folder.src % it })
                     classpath (builtins,
                                stdlib,
                                protobufLite,
@@ -546,7 +546,7 @@ fun main(args: Array<String>) {
             val reflection = module("reflection") {
                 build using newJVMCompiler() with {
                     export = true
-                    from (folder.source % "core/reflection.jvm")
+                    from (folder.src % "core/reflection.jvm")
                     classpath (builtins,
                                stdlib,
                                core,
@@ -589,7 +589,7 @@ fun main(args: Array<String>) {
                           "core/reflection.jvm/src",
                           "core/runtime.jvm/src",
                           "core/util.runtime/src",
-                          "libraries/stdlib/src").map { files(artifacts.sources, it, "**/*") }
+                          "libraries/stdlib/src").map { files(artifacts.source, it, "**/*") }
                     )
                     addManifestProperty("Implementation-Title", { "${properties.get("manifest.impl.title.kotlin.jvm.runtime.sources")}" })
                 }
@@ -599,7 +599,7 @@ fun main(args: Array<String>) {
             module("kotlin-for-upsource") {
 
                 val classes = build using bootstrapCompiler() with {
-                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files.source % it + "src/**" })
+                    from (listOf("idea/ide-common", "idea/idea-analysis").map { files.src % it + "src/**" })
                     classpath (files(artifacts.jar, ideaSdkDir/ "lib", "*.jar"),
                                uncheckedCompilerJar,
                                bootstrapRuntime)
@@ -610,19 +610,19 @@ fun main(args: Array<String>) {
                     from (classes,
                           compilerClasses,
                           filterSerializedBuiltins,
-                          files.source % "idea/idea-analysis/src"
+                          files.src % "idea/idea-analysis/src"
                                   + "**"
                                   - "**/*.java"
                                   - "**/*.kt",
-                          files.source % "compiler/frontend.java/src" + "META-INF/services/**",
-                          files.source % "compiler/backend/src" + "META-INF/services/**",
+                          files.src % "compiler/frontend.java/src" + "META-INF/services/**",
+                          files.src % "compiler/backend/src" + "META-INF/services/**",
                           files.jar % "lib" + "*.jar" + "**/*.jar",
                           newRuntime,
                           newRuntimeSources,
                           newReflect,
-                          folder.resource % "resources",
-                          folder.resource % "idea/resources",
-                          files.source % "idea/src" + "META-INF/**")
+                          folder.res % "resources",
+                          folder.res % "idea/resources",
+                          files.src % "idea/src" + "META-INF/**")
                 }
             }
 
@@ -635,13 +635,13 @@ fun main(args: Array<String>) {
                     "src/kotlin/Iterators.kt",
                     "src/kotlin/Range.kt",
                     "src/kotlin/FloatingPointConstants.kt"
-                ).map { file % "core/builtins" / it.source } )
+                ).map { file % "core/builtins" / it.src } )
 
             val kjsStdlibSources = artifactsSet(
-                    files.source % "js/js.libraries" + "src/**/*.kt",
-                    files.source % "core/builtins" + "src/kotlin/reflect/*.kt" +
+                    files.src % "js/js.libraries" + "src/**/*.kt",
+                    files.src % "core/builtins" + "src/kotlin/reflect/*.kt" +
                                                      "src/kotlin/reflect/**/*.kt",
-                    (files.source % "libraries/stdlib/src" + "**/*.kt").exclude(
+                    (files.src % "libraries/stdlib/src" + "**/*.kt").exclude(
                             "**/*JVM.kt",
                             "kotlin/jvm/**",
                             "kotlin/beans/**",
@@ -658,14 +658,14 @@ fun main(args: Array<String>) {
 
             module("kotlin-jslib") {
 
-                val builtinsJs = file(artifacts.sources, outputDir / "builtins.js")
-                val stdlibJs = file(artifacts.sources, outputDir / "jslib.js")
-                val stdlibJsMeta = file(artifacts.sources, outputDir / "stdlib-meta.js")
+                val builtinsJs = file % outputDir / "builtins".src("js")
+                val stdlibJs = file % outputDir / "jslib.js".src("js")
+                val stdlibJsMeta = file % outputDir / "stdlib-meta.js".src("js")
 
                 build using newJSCompiler() with {
                     from (kjsBuiltinsSources)
                     into (builtinsJs)
-                    meta (file(artifacts.sources, outputDir / "builtins-meta.js"))
+                    meta (file % outputDir / "builtins-meta".src("js"))
                     includeStdlib = false
                 }
 
@@ -679,10 +679,10 @@ fun main(args: Array<String>) {
                 val compiledJsFiles = build using tools.closureCompiler with {
                     from (builtinsJs,
                           stdlibJs,
-                          files(artifacts.sources, "js/js.translator/testData")
+                          (files.src % "js/js.translator/testData")
                                     .include("kotlin_lib_ecma5.js", "kotlin_lib.js", "maps.js", "long.js", "export_Kotlin_if_possible.js"))
-                    extern (file(artifacts.sources, "js/js.translator/testData/externs.js"))
-                    into (file(artifacts.sources, outputDir / "kotlin.js"))
+                    extern (file % "js/js.translator/testData/externs.js".src)
+                    into (file % outputDir / "kotlin".src("js"))
                 }
 
                 build using brandedJarTool() with {

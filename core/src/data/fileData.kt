@@ -64,7 +64,7 @@ public fun openFileSet(pair: Pair<komplex.model.ArtifactDesc, ArtifactData?>,
             if (snd.coll.isEmpty() || snd.coll.first() !is FileData ||
                 // special treatment of folders as libraries
                 // \todo find better solution, e.g. dispatching by artifact type and separate functions like openLibrariesSet
-                (options == OpenFileSet.FoldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binaries))
+                (options == OpenFileSet.FoldersAsLibraries && fst is FolderArtifact && fst.type == komplex.dsl.artifacts.binary))
                     openFileSet(fst, baseDir = baseDir, options = options)
             else
                 adaptToDataCollection(snd as DataCollection<FileData>)
@@ -80,7 +80,7 @@ internal fun tryOpenFileSet(it: Any, baseDir: Path? = null, options: OpenFileSet
         is FolderArtifact ->
             // special treatment of folders as libraries
             // \todo find better solution, see openFileSet(pair...)
-            if (options == OpenFileSet.FoldersAsLibraries && it.type == dsl.artifacts.binaries ) listOf(FolderData(it.path))
+            if (options == OpenFileSet.FoldersAsLibraries && it.type == dsl.artifacts.binary ) listOf(FolderData(it.path))
             else collectFolderFiles((baseDir ?: Paths.get(".")).resolve(it.path))
         is FileArtifact -> listOf(SimpleFileData(it.path))
         is Path -> listOf(SimpleFileData(it))

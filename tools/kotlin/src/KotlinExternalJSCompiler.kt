@@ -26,8 +26,8 @@ public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<
             val tempDir = module.env.tempDir
             if (tempDir != null) {
                 val stepTempDir = tempDir / (module.name + "." + name.replace(' ', '_'))
-                if (explicitTargets.none()) into(module.file(artifacts.sources, stepTempDir / "out.js"))
-                if (explicitMetaTargets.none()) into(module.file(artifacts.sources, stepTempDir / "meta.js"))
+                if (explicitTargets.none()) into(module.file(artifacts.source, stepTempDir / "out.js"))
+                if (explicitMetaTargets.none()) into(module.file(artifacts.source, stepTempDir / "meta.js"))
             }
             else ret = ret + BuildDiagnostic.Fail("$name (${module.fullName}) Cannot auto configure targets: tempDir is not defined")
         }

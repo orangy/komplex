@@ -19,7 +19,7 @@ fun main(args: Array<String>) {
         val jar = scenario("jar")
         val publish = scenario("publish")
 
-        val libraries = folder(artifacts.binaries, "out/sample/libs")
+        val libraries = folder(artifacts.binary, "out/sample/libs")
 
         fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
             val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
@@ -36,8 +36,8 @@ fun main(args: Array<String>) {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects
-            val sources = files(artifacts.sources, ".", "$moduleName/src/**/*.kt", "$moduleName/src/*.kt")
-            val binaries = folder(artifacts.binaries, "out/sample/$moduleName")
+            val sources = files(artifacts.source, ".", "$moduleName/src/**/*.kt", "$moduleName/src/*.kt")
+            val binaries = folder(artifacts.binary, "out/sample/$moduleName")
             val jarFile = file(artifacts.jar, "out/artifacts/sample/$moduleName.jar")
 
             depends on children

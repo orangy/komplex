@@ -16,10 +16,10 @@ class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCom
     public fun from(sourceRootDirs: Iterable<AbstractFolderBasedArtifact>): KotlinJavaToolRule {
         kotlin.with {
             sourceRoots.addAll( sourceRootDirs.map { (it.path / "src").toString() })
-            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.kt") })
+            from(sourceRootDirs.map { files(artifacts.source, it.path, "src/**.kt") })
         }
         java.with {
-            from(sourceRootDirs.map { files(artifacts.sources, it.path, "src/**.java") })
+            from(sourceRootDirs.map { files(artifacts.source, it.path, "src/**.java") })
         }
         return this
     }

@@ -76,6 +76,8 @@ public fun IncompletePathBasedArtifact<FileArtifact>.div(pt: PathBasedArtifactTy
 public fun PathBasedArtifactRoot<FileArtifact>.mod(pt: PathBasedArtifactTypedPart): FileArtifact = SimpleFileArtifact(pt.type, ctx.resolvePath(pt.pathPart))
 
 
+// \todo add extrensions handling for folder and files artifacts
+
 // complete folder artifact building functions
 // from type + path/string, based on context
 public fun ScriptContext.folder(type: ArtifactType, path: Path): FolderArtifact =  FolderArtifact(type, resolvePath(path))
@@ -99,7 +101,6 @@ public val ScriptContext.folder: PathBasedArtifactRoot<FolderArtifact> get() = f
 // completing incomplete file artifact (or root) with type
 public fun IncompletePathBasedArtifact<FolderArtifact>.div(pt: PathBasedArtifactTypedPart): FolderArtifact = FolderArtifact(pt.type, path.resolve(pt.pathPart))
 public fun PathBasedArtifactRoot<FolderArtifact>.mod(pt: PathBasedArtifactTypedPart): FolderArtifact = FolderArtifact(pt.type, ctx.resolvePath(pt.pathPart))
-
 
 // complete files artifact building functions
 // from type + path/string/other path based artifact, based on context
@@ -160,21 +161,42 @@ public fun variable<T: Any>(type: ArtifactType, ref: T) : VariableArtifact<T> = 
 public fun String.type(at: ArtifactType): PathBasedArtifactTypedPart = PathBasedArtifactTypedPart(Paths.get(this), at)
 public fun Path.type(at: ArtifactType): PathBasedArtifactTypedPart = PathBasedArtifactTypedPart(this, at)
 
+
 // concrete typed path part generators
-public val String.source: PathBasedArtifactTypedPart get() = type(artifacts.sources)
-public val Path.source: PathBasedArtifactTypedPart get() = type(artifacts.sources)
-public val String.resource: PathBasedArtifactTypedPart get() = type(artifacts.resources)
-public val Path.resource: PathBasedArtifactTypedPart get() = type(artifacts.resources)
-public val String.bin: PathBasedArtifactTypedPart get() = type(artifacts.binaries)
-public val Path.bin: PathBasedArtifactTypedPart get() = type(artifacts.binaries)
+public val String.src: PathBasedArtifactTypedPart get() = type(artifacts.source)
+public fun String.src(extension: String): PathBasedArtifactTypedPart = type(artifacts.source(extension))
+public val Path.src: PathBasedArtifactTypedPart get() = type(artifacts.source)
+public fun Path.src(extension: String): PathBasedArtifactTypedPart = type(artifacts.source(extension))
+
+public val String.res: PathBasedArtifactTypedPart get() = type(artifacts.resource)
+public fun String.res(extension: String): PathBasedArtifactTypedPart = type(artifacts.resource(extension))
+public val Path.res: PathBasedArtifactTypedPart get() = type(artifacts.resource)
+public fun Path.res(extension: String): PathBasedArtifactTypedPart = type(artifacts.resource(extension))
+
+public val String.bin: PathBasedArtifactTypedPart get() = type(artifacts.binary)
+public fun String.bin(extension: String): PathBasedArtifactTypedPart = type(artifacts.binary(extension))
+public val Path.bin: PathBasedArtifactTypedPart get() = type(artifacts.binary)
+public fun Path.bin(extension: String): PathBasedArtifactTypedPart = type(artifacts.binary(extension))
+
 public val String.jar: PathBasedArtifactTypedPart get() = type(artifacts.jar)
+public fun String.jar(extension: String): PathBasedArtifactTypedPart = type(artifacts.jar(extension))
 public val Path.jar: PathBasedArtifactTypedPart get() = type(artifacts.jar)
-public val String.config: PathBasedArtifactTypedPart get() = type(artifacts.configs)
-public val Path.config: PathBasedArtifactTypedPart get() = type(artifacts.configs)
+public fun Path.jar(extension: String): PathBasedArtifactTypedPart = type(artifacts.jar(extension))
+
+public val String.cfg: PathBasedArtifactTypedPart get() = type(artifacts.config)
+public fun String.cfg(extension: String): PathBasedArtifactTypedPart = type(artifacts.config(extension))
+public val Path.cfg: PathBasedArtifactTypedPart get() = type(artifacts.config)
+public fun Path.cfg(extension: String): PathBasedArtifactTypedPart = type(artifacts.config(extension))
+
 
 // properties generation TypedPathBasedArtifactRoot from untyped root
-public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.source: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.sources)
-public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.resource: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.resources)
-public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.bin: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.binaries)
+public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.src: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.source)
+public fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.src(extension: String): TypedPathBasedArtifactRoot<T> = TypedPathBasedArtifactRoot(ctx, artifacts.source(extension))
+public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.res: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.resource)
+public fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.res(extension: String): TypedPathBasedArtifactRoot<T> = TypedPathBasedArtifactRoot(ctx, artifacts.resource(extension))
+public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.bin: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.binary)
+public fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.bin(extension: String): TypedPathBasedArtifactRoot<T> = TypedPathBasedArtifactRoot(ctx, artifacts.binary(extension))
 public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.jar: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.jar)
-public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.config: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.configs)
+public fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.jar(extension: String): TypedPathBasedArtifactRoot<T> = TypedPathBasedArtifactRoot(ctx, artifacts.jar(extension))
+public val<T: PathBasedArtifact> PathBasedArtifactRoot<T>.cfg: TypedPathBasedArtifactRoot<T> get() = TypedPathBasedArtifactRoot(ctx, artifacts.config)
+public fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.cfg(extension: String): TypedPathBasedArtifactRoot<T> = TypedPathBasedArtifactRoot(ctx, artifacts.config(extension))

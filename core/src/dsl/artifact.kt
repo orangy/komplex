@@ -14,23 +14,29 @@ public interface Artifact : komplex.model.ArtifactDesc, GenericSourceType {
 public interface ArtifactType {
 }
 
-public open class NamedArtifactType(val name: String) : ArtifactType {
+public class NamedArtifactType(val name: String, val extension: String? = null) : ArtifactType {
     override fun toString(): String = "($name)"
-}
-
-public class NamedArtifactTypeWithDefaultExtension(name: String, val ext: String) : NamedArtifactType(name) {
-    // \todo write correct implementation handling corner cases
-    fun updateExtension(p: Path): Path = if (p.getFileName().toString().endsWith(ext)) p else p.getParent().resolve(p.getFileName().toString() + ext)
+    fun updateExtension(p: Path): Path {
+        // \todo think about asserting the extension here
+        if (extension == null) return p
+        val ext = if (extension.startsWith(".")) extension else ".$extension"
+        return if (p.getFileName().toString().endsWith(ext, ignoreCase = true)) p else p.getParent().resolve(p.getFileName().toString() + ext)
+    }
 }
 
 
 public object artifacts {
     public val unspecified: ArtifactType = NamedArtifactType("?")
-    public val sources: ArtifactType = NamedArtifactType("src")
-    public val resources: ArtifactType = NamedArtifactType("res")
-    public val binaries: ArtifactType = NamedArtifactType("bin")
-    public val jar: ArtifactType = NamedArtifactTypeWithDefaultExtension("jar", ".jar")
-    public val configs: ArtifactType = NamedArtifactType("cfg")
+    public val source: ArtifactType = NamedArtifactType("src")
+    public fun source(extension: String): ArtifactType = NamedArtifactType("src", extension)
+    public val resource: ArtifactType = NamedArtifactType("res")
+    public fun resource(extension: String): NamedArtifactType = NamedArtifactType("res", extension)
+    public val binary: ArtifactType = NamedArtifactType("bin")
+    public fun binary(extension: String): NamedArtifactType = NamedArtifactType("bin", extension)
+    public val jar: ArtifactType = NamedArtifactType("jar", "jar")
+    public fun jar(extension: String): NamedArtifactType = NamedArtifactType("jar", extension)
+    public val config: ArtifactType = NamedArtifactType("cfg")
+    public fun config(extension: String): NamedArtifactType = NamedArtifactType("cfg", extension)
 }
 
 public interface PathBasedArtifact : Artifact {
@@ -45,7 +51,7 @@ public interface FileArtifact : PathBasedArtifact { }
 public class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : FileArtifact {
     init { assert(ipath.toFile().isFile(), "Expecting a file at '$ipath'") }
     override val basePath: Path = ipath.getParent().toAbsolutePath().normalize()
-    override val relPath = basePath.relativize((if (type is NamedArtifactTypeWithDefaultExtension) type.updateExtension(ipath) else ipath).toAbsolutePath().normalize())
+    override val relPath = basePath.relativize((if (type is NamedArtifactType) type.updateExtension(ipath) else ipath).toAbsolutePath().normalize())
     override val name: String get() = "$`type` file ${path}"
 
     override fun equals(other: Any?): Boolean = path.equals((other as? SimpleFileArtifact)?.path)

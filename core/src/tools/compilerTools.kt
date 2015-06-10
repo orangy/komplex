@@ -32,7 +32,7 @@ public abstract class JVMCompilerRule<Config: JVMCompilerRule<Config, T>, T: Too
     override fun configure(): BuildDiagnostic =
             super<RuleWithClasspathImpl>.configure() +
                     // \todo generic and robust conversion to file-name friendly string, also in other places
-                    configureSingleTempFolderTarget(module, artifacts.binaries, { "${module.name}.${name.replace(' ', '_')}" })
+                    configureSingleTempFolderTarget(module, artifacts.binary, { "${module.name}.${name.replace(' ', '_')}" })
 }
 
 platformName("getPaths_Pairs_of_ArtifactDesc_ArtifactData")
