@@ -8,6 +8,7 @@ import komplex.model.Scenarios
 import komplex.model.Step
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
+import java.nio.file.Path
 
 
 public interface ConfigurablesCollection {
@@ -17,7 +18,7 @@ public interface ConfigurablesCollection {
     public val configurableChildren: MutableCollection<Configurable>
     public var configurationDiagnostic: BuildDiagnostic
 
-    public fun addConfigurable(c: Configurable): Boolean = configurableChildren.add(c)
+    public fun addConfigurable(c: Any): Boolean = if (c is Configurable) configurableChildren.add(c) else false
     public fun configureChildren(): Boolean {
         val unconfigured = configurableChildren.filterNot { it.configured }
         if (unconfigured.none()) return false
@@ -30,18 +31,18 @@ public interface ConfigurablesCollection {
 // the name is misleading, it is now contains not only modules but also all other configurables,
 // and it also services as a validation entry point
 // \todo rename or reorganise hierarchy and/or aggregation
-public open class ModuleCollection(override val parent: Module? = null) : komplex.model.ModuleCollection, ScriptContext, Configurable, Validable, ConfigurablesCollection {
+public open class ModuleCollection(override val parent: ProjectModule? = null) : komplex.model.ModuleCollection, ScriptContext, Configurable, Validable, ConfigurablesCollection {
 
     override val env: ContextEnvironment = ContextEnvironment(parent)
-    override val children: MutableList<Module> = arrayListOf()
+    override val children: MutableList<komplex.model.Module> = arrayListOf()
     override var configured: Boolean = false
     override val configurableChildren: MutableCollection<Configurable> = arrayListOf()
     override var configurationDiagnostic: BuildDiagnostic = BuildDiagnostic.Success
 
-    public fun module(name: String, description: String? = null, body: Module.() -> Unit): Module {
+    public fun module(name: String, description: String? = null, body: ProjectModule.() -> Unit): ProjectModule {
         // first configure all known to this point configurables
         configureChildren()
-        val module = Module(this as? Module, name)
+        val module = ProjectModule(this as? ProjectModule, name)
         if (description != null)
             module.description(description)
         module.body()
@@ -61,11 +62,16 @@ public open class ModuleCollection(override val parent: Module? = null) : komple
     // validates module before usage, intended to be called after configuration
     override fun validate(): BuildDiagnostic =
             // validate children (submodules)
-            children.fold( BuildDiagnostic.Success, { r, module -> r + module.validate() })
+            children.filter { it is Validable }.fold( BuildDiagnostic.Success, { r, module -> r + module.validateIfValidable() })
 }
 
 
-public open class Module(parent1: Module?, override val name: String) : ModuleCollection(parent1), komplex.model.Module, GenericSourceType {
+// not a nice name, need something more precise, may be different hierarchy altogether. The idea is that dsl module is mutable entity
+// on top of some more specific (than in komplex.model) model entity describing build module, e.g. in typical for JVM world sense
+// \todo rename/reorganise hierarchy
+public open class ProjectModule(parent1: ProjectModule?, override val name: String, rootPath: Path? = null)
+: ModuleCollection(parent1), komplex.model.Module, GenericSourceType {
+
     public val moduleName : String get() = name
 
     public open class Metadata : ModuleMetadata {
@@ -141,10 +147,10 @@ public open class Module(parent1: Module?, override val name: String) : ModuleCo
             // validate children (submodules) and then steps
             steps.fold(
                     super<ModuleCollection>.validate(),
-                    { r, step -> if (step is Rule) r + step.validate() else r })
+                    { r, step -> if (step is Rule) r + step.validateIfValidable() else r })
 }
 
-public fun Module.default(scenario: ScenarioSelector) : Module {
+public fun ProjectModule.default(scenario: ScenarioSelector) : ProjectModule {
     defaultScenario = scenario.scenarios
     return this
 }

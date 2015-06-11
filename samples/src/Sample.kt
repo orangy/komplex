@@ -1,10 +1,7 @@
 package komplex.sample
 
 import komplex.dsl.*
-import komplex.model.GraphBuildContext
-import komplex.model.Scenarios
-import komplex.model.build
-import komplex.model.nicePrint
+import komplex.model.*
 import komplex.tools.classpath
 import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
@@ -21,9 +18,8 @@ fun main(args: Array<String>) {
 
         val libraries = folder(artifacts.binary, "out/sample/libs")
 
-        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
+        fun library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): komplex.tools.maven.MavenLibraryModule {
             val libModule = komplex.tools.maven.mavenLibrary(id, version, target = libraries)
-            libModule.build using tools.maven
             return libModule
         }
 
@@ -32,7 +28,7 @@ fun main(args: Array<String>) {
         val kotlinRuntime = library("org.jetbrains.kotlin:kotlin-runtime:0.12.213")
         val kotlinRreflect = library("org.jetbrains.kotlin:kotlin-reflect:0.12.213")
 
-        fun Module.shared() {
+        fun ProjectModule.shared() {
             version("SNAPSHOT-0.1")
 
             // shared settings for all projects

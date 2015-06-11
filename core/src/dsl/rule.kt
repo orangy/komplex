@@ -21,11 +21,15 @@ public interface Configurable {
     }
 }
 
+public fun Any.configureIfConfigurable(): BuildDiagnostic = (this as? Configurable)?.configure() ?: BuildDiagnostic.Success
+
 
 public interface Validable {
     // validates step before usage, intended to be called after configuration
     public open fun validate(): BuildDiagnostic = BuildDiagnostic.Success
 }
+
+public fun Any.validateIfValidable(): BuildDiagnostic = (this as? Validable)?.validate() ?: BuildDiagnostic.Success
 
 
 public data class RuleSources {
@@ -45,7 +49,7 @@ public data class RuleSources {
 
 public interface Rule : Step, GenericSourceType, Configurable, Validable {
 
-    public var module: Module
+    public var module: ProjectModule
     internal val explicitFroms: RuleSources
     internal val explicitDepends: RuleSources
     internal val explicitTargets: MutableCollection<Artifact> // filled with "into" and "export"
@@ -72,10 +76,10 @@ public interface Rule : Step, GenericSourceType, Configurable, Validable {
 
 
 public abstract class RuleImpl : Rule {
-    private var module_: Module? = null
-    override var module: Module
+    private var module_: ProjectModule? = null
+    override var module: ProjectModule
         get() = module_!!
-        set(v: Module) { if (module_!=null) throw Exception("Module ${module_!!.fullName} already set for $name"); module_ = v }
+        set(v: ProjectModule) { if (module_!=null) throw Exception("Module ${module_!!.fullName} already set for $name"); module_ = v }
     override val explicitFroms: RuleSources = RuleSources()
     override val explicitDepends: RuleSources = RuleSources()
     override val explicitTargets: MutableCollection<Artifact> = arrayListOf()

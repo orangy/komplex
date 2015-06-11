@@ -1,10 +1,10 @@
 package komplex.tools.maven
 
 import komplex.dsl
-import komplex.dsl.ArtifactType
-import komplex.dsl.FolderArtifact
-import komplex.dsl.from
-import komplex.dsl.into
+import komplex.dsl.*
+import komplex.model.ConditionalModuleDependency
+import komplex.model.Module
+import komplex.model.ModuleMetadata
 import kotlin.properties.Delegates
 
 public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
@@ -31,8 +31,16 @@ public data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryA
     override fun hashCode(): Int = 3347 * sourceArtifact.hashCode()
 }
 
+
 public class MavenLibraryModule(public val library: MavenLibraryArtifact, public val target: dsl.FolderArtifact)
-: komplex.dsl.Module(null, "library ${library.name}") {
+: komplex.model.Module, GenericSourceType {
+
+    override val metadata = object : ModuleMetadata {}
+    override val dependencies: Iterable<ConditionalModuleDependency> = listOf()
+    override val parent: Module? = null
+    override val children: Iterable<Module> = listOf()
+    override val name: String = "library ${library.name}"
+
     override val steps by Delegates.lazy {
         val step = dsl.tools.maven
         step from library into target

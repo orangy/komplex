@@ -8,7 +8,7 @@ import komplex.model.combine
 public open class RuleSetDesc(val rules: Iterable<Rule>) : GenericSourceType {}
 
 
-public class ModuleRuleSet(val parent: Module) {
+public class ModuleRuleSet(val parent: ProjectModule) {
     val selectors: MutableList<ScenarioSelector> = arrayListOf()
 
     public val rules: MutableList<Rule> = arrayListOf()

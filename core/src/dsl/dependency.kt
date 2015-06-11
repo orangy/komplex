@@ -2,10 +2,7 @@
 package komplex.dsl
 
 import komplex.model
-import komplex.model.ArtifactDesc
-import komplex.model.ScenarioSelector
-import komplex.model.Scenarios
-import komplex.model.combine
+import komplex.model.*
 
 public class ModuleDependency(
         override val module: Module,

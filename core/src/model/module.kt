@@ -19,6 +19,9 @@ public interface Module : ModuleCollection, Named {
     public val defaultScenario: Scenarios get() = Scenarios.All
     public val fullName: String get() = sequence(this, { it.parent }).toList().reverse().map { it.name }.joinToString(".")
 
+    public fun ownSources(scenarios: Scenarios): Iterable<ArtifactDesc> =
+            steps.filter { scenarios.matches(it.selector) }.flatMap { it.sources }
+
     public fun sources(scenarios: Scenarios): Iterable<ArtifactDesc> =
         children.flatMap { it.sources(scenarios) } +
         dependencies
@@ -29,7 +32,7 @@ public interface Module : ModuleCollection, Named {
                             Scenarios.Same -> scenarios
                             else -> modDep.scenarios
                 })} +
-        steps.filter { scenarios.matches(it.selector) }.flatMap { it.sources }
+        ownSources(scenarios)
 
     public fun targets(scenarios: Scenarios = Scenarios.Default_): Iterable<ArtifactDesc> =
         children.flatMap { it.targets( if (scenarios == Scenarios.Default_) defaultScenario else scenarios) } +

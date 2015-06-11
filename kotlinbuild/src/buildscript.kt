@@ -5,7 +5,7 @@ import komplex.data.VariableData
 import komplex.data.openFileSet
 import komplex.data.openInputStream
 import komplex.dsl.*
-import komplex.dsl.Module
+import komplex.dsl.ProjectModule
 import komplex.model.*
 import komplex.tools.*
 import komplex.tools.jar.addManifestProperty
@@ -35,11 +35,10 @@ internal val log = LoggerFactory.getLogger("kotlinbuild")
 fun run(args: Iterable<String>): Int = runProcess(args, { log.debug(it) }, { log.error(it) })
 fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it) }, { log.error(it) })
 
-val Module.copy: CopyToolRule get() = build using(tools.copy)
+val ProjectModule.copy: CopyToolRule get() = build using(tools.copy)
 
-fun Module.library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): Module {
+fun ProjectModule.library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): komplex.tools.maven.MavenLibraryModule {
     val libModule = komplex.tools.maven.mavenLibrary(id, version, target = folder % env.libDir.jar)
-    libModule.build using tools.maven
     this.children.add(libModule)
     return libModule
 }
@@ -75,7 +74,7 @@ fun main(args: Array<String>) {
 
         val bootstrapHome = rootDir / "dependencies/bootstrap-compiler"
         val bootstrapCompilerHome = bootstrapHome / "Kotlin/kotlinc"
-        val bootstrapRuntime = file % bootstrapHome / "Kotlin/lib/kotlin-runtime".jar
+        val bootstrapRuntime: FileArtifact = file % bootstrapHome / "Kotlin/lib/kotlin-runtime".jar
         val bootstrapReflect = file % bootstrapHome / "Kotlin/lib/kotlin-reflect".jar
         val bootstrapCompilerJar = file % bootstrapCompilerHome / "lib/kotlin-compiler".jar
         val bootstrapCompilerScript = bootstrapCompilerHome / "bin/kotlinc"
@@ -263,8 +262,8 @@ fun main(args: Array<String>) {
                         files.res % "compiler/backend/src" + "META-INF/services/**",
                         files.res % "resources" + "kotlinManifest.properties",
                         files.res % "idea/src" + "META-INF/extensions/common.xml" +
-                                                      "META-INF/extensions/kotlin2jvm.xml" +
-                                                      "META-INF/extensions/kotlin2js.xml"
+                                                 "META-INF/extensions/kotlin2jvm.xml" +
+                                                 "META-INF/extensions/kotlin2js.xml"
                 )
 
                 val makeUncheckedJar = build(jar, test, check) using brandedJarTool() with {
