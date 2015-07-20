@@ -10,7 +10,6 @@ import komplex.utils.findGlobFiles
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.MessageDigest
-import kotlin.properties.Delegates
 
 public fun fileHash(path: Path): ByteArray {
     val digest = MessageDigest.getInstance("SHA-1")
@@ -24,14 +23,14 @@ public interface FileData : komplex.model.ArtifactData {
 
 public open class SimpleFileData(ipath: Path) : FileData {
     override val path: Path = ipath.normalize().toAbsolutePath()
-    override val hash: ByteArray by Delegates.lazy { fileHash(path) }
+    override val hash: ByteArray by lazy { fileHash(path) }
 }
 
 public fun getFile(artifact: komplex.dsl.FileArtifact): FileData = SimpleFileData(artifact.path)
 
 public class FolderData(ipath: Path) : FileData {
     override val path: Path = ipath.normalize().toAbsolutePath()
-    override val hash: ByteArray by Delegates.lazy { mergeHashes(collectFolderFiles(path)) }
+    override val hash: ByteArray by lazy { mergeHashes(collectFolderFiles(path)) }
 }
 
 

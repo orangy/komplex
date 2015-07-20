@@ -100,7 +100,9 @@ public class BuildGraph() {
     private fun isSelected(producingNode: BuildGraphNode, scenarios: Scenarios): Boolean {
         // check match with module and node selectors
         val moduleSel = moduleSelectors.get(producingNode.moduleFlavor)
-        if (!scenarios.matches(moduleSel))
+        if (moduleSel == null)
+            log.trace("skipping $producingNode because module selector for it is not found")
+        else if (!scenarios.matches(moduleSel))
             log.trace("skipping $producingNode because it's module selector $moduleSel doesn't match with $scenarios")
         else if (!scenarios.matches(producingNode.step.selector))
             log.trace("skipping $producingNode because it itself doesn't match with $scenarios")

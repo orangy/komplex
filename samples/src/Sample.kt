@@ -60,7 +60,7 @@ fun main(args: Array<String>) {
             default(jar) // default build scenario, '*'/null if not specified (means - all)
         }
 
-        module("komplex") {
+        module("komplex", rootPath = Paths.get(".")) {
 
             val core = module("core", "Komplex Core") {
                 depends.on( slf4j )

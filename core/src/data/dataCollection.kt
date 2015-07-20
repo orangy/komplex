@@ -6,7 +6,6 @@ import java.security.MessageDigest
 import java.util.Arrays
 import java.util.Comparator
 import java.util.HashSet
-import kotlin.properties.Delegates
 
 public fun ByteArray.hashEquals(other: ByteArray): Boolean = Arrays.equals(this, other)
 
@@ -36,7 +35,7 @@ public interface DataCollection<Data: ArtifactData> : ArtifactData {
 }
 
 public open class DataSet<Data: ArtifactData>(override val coll: HashSet<Data> = hashSetOf()) : DataCollection<Data> {
-    override val hash: ByteArray by Delegates.lazy { mergeHashes(coll)}
+    override val hash: ByteArray by lazy { mergeHashes(coll)}
 }
 
 // second constructor
@@ -44,7 +43,7 @@ public fun DataSet<Data: ArtifactData>(coll: Iterable<Data>): DataSet<Data> = Da
 
 
 public open class DataToDataCollectionAdaptor<Data: ArtifactData>(data: Data) : DataCollection<Data> {
-    override val hash: ByteArray by Delegates.lazy { mergeHashes(coll)}
+    override val hash: ByteArray by lazy { mergeHashes(coll)}
     override val coll: Iterable<Data> = listOf(data)
 }
 

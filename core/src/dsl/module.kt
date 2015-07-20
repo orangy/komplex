@@ -39,10 +39,10 @@ public open class ModuleCollection(override val parent: ProjectModule? = null) :
     override val configurableChildren: MutableCollection<Configurable> = arrayListOf()
     override var configurationDiagnostic: BuildDiagnostic = BuildDiagnostic.Success
 
-    public fun module(name: String, description: String? = null, body: ProjectModule.() -> Unit): ProjectModule {
+    public fun module(name: String, description: String? = null, rootPath: Path? = null, body: ProjectModule.() -> Unit): ProjectModule {
         // first configure all known to this point configurables
         configureChildren()
-        val module = ProjectModule(this as? ProjectModule, name)
+        val module = ProjectModule(this as? ProjectModule, name, rootPath)
         if (description != null)
             module.description(description)
         module.body()
@@ -91,6 +91,8 @@ public open class ProjectModule(parent1: ProjectModule?, override val name: Stri
     public var version: String?
         get() = metadata.version ?: parent?.version
         set(value: String?) { metadata.version = value }
+
+    public val rootPath: Path = (rootPath ?: parent?.rootPath?.resolve(name) ?: throw IllegalArgumentException("Module root path is not defined")).normalize().toAbsolutePath()
 
     public val ruleSets: MutableList<ModuleRuleSet> = arrayListOf()
 

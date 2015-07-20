@@ -4,7 +4,6 @@ package komplex.model
 import komplex.data.*
 import komplex.log
 import komplex.utils.BuildDiagnostic
-import komplex.utils.toHexString
 
 public open class GraphBuildContext(val baseScenario: Scenarios,
                                     public val graph: BuildGraph,
@@ -59,7 +58,7 @@ public fun BuildGraph.build(scenario: Scenarios,
                     }
                     if (log.isDebugEnabled() && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
                         log.debug("    $name: ${hashStr(actual?.hash, "x")} != ${hashStr(expected, "y")}")
-                    context.detailedHashes?.put(name, actual?.hash)
+                    context.detailedHashes.put(name, actual?.hash)
                 }
             }
             context.node = n

@@ -7,7 +7,6 @@ import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
-import kotlin.properties.Delegates
 
 public interface InputStreamData : komplex.model.ArtifactData {
     public val inputStream: InputStream
@@ -19,7 +18,7 @@ public interface OutputStreamData : komplex.model.ArtifactData {
 
 
 public open class FileInputStreamData(public val path: Path) : InputStreamData {
-    override val hash: ByteArray by Delegates.lazy { fileHash(path) }
+    override val hash: ByteArray by lazy { fileHash(path) }
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
 }
