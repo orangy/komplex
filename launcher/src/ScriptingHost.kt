@@ -4,7 +4,7 @@ package komplex.launcher
 import com.intellij.openapi.util.Disposer
 import com.sampullara.cli.Args
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
-import org.jetbrains.kotlin.cli.common.messages.MessageCollectorPlainTextToStream
+import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.PathUtil
@@ -17,7 +17,7 @@ class ScriptingHost {
 
         val rootDisposable = Disposer.newDisposable()
 
-        val messageCollector = MessageCollectorPlainTextToStream.PLAIN_TEXT_TO_SYSTEM_ERR
+        val messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
         val configuration = CompilerConfiguration()
 
         val paths = PathUtil.getKotlinPathsForCompiler()
@@ -59,15 +59,15 @@ class ScriptingHost {
         return classpath
     }
 
-    private fun getAnnotationsPath(paths: KotlinPaths, arguments: K2JVMCompilerArguments): MutableList<File> {
-        val annotationsPath = arrayListOf<File>()
-        annotationsPath.add(paths.getJdkAnnotationsPath())
-        val annotationPaths = arguments.annotations
-        if (annotationPaths != null) {
-            for (element in annotationPaths.split(File.pathSeparatorChar)) {
-                annotationsPath.add(File(element))
-            }
-        }
-        return annotationsPath
-    }
+//    private fun getAnnotationsPath(paths: KotlinPaths, arguments: K2JVMCompilerArguments): MutableList<File> {
+//        val annotationsPath = arrayListOf<File>()
+//        annotationsPath.add(paths.getJdkAnnotationsPath())
+//        val annotationPaths = arguments.annotations
+//        if (annotationPaths != null) {
+//            for (element in annotationPaths.split(File.pathSeparatorChar)) {
+//                annotationsPath.add(File(element))
+//            }
+//        }
+//        return annotationsPath
+//    }
 }

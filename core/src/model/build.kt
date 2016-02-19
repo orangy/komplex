@@ -5,20 +5,20 @@ import komplex.data.*
 import komplex.log
 import komplex.utils.BuildDiagnostic
 
-public open class GraphBuildContext(val baseScenario: Scenarios,
-                                    public val graph: BuildGraph,
-                                    public val sourceHashes: MutableMap<String, ByteArray> = hashMapOf(),
-                                    public val detailedHashes: MutableMap<String, ByteArray?>? = null
+open class GraphBuildContext(val baseScenario: Scenarios,
+                                    val graph: BuildGraph,
+                                    val sourceHashes: MutableMap<String, ByteArray> = hashMapOf(),
+                                    val detailedHashes: MutableMap<String, ByteArray?>? = null
 ) : BuildContext {
-    public var node: BuildGraphNode? = null
+    var node: BuildGraphNode? = null
     override val module: Module
         get() = node!!.moduleFlavor.module
     override val scenario = node?.moduleFlavor?.scenarios?.resolve(baseScenario) ?: baseScenario
-    public val artifacts: MutableMap<ArtifactDesc, ArtifactData?> = hashMapOf()
+    val artifacts: MutableMap<ArtifactDesc, ArtifactData?> = hashMapOf()
 }
 
 
-public fun BuildGraph.build(scenario: Scenarios,
+fun BuildGraph.build(scenario: Scenarios,
                             context: GraphBuildContext = GraphBuildContext(scenario, this),
                             sources: Set<BuildGraphNode> = this.roots(scenario).toHashSet(),
                             targets: Iterable<BuildGraphNode> = this.leafs(scenario))
@@ -39,7 +39,7 @@ public fun BuildGraph.build(scenario: Scenarios,
                 hasNonHasheableArtifact = true
             }
         }
-        val hash = mergeHashes(artifacts.values())
+        val hash = mergeHashes(artifacts.values)
         if (!hasNonHasheableArtifact && n.step.targets.all { context.sourceHashes.get(it.name)?.hashEquals(hash) ?: false }) {
             log.info("skipping: already built: ${n.step.name} in module ${n.moduleFlavor.module.name}")
             return false
@@ -48,15 +48,15 @@ public fun BuildGraph.build(scenario: Scenarios,
             if (context.detailedHashes != null) {
                 log.debug("Hashes mismatch for the following sources (actual vs expected):")
                 for (it in artifacts) {
-                    val name = it.getKey().name
-                    val actual = it.getValue()
+                    val name = it.key.name
+                    val actual = it.value
                     val expected = context.detailedHashes.get(name)
                     fun hashStr(hash: ByteArray?, valName: String) = when {
                         hash == null -> "null"
-                        hash.size() == 0 -> "[]"
+                        hash.size == 0 -> "[]"
                         else -> valName // "[${hash.toHexString()}]"
                     }
-                    if (log.isDebugEnabled() && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
+                    if (log.isDebugEnabled && (actual == null || expected == null || !actual.hash.hashEquals(expected)))
                         log.debug("    $name: ${hashStr(actual?.hash, "x")} != ${hashStr(expected, "y")}")
                     context.detailedHashes.put(name, actual?.hash)
                 }

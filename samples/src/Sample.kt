@@ -6,7 +6,6 @@ import komplex.tools.classpath
 import komplex.tools.jar.jar
 import komplex.tools.kotlin.kotlin
 import komplex.tools.maven.maven
-import komplex.utils
 import java.nio.file.Paths
 
 fun main(args: Array<String>) {
@@ -147,10 +146,10 @@ fun main(args: Array<String>) {
     // kbuild script.build -t publish -t src
 
     println("\n--- script ------------------------------")
-    println(script.nicePrint(utils.TwoSpaceIndentLn()))
+    println(script.nicePrint(komplex.utils.TwoSpaceIndentLn()))
     val graph = script.buildGraph()
     println("\n--- plan --------------------------------")
-    println(graph.nicePrint( utils.TwoSpaceIndentLn(),  Scenarios.All))
+    println(graph.nicePrint(komplex.utils.TwoSpaceIndentLn(),  Scenarios.All))
     println("\n--- build -------------------------------")
     graph.build(Scenarios.All)
     println("\n--- build 2 - partial -------------------")

@@ -2,7 +2,6 @@ package komplex.tools.kotlin
 
 import com.intellij.openapi.util.Disposer
 import komplex.dsl.FolderArtifact
-import komplex.utils
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
@@ -18,13 +17,13 @@ import java.io.File
 import java.nio.file.Path
 
 
-public val komplex.dsl.tools.kotlin: KotlinCompilerRule
+val komplex.dsl.tools.kotlin: KotlinCompilerRule
     get() = KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinBuiltInCompiler>("Kotlin compiler", { KotlinBuiltInCompiler() } ))
 
-public class KotlinBuiltInCompiler() : KotlinCompiler() {
+class KotlinBuiltInCompiler() : KotlinCompiler() {
     override val name: String = "Kotlin built-in compiler"
 
-    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
+    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): komplex.utils.BuildDiagnostic {
 
         val messageCollector = object : MessageCollector {
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
@@ -52,7 +51,7 @@ public class KotlinBuiltInCompiler() : KotlinCompiler() {
         return runCompiler(compilerCfg, destFolder, messageCollector, includeRuntime)
     }
 
-    private fun runCompiler(compilerCfg: CompilerConfiguration, destFolder: FolderArtifact, messageCollector: MessageCollector, includeRuntime: Boolean): utils.BuildDiagnostic {
+    private fun runCompiler(compilerCfg: CompilerConfiguration, destFolder: FolderArtifact, messageCollector: MessageCollector, includeRuntime: Boolean): komplex.utils.BuildDiagnostic {
 
         val rootDisposable = Disposer.newDisposable()
 
@@ -62,15 +61,16 @@ public class KotlinBuiltInCompiler() : KotlinCompiler() {
 
         try {
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, compilerCfg, EnvironmentConfigFiles.JVM_CONFIG_FILES)
-            if (KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, includeRuntime))
-                return utils.BuildDiagnostic.Success
+            val friendPaths = listOf<String>()
+            if (KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, friendPaths, includeRuntime))
+                return komplex.utils.BuildDiagnostic.Success
             else
                 // \todo add errors into diagnostics
-                return utils.BuildDiagnostic.Fail("Compilation error")
+                return komplex.utils.BuildDiagnostic.Fail("Compilation error")
         } catch (e: CompilationException) {
             messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),
-                    MessageUtil.psiElementToMessageLocation(e.getElement()))
-            return utils.BuildDiagnostic.Fail("Internal error: ${OutputMessageUtil.renderException(e)}")
+                    MessageUtil.psiElementToMessageLocation(e.element))
+            return komplex.utils.BuildDiagnostic.Fail("Internal error: ${OutputMessageUtil.renderException(e)}")
         } finally {
             rootDisposable.dispose()
         }

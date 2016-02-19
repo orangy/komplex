@@ -28,7 +28,7 @@ class KotlinJavaToolRule(override val name: String, public val kotlin: KotlinCom
     public fun<S: GenericSourceType> classpath(v: Iterable<S>): KotlinJavaToolRule { kotlin.classpath(v); java.classpath(v); return this }
     public fun<S: GenericSourceType> classpath(vararg v: S): KotlinJavaToolRule { kotlin.classpath(*v); java.classpath(*v); return this }
 
-    public fun with(body: KotlinJavaToolRule.() -> Unit): KotlinJavaToolRule {
+    public infix fun with(body: KotlinJavaToolRule.() -> Unit): KotlinJavaToolRule {
         body()
         return this
     }

@@ -2,15 +2,14 @@
 package komplex.tests.selfbuild
 
 import org.junit.Assert
-import java.io.File
 import java.nio.file.Paths
 import kotlin.concurrent.thread
-import org.junit.Test as test
+import org.junit.Test
 
 // taken from core.utils, since it is better not to link it in this test
-public fun runProcess(command: Iterable<String>, listenStdout: ((String) -> Unit)? = null, listenStderr: ((String) -> Unit)? = null): Int {
+fun runProcess(command: Iterable<String>, listenStdout: ((String) -> Unit)? = null, listenStderr: ((String) -> Unit)? = null): Int {
     println("running: " + command.joinToString(" "))
-    val process = ProcessBuilder(command.toArrayList()).redirectErrorStream(false).start()
+    val process = ProcessBuilder(command.toList()).redirectErrorStream(false).start()
     // read one stream in a separated thread, and another right here, to avoid java's exec deadlock
     val stderrThread = if (listenStderr != null) thread { process.getErrorStream().reader().forEachLine { listenStderr(it) } } else null
     if (listenStdout != null) process.getInputStream().reader().forEachLine { listenStdout(it) }
@@ -20,7 +19,7 @@ public fun runProcess(command: Iterable<String>, listenStdout: ((String) -> Unit
 }
 class selfBuildTest {
 
-    test fun BuildKomplexTest() {
+    @Test fun BuildKomplexTest() {
         println(Paths.get("").toAbsolutePath())
         //val javaClass.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()
         /*val classpath = listOf(

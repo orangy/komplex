@@ -25,7 +25,7 @@ public class ModuleScript(val module: Module) {
 }
 */
 
-public fun script(body: BuildScript.() -> Unit): BuildScript {
+fun script(body: BuildScript.() -> Unit): BuildScript {
     val script = BuildScript()
     script.body()
 
@@ -39,7 +39,7 @@ public fun script(body: BuildScript.() -> Unit): BuildScript {
 }
 
 
-public class BuildScript() : ModuleCollection(), ScriptContext {
+class BuildScript() : ModuleCollection(), ScriptContext {
 
     init {
         env.rootDir = Paths.get(".")

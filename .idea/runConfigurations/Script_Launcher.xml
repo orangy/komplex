@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Script Launcher" type="JetRunConfigurationType" factoryName="Kotlin" singleton="true">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
-    <option name="MAIN_CLASS_NAME" value="komplex.launcher.LauncherPackage" />
+    <option name="MAIN_CLASS_NAME" value="komplex.launcher.LauncherKt" />
     <option name="VM_PARAMETERS" value="" />
     <option name="PROGRAM_PARAMETERS" value="script1.ktscript script2.ktscript -classpath ../../out/production/core " />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/launcher/scripts" />

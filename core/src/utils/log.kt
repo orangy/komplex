@@ -6,7 +6,7 @@ import java.io.IOException
 
 // taken from http://stackoverflow.com/questions/11187461/redirect-system-out-and-system-err-to-slf4j
 
-public enum class LogLevel {
+enum class LogLevel {
     ERROR,
     WARNING,
     INFO,
@@ -14,7 +14,7 @@ public enum class LogLevel {
     TRACE
 }
 
-public class LogOutputStream(val log: Logger, val level: LogLevel) : java.io.OutputStream() {
+class LogOutputStream(val log: Logger, val level: LogLevel) : java.io.OutputStream() {
 
     protected var hasBeenClosed: Boolean = false
 
@@ -39,7 +39,7 @@ public class LogOutputStream(val log: Logger, val level: LogLevel) : java.io.Out
      * @param b
      * *            the `byte` to write
      */
-    throws(IOException::class)
+    @Throws(IOException::class)
     override fun write(b: Int) {
         if (hasBeenClosed) throw IOException("The stream has been closed.")
 
@@ -74,9 +74,9 @@ public class LogOutputStream(val log: Logger, val level: LogLevel) : java.io.Out
         if (count == 0) return
 
         // don't print out blank lines; flushing from PrintStream puts out these
-        if (count == LINE_SEPERATOR.length() &&
-            ((buf[0].toChar()) == LINE_SEPERATOR.charAt(0) && ((count == 1) || // <- Unix & Mac,
-             ((count == 2) && (buf[1].toChar()) == LINE_SEPERATOR.charAt(1))))) // <- Windows
+        if (count == LINE_SEPERATOR.length &&
+            ((buf[0].toChar()) == LINE_SEPERATOR[0] && ((count == 1) || // <- Unix & Mac,
+             ((count == 2) && (buf[1].toChar()) == LINE_SEPERATOR[1])))) // <- Windows
         {
             reset()
             return
@@ -105,7 +105,7 @@ public class LogOutputStream(val log: Logger, val level: LogLevel) : java.io.Out
 
     companion object {
         protected val LINE_SEPERATOR: String = System.getProperty("line.separator")
-        public val DEFAULT_BUFFER_LENGTH: Int = 2048
+        val DEFAULT_BUFFER_LENGTH: Int = 2048
     }
 }
 

@@ -5,29 +5,29 @@ import komplex.model.ScenarioSelector
 import komplex.model.combine
 
 
-public open class RuleSetDesc(val rules: Iterable<Rule>) : GenericSourceType {}
+open class RuleSetDesc(val rules: Iterable<Rule>) : GenericSourceType {}
 
 
-public class ModuleRuleSet(val parent: ProjectModule) {
+class ModuleRuleSet(val parent: ProjectModule) {
     val selectors: MutableList<ScenarioSelector> = arrayListOf()
 
-    public val rules: MutableList<Rule> = arrayListOf()
+    val rules: MutableList<Rule> = arrayListOf()
 
-    public fun invoke(vararg sels: ScenarioSelector): ModuleRuleSet {
+    operator fun invoke(vararg sels: ScenarioSelector): ModuleRuleSet {
         selectors.addAll(sels)
         return this
     }
 
-    public fun invoke(body: ModuleRuleSet.() -> Unit) {
+    fun invoke(body: ModuleRuleSet.() -> Unit) {
         body()
     }
 
-    inline public fun invoke(vararg scenario: ScenarioSelector, body: ModuleRuleSet.() -> Unit) {
+    inline fun invoke(vararg scenario: ScenarioSelector, body: ModuleRuleSet.() -> Unit) {
         invoke(*scenario)
         body()
     }
 
-    public fun using<TR : Rule>(rule: TR): TR {
+    infix fun <TR : Rule> using(rule: TR): TR {
         rules.add(rule)
         rule.selector = selectors.combine(true)
         rule.module = parent
@@ -35,17 +35,17 @@ public class ModuleRuleSet(val parent: ProjectModule) {
         return rule
     }
 
-    public fun using<TR : Rule>(rule: TR, body: TR.() -> Unit): TR {
+    fun <TR : Rule> using(rule: TR, body: TR.() -> Unit): TR {
         rule.body() // \todo find out how to write it
         return using(rule)
     }
 
-    public fun using<TR : RuleSetDesc>(ruleSet: TR): TR {
+    infix fun <TR : RuleSetDesc> using(ruleSet: TR): TR {
         ruleSet.rules.forEach { using(it) }
         return ruleSet
     }
 
-    public fun using<TR : RuleSetDesc>(ruleSet: TR, body: TR.() -> Unit): TR {
+    fun <TR : RuleSetDesc> using(ruleSet: TR, body: TR.() -> Unit): TR {
         ruleSet.body() // \todo find out how to write it
         return using(ruleSet)
     }

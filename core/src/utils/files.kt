@@ -4,10 +4,20 @@ import komplex.log
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 
-public val fileSystem: FileSystem = FileSystems.getDefault()!!
+val fileSystem: FileSystem = FileSystems.getDefault()!!
+internal val currentPath = Paths.get(System.getProperty("user.dir"))
 
-fun komplex.dsl.ScriptContext.resolvePath(path: Path): Path = this.env.rootDir?.resolve(path) ?: path
-fun komplex.dsl.ScriptContext.resolvePath(path: String): Path = this.env.rootDir?.resolve(path) ?: fileSystem.getPath(path)
+fun Path?.orCurrent(): Path = this ?: currentPath
+
+fun Path?.resolve(path: Path): Path = this.orCurrent().resolve(path)
+fun Path?.resolve(path: String): Path = this.orCurrent().resolve(path)
+
+fun Path?.relativize(path: Path): Path = this.orCurrent().relativize(path)
+@Suppress("unused")
+fun Path?.relativize(path: String): Path = this.orCurrent().relativize(path)
+
+fun komplex.dsl.ScriptContext.resolvePath(path: Path): Path = this.env.rootDir.resolve(path)
+fun komplex.dsl.ScriptContext.resolvePath(path: String): Path = this.env.rootDir.resolve(path)
 
 fun findFilesInPath(path: Path, baseDir: Path? = null): List<Path> {
     val result = arrayListOf<Path>()
@@ -19,15 +29,14 @@ fun findFilesInPath(path: Path, baseDir: Path? = null): List<Path> {
             return FileVisitResult.CONTINUE
         }
     }
-    val dir = (baseDir ?: fileSystem.getPath("")).resolve(path)
-    Files.walkFileTree(dir, Finder())
+    Files.walkFileTree(baseDir.resolve(path), Finder())
     return result
 }
 
-public fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>, baseDir: Path? = null): List<Path> {
-    val includeFilter = included map { fileSystem.getPathMatcher("glob:$it") }
-    val excludeFilter = excluded map { fileSystem.getPathMatcher("glob:$it") }
-    val basePath = (baseDir ?: fileSystem.getPath("")).normalize()
+fun findGlobFiles(included: Iterable<String>, excluded: Iterable<String>, baseDir: Path? = null): List<Path> {
+    val includeFilter = included.map { fileSystem.getPathMatcher("glob:$it") }
+    val excludeFilter = excluded.map { fileSystem.getPathMatcher("glob:$it") }
+    val basePath = baseDir?.normalize()
     val result = arrayListOf<Path>()
 
     class Finder : SimpleFileVisitor<Path?>() {

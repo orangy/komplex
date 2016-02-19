@@ -2,24 +2,23 @@
 package komplex.utils
 
 import komplex.log
-import java.util.ArrayDeque
-import java.util.HashSet
+import java.util.*
 
 // generic traverse checker with generators
-public class TraversedChecker<Node>() {
+class TraversedChecker<Node>() {
     val traversed = HashSet<Node>()
-    public fun checkAdd(n: Node): Boolean = traversed.add(n)
-    public fun check(n: Node): Boolean = !traversed.contains(n)
+    fun checkAdd(n: Node): Boolean = traversed.add(n)
+    fun check(n: Node): Boolean = !traversed.contains(n)
 }
 
-public fun makeVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
+fun <Node> makeVisitedTraversalChecker(): (Node) -> kotlin.Boolean {
     val checker = TraversedChecker<Node>()
     return { n: Node -> checker.checkAdd(n) }
 }
 
-public fun makeTracingVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean {
+fun <Node> makeTracingVisitedTraversalChecker(): (Node) -> kotlin.Boolean {
     val checker = TraversedChecker<Node>()
-    return if (log.isTraceEnabled())
+    return if (log.isTraceEnabled)
         { n: Node ->
             val res = checker.checkAdd(n)
             if (!res) log.trace("skipped already traversed node $n")
@@ -33,14 +32,14 @@ public fun makeTracingVisitedTraversalChecker<Node>(): (Node) -> kotlin.Boolean 
 
 // generic preorder BFS
 // \todo check if keeping separate preorder version makes sense e.g. performance-wise
-public fun graphPreorderBFS<Node>(from: Iterable<Node>,
-                                  preorderPred: (Node) -> Boolean,
-                                  nextNodes: (Node) -> Iterable<Node>,
-                                  checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
-                                 ): Boolean {
+fun <Node> graphPreorderBFS(from: Iterable<Node>,
+                            preorderPred: (Node) -> Boolean,
+                            nextNodes: (Node) -> Iterable<Node>,
+                            checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
+): Boolean {
 
-    val queue: java.util.Queue<Node> = linkedListOf() // \todo check/optimize collection
-    var currentQueue = from;
+    val queue: java.util.Queue<Node> = LinkedList<Node>() // \todo check/optimize collection
+    var currentQueue = from
 
     while (true) {
         // checking which nodes to add from currentQueue
@@ -57,12 +56,12 @@ public fun graphPreorderBFS<Node>(from: Iterable<Node>,
 }
 
 // generic pre+postorder BFS
-public fun graphBFS<Node>(from: Iterable<Node>,
-                                   preorderPred: (Node) -> Boolean,
-                                   postorderPred: (Node) -> Boolean,
-                                   nextNodes: (Node) -> Iterable<Node>,
-                                   checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
-                                  ): Boolean {
+fun <Node> graphBFS(from: Iterable<Node>,
+                    preorderPred: (Node) -> Boolean,
+                    postorderPred: (Node) -> Boolean,
+                    nextNodes: (Node) -> Iterable<Node>,
+                    checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
+): Boolean {
 
     // note: this is not nice, but fail-fast iterators do not allow nice implementation based on standard containers
     val stack = arrayListOf<Node>()
@@ -77,11 +76,11 @@ public fun graphBFS<Node>(from: Iterable<Node>,
             }
         }
         // finding next non-empty list of edges from added ones
-        if (pos >= stack.size()) break
+        if (pos >= stack.size) break
         currentQueue = nextNodes(stack.get(pos++))
     }
     // process collected nodes
-    pos = stack.size()
+    pos = stack.size
     while (pos > 0) {
         if (postorderPred(stack.get(--pos))) return true // found on postorder
         // \todo optimization: remove processed edge here?
@@ -91,12 +90,12 @@ public fun graphBFS<Node>(from: Iterable<Node>,
 
 
 // generic DFS, recursive impl \todo: make non-recursive impl
-public fun graphDFS<Node>(from: Iterable<Node>,
-                          preorderPred: (e: Node) -> Boolean,
-                          postorderPred: (Node) -> Boolean,
-                          nextNodes: (e: Node) -> Iterable<Node>,
-                          checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
-                         ): Boolean {
+fun <Node> graphDFS(from: Iterable<Node>,
+                    preorderPred: (e: Node) -> Boolean,
+                    postorderPred: (Node) -> Boolean,
+                    nextNodes: (e: Node) -> Iterable<Node>,
+                    checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
+): Boolean {
     for (e in from)
         if (checkTraversal(e)) {
             if (preorderPred(e)) return true // found, stop traversing
@@ -107,14 +106,14 @@ public fun graphDFS<Node>(from: Iterable<Node>,
 }
 
 
-public fun subgraphDFS<Node>(from: Iterable<Node>,
-                             to: Set<Node>,
-                             preorderPred: (e: Node) -> Boolean,
-                             postorderPred: (Node) -> Boolean,
-                             nextNodes: (n: Node) -> Iterable<Node>,
-                             checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
-                            ): Boolean {
-    if (log.isTraceEnabled()) {
+fun <Node> subgraphDFS(from: Iterable<Node>,
+                       to: Set<Node>,
+                       preorderPred: (e: Node) -> Boolean,
+                       postorderPred: (Node) -> Boolean,
+                       nextNodes: (n: Node) -> Iterable<Node>,
+                       checkTraversal: (Node) -> Boolean = makeVisitedTraversalChecker()
+): Boolean {
+    if (log.isTraceEnabled) {
         log.trace("subgraph from: ${from.joinToString(", ", "(", ")")}")
         log.trace("subgraph to: ${to.joinToString(", ", "(", ")")}")
     }
@@ -141,7 +140,7 @@ public fun subgraphDFS<Node>(from: Iterable<Node>,
                 checkTraversal = { true } // \todo doublecheck traversal checking for path finding
         )
     }
-    if (log.isTraceEnabled()) {
+    if (log.isTraceEnabled) {
         log.trace("subgraph roots: ${roots.joinToString(", ", "(", ")")}")
         log.trace("subgraph nodes: ${subgraphNodes.joinToString(", ", "(", ")")}")
     }

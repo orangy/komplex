@@ -1,31 +1,29 @@
 package komplex.tools.kotlin
 
 import komplex.dsl.FolderArtifact
-import komplex.utils
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import java.io.File
 import java.nio.file.Path
-import java.util.ArrayList
 
-public fun komplex.dsl.tools.kotlin(compilerCmd: Iterable<String>): KotlinCompilerRule =
+fun komplex.dsl.tools.kotlin(compilerCmd: Iterable<String>): KotlinCompilerRule =
         KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinExternalCompiler>("Kotlin compiler", { KotlinExternalCompiler(compilerCmd) } ))
 
-public fun komplex.dsl.tools.kotlin(vararg compilerCmd: String): KotlinCompilerRule = komplex.dsl.tools.kotlin(compilerCmd.asIterable())
+fun komplex.dsl.tools.kotlin(vararg compilerCmd: String): KotlinCompilerRule = komplex.dsl.tools.kotlin(compilerCmd.asIterable())
 
-public fun komplex.dsl.tools.kotlin(compilerJarPath: Path): KotlinCompilerRule = komplex.dsl.tools.kotlin("java", "-jar", compilerJarPath.toString())
+fun komplex.dsl.tools.kotlin(compilerJarPath: Path): KotlinCompilerRule = komplex.dsl.tools.kotlin("java", "-jar", compilerJarPath.toString())
 
 
-public class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinCompiler() {
+class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinCompiler() {
     override val name: String = "Kotlin external compiler"
 
-    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): utils.BuildDiagnostic {
+    override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): komplex.utils.BuildDiagnostic {
 
         val destFolderFile = destFolder.path.toFile()
         if (!destFolderFile.exists())
             destFolderFile.mkdirs()
 
-        val ktccmdline: ArrayList<String> = compilerCmd.map { escape4cli(it) }.toArrayList()
+        val ktccmdline: MutableList<String> = compilerCmd.map { escape4cli(it) }.toMutableList()
 
         ktccmdline.addAll(listOf("-d", escape4cli(destFolder.path.toString())))
 
@@ -40,7 +38,7 @@ public class KotlinExternalCompiler(val compilerCmd: Iterable<String>) : KotlinC
 
         val res = runProcess(ktccmdline, { log.info(it) }, { log.info(it) })
 
-        return if (res == 0) utils.BuildDiagnostic.Success
-               else utils.BuildDiagnostic.Fail
+        return if (res == 0) komplex.utils.BuildDiagnostic.Success
+               else komplex.utils.BuildDiagnostic.Fail
     }
 }

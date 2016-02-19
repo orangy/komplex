@@ -12,16 +12,18 @@ import komplex.model.BuildContext
 import komplex.model.BuildResult
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
+import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 // ----------------------------------
 
-public val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
+@Suppress("unused")
+val komplex.dsl.tools.copy: CopyToolRule get() = CopyToolRule()
 
 
-public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
+class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(CopyTool()) {
 
     override fun configure(): BuildDiagnostic {
         val guessedType = (sources.firstOrNull() as? Artifact?)?.type ?: artifacts.unspecified
@@ -52,12 +54,12 @@ public class CopyToolRule : komplex.dsl.BasicToolRule<CopyToolRule, CopyTool>(Co
         return res
     }
 
-    public var makeDirs: Boolean = true
+    var makeDirs: Boolean = true
 }
 
 
 // copies all sources to all destinations
-public class CopyTool : komplex.model.Tool<CopyToolRule> {
+class CopyTool : komplex.model.Tool<CopyToolRule> {
     override val name: String = "copy"
 
     override fun execute(context: BuildContext, cfg: CopyToolRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
@@ -93,15 +95,16 @@ public class CopyTool : komplex.model.Tool<CopyToolRule> {
 
 // ----------------------------------
 
-public val komplex.dsl.tools.find: FindInPathsToolRule get() = FindInPathsToolRule()
+@Suppress("unused")
+val komplex.dsl.tools.find: FindInPathsToolRule get() = FindInPathsToolRule()
 
 
-public class FindInPathsToolRule : komplex.dsl.BasicToolRule<FindInPathsToolRule, FindInPathsTool>(FindInPathsTool()) {
-    public val paths: MutableList<Path> = arrayListOf()
+class FindInPathsToolRule : komplex.dsl.BasicToolRule<FindInPathsToolRule, FindInPathsTool>(FindInPathsTool()) {
+    val paths: MutableList<Path> = arrayListOf()
 }
 
 // finds all sources in preconfigured paths, ignores targets - add sources as a key in destinations
-public class FindInPathsTool : komplex.model.Tool<FindInPathsToolRule> {
+class FindInPathsTool : komplex.model.Tool<FindInPathsToolRule> {
     override val name: String = "find in paths"
 
     override fun execute(context: BuildContext, cfg: FindInPathsToolRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
@@ -125,19 +128,19 @@ public class FindInPathsTool : komplex.model.Tool<FindInPathsToolRule> {
 
 // ----------------------------------
 
-public val komplex.dsl.tools.echo: EchoToolRule get() = EchoToolRule()
+val komplex.dsl.tools.echo: EchoToolRule get() = EchoToolRule()
 
 
-public class EchoToolRule : komplex.dsl.BasicToolRule<EchoToolRule, EchoTool>(EchoTool()) {
+class EchoToolRule : komplex.dsl.BasicToolRule<EchoToolRule, EchoTool>(EchoTool()) {
     // \todo make it an (string) artifact, so checksum could be calculated
-    public var sourceStr: String = ""
-    public var makeDirs: Boolean = true
-    public var charset: String = "UTF-8"
+    var sourceStr: String = ""
+    var makeDirs: Boolean = true
+    var charset: String = "UTF-8"
 }
 
 
 // echoes a string to all destinations
-public class EchoTool : komplex.model.Tool<EchoToolRule> {
+class EchoTool : komplex.model.Tool<EchoToolRule> {
     override val name: String = "echo"
 
     override fun execute(context: BuildContext, cfg: EchoToolRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
@@ -146,7 +149,7 @@ public class EchoTool : komplex.model.Tool<EchoToolRule> {
             log.debug("echoing \"${cfg.sourceStr}\" into target $destination")
             if (destination is FileArtifact) {
                 if (cfg.makeDirs && !destination.path.getParent().toFile().exists()) destination.path.getParent().toFile().mkdirs()
-                destination.path.toFile().writeText(cfg.sourceStr, cfg.charset)
+                destination.path.toFile().writeText(cfg.sourceStr, Charset.forName(cfg.charset))
                 result.add(Pair(destination, SimpleFileData(destination.path)))
             }
             else throw IllegalArgumentException("$destination is not supported as a destination in echo tool")
@@ -155,7 +158,7 @@ public class EchoTool : komplex.model.Tool<EchoToolRule> {
     }
 }
 
-public fun EchoToolRule.from(str: String): EchoToolRule {
+infix fun EchoToolRule.from(str: String): EchoToolRule {
     sourceStr = str
     return this
 }

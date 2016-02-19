@@ -6,11 +6,11 @@ import komplex.model.Scenarios
 import komplex.utils.BuildDiagnostic
 import komplex.utils.plus
 import org.junit.Assert
-import org.junit.Test as test
+import org.junit.Test
 
 class modelBaseTests {
 
-    test fun buildDiagnostics() {
+    @Test fun buildDiagnostics() {
         Assert.assertEquals(BuildDiagnostic.Success, BuildDiagnostic.Success + BuildDiagnostic.Success)
         Assert.assertEquals(BuildDiagnostic.Fail, BuildDiagnostic.Success + BuildDiagnostic.Fail)
         Assert.assertEquals(BuildDiagnostic.Fail, BuildDiagnostic.Fail + BuildDiagnostic.Success)
@@ -18,7 +18,7 @@ class modelBaseTests {
         Assert.assertEquals(arrayListOf("1","2"), (BuildDiagnostic.Fail("1") + BuildDiagnostic.Fail("2")).messages)
     }
 
-    test fun Scenarios() {
+    @Test fun Scenarios() {
         class S(val name: String) : Scenario {}
         val s1 = S("1")
         val s2 = S("2")

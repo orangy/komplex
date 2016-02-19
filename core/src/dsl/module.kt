@@ -11,15 +11,15 @@ import komplex.utils.plus
 import java.nio.file.Path
 
 
-public interface ConfigurablesCollection {
+interface ConfigurablesCollection {
 
     // filled with configurables (steps and submodules) in the order of adding.
     // NOTE - order is important for proper dependency-related configuration, so separate collection is used
-    public val configurableChildren: MutableCollection<Configurable>
-    public var configurationDiagnostic: BuildDiagnostic
+    val configurableChildren: MutableCollection<Configurable>
+    var configurationDiagnostic: BuildDiagnostic
 
-    public fun addConfigurable(c: Any): Boolean = if (c is Configurable) configurableChildren.add(c) else false
-    public fun configureChildren(): Boolean {
+    fun addConfigurable(c: Any): Boolean = if (c is Configurable) configurableChildren.add(c) else false
+    fun configureChildren(): Boolean {
         val unconfigured = configurableChildren.filterNot { it.configured }
         if (unconfigured.none()) return false
         configurationDiagnostic = unconfigured.fold( configurationDiagnostic, { r, c -> r + c.configure() })
@@ -31,7 +31,7 @@ public interface ConfigurablesCollection {
 // the name is misleading, it is now contains not only modules but also all other configurables,
 // and it also services as a validation entry point
 // \todo rename or reorganise hierarchy and/or aggregation
-public open class ModuleCollection(override val parent: ProjectModule? = null) : komplex.model.ModuleCollection, ScriptContext, Configurable, Validable, ConfigurablesCollection {
+open class ModuleCollection(override val parent: ProjectModule? = null) : komplex.model.ModuleCollection, ScriptContext, Configurable, Validable, ConfigurablesCollection {
 
     override val env: ContextEnvironment = ContextEnvironment(parent)
     override val children: MutableList<komplex.model.Module> = arrayListOf()
@@ -39,7 +39,7 @@ public open class ModuleCollection(override val parent: ProjectModule? = null) :
     override val configurableChildren: MutableCollection<Configurable> = arrayListOf()
     override var configurationDiagnostic: BuildDiagnostic = BuildDiagnostic.Success
 
-    public fun module(name: String, description: String? = null, rootPath: Path? = null, body: ProjectModule.() -> Unit): ProjectModule {
+    fun module(name: String, description: String? = null, rootPath: Path? = null, body: ProjectModule.() -> Unit): ProjectModule {
         // first configure all known to this point configurables
         configureChildren()
         val module = ProjectModule(this as? ProjectModule, name, rootPath)
@@ -69,12 +69,12 @@ public open class ModuleCollection(override val parent: ProjectModule? = null) :
 // not a nice name, need something more precise, may be different hierarchy altogether. The idea is that dsl module is mutable entity
 // on top of some more specific (than in komplex.model) model entity describing build module, e.g. in typical for JVM world sense
 // \todo rename/reorganise hierarchy
-public open class ProjectModule(parent1: ProjectModule?, override val name: String, rootPath: Path? = null)
+open class ProjectModule(parent1: ProjectModule?, override val name: String, rootPath: Path? = null)
 : ModuleCollection(parent1), komplex.model.Module, GenericSourceType {
 
-    public val moduleName : String get() = name
+    val moduleName : String get() = name
 
-    public open class Metadata : ModuleMetadata {
+    open class Metadata : ModuleMetadata {
         internal var description: String? = null
         internal var version: String? = null
     }
@@ -85,31 +85,31 @@ public open class ProjectModule(parent1: ProjectModule?, override val name: Stri
     override val steps: Iterable<Step>
         get() = ruleSets.flatMap { it.rules }
 
-    public val title: String
+    val title: String
         get() = "$name${if (version.isNullOrEmpty()) "" else "-$version"}${if (description.isNullOrEmpty()) "" else " ($description)"}"
 
-    public var version: String?
+    var version: String?
         get() = metadata.version ?: parent?.version
         set(value: String?) { metadata.version = value }
 
-    public val rootPath: Path = (rootPath ?: parent?.rootPath?.resolve(name) ?: throw IllegalArgumentException("Module root path is not defined")).normalize().toAbsolutePath()
+    val rootPath: Path by lazy { (rootPath ?: throw IllegalArgumentException("Module root path is not defined")).normalize().toAbsolutePath() }
 
-    public val ruleSets: MutableList<ModuleRuleSet> = arrayListOf()
+    val ruleSets: MutableList<ModuleRuleSet> = arrayListOf()
 
-    public fun version(value: String) {
+    fun version(value: String) {
         version = value
     }
 
-    public var description: String?
+    var description: String?
         get() = metadata.description
         set(value: String?) { metadata.description = value }
 
-    public fun description(value: String) {
+    fun description(value: String) {
         metadata.description = value
     }
 
-    public val depends: Dependencies = Dependencies()
-    public val build: ModuleRuleSet get() {
+    val depends: Dependencies = Dependencies()
+    val build: ModuleRuleSet get() {
         // first configure all known to this point configurables
         configureChildren()
         val rs = ModuleRuleSet(this)
@@ -128,7 +128,7 @@ public open class ProjectModule(parent1: ProjectModule?, override val name: Stri
 
         log.debug("configuring $fullName")
 
-        res = super<ModuleCollection>.configure()
+        res = super.configure()
 
         // collect all artifacts that are consumed within module itself
         val consumed = steps.flatMap { it.sources }.toHashSet()
@@ -148,11 +148,11 @@ public open class ProjectModule(parent1: ProjectModule?, override val name: Stri
     override fun validate(): BuildDiagnostic =
             // validate children (submodules) and then steps
             steps.fold(
-                    super<ModuleCollection>.validate(),
+                    super.validate(),
                     { r, step -> if (step is Rule) r + step.validateIfValidable() else r })
 }
 
-public fun ProjectModule.default(scenario: ScenarioSelector) : ProjectModule {
+fun ProjectModule.default(scenario: ScenarioSelector) : ProjectModule {
     defaultScenario = scenario.scenarios
     return this
 }

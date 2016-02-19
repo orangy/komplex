@@ -1,10 +1,9 @@
 
 package komplex.dsl
 
-import komplex.model
 import komplex.model.*
 
-public class ModuleDependency(
+class ModuleDependency(
         override val module: Module,
         override var scenarios: komplex.model.Scenarios,
         override var selector: ScenarioSelector
@@ -13,47 +12,61 @@ public class ModuleDependency(
 }
 
 // need it in order to make the collection a GenericSourceType
-public class ModuleDependencies(public val coll: Iterable<model.ConditionalModuleDependency>): GenericSourceType {}
+class ModuleDependencies(val coll: Iterable<komplex.model.ConditionalModuleDependency>): GenericSourceType {}
 
 
-public open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {
+open class DependencyGroup(val selectors: Iterable<ScenarioSelector>) {
     val items: MutableList<ModuleDependency> = arrayListOf()
 
-    public fun on(vararg ms: Module): DependencyGroup {
-        ms.forEach { items.add(ModuleDependency(it, Scenarios.Same, selectors.combine())) }
+    fun on(vararg ms: Module): DependencyGroup {
+        ms.forEach { addModuleDependency(it) }
         return this
     }
 
-    public fun on(vararg ms: Iterable<Module>): DependencyGroup {
-        ms.forEach { it.forEach { items.add(ModuleDependency(it, Scenarios.Same, selectors.combine())) } }
+    infix fun on(module: Module): DependencyGroup {
+        addModuleDependency(module)
         return this
     }
 
-    public fun invoke(scenario: ScenarioSelector): Unit {
+    fun on(vararg ms: Iterable<Module>): DependencyGroup {
+        ms.forEach { it.forEach { addModuleDependency(it) } }
+        return this
+    }
+
+    infix fun on(ms: Iterable<Module>): DependencyGroup {
+        ms.forEach { addModuleDependency(it) }
+        return this
+    }
+
+    fun invoke(scenario: ScenarioSelector): Unit {
         items.forEach { it.scenarios = scenario.scenarios }
+    }
+
+    private fun addModuleDependency(module: Module) {
+        items.add(ModuleDependency(module, Scenarios.Same, selectors.combine()))
     }
 }
 
 
-public class Dependencies(vararg scenarios: ScenarioSelector = arrayOf(ScenarioSelector.Any)) : DependencyGroup(scenarios.toList()) {
+class Dependencies(vararg scenarios: ScenarioSelector = arrayOf(ScenarioSelector.Any)) : DependencyGroup(scenarios.toList()) {
     val groups: MutableList<DependencyGroup> = arrayListOf(this)
 
-    inline public fun invoke(vararg scenarios: ScenarioSelector, body: DependencyGroup.() -> Unit): DependencyGroup {
+    inline fun invoke(vararg scenarios: ScenarioSelector, body: DependencyGroup.() -> Unit): DependencyGroup {
         val group = invoke(*scenarios)
         group.body()
         return group
     }
 
-    public fun invoke(vararg scenarios: ScenarioSelector): DependencyGroup {
+    fun invoke(vararg scenarios: ScenarioSelector): DependencyGroup {
         val group = DependencyGroup(scenarios.toList())
         groups.add(group)
         return group
     }
 
-    public val modules: ModuleDependencies
+    val modules: ModuleDependencies
         get() = ModuleDependencies(groups.flatMap { it.items })
 
 }
 
-public fun Dependencies.allArtifacts(scenarios: Scenarios = Scenarios.Same): Iterable<ArtifactDesc> =
+fun Dependencies.allArtifacts(scenarios: Scenarios = Scenarios.Same): Iterable<ArtifactDesc> =
         modules.coll.flatMap { it.module.targets(scenarios) }

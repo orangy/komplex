@@ -1,13 +1,9 @@
 package komplex.tools.javac
 
-import komplex.data
 import komplex.data.OpenFileSet
-import komplex.dsl
-import komplex.model
 import komplex.model.Tool
 import komplex.tools.filterIn
 import komplex.tools.getPaths
-import komplex.utils
 import komplex.utils.escape4cli
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -15,22 +11,22 @@ import java.io.InputStream
 import javax.tools.*
 
 
-public val komplex.dsl.tools.javac: JavaCompilerRule
+val komplex.dsl.tools.javac: JavaCompilerRule
     get() = JavaCompilerRule(komplex.model.LazyTool<JavaCompilerRule, JavaCompiler>("Kotlin compiler", { JavaCompiler()} ))
 
 val log = LoggerFactory.getLogger("komplex.tools.javac")
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class JavaCompilerRule(override val tool: Tool<JavaCompilerRule>) : komplex.tools.JVMCompilerRule<JavaCompilerRule, Tool<JavaCompilerRule>>() {
+class JavaCompilerRule(override val tool: Tool<JavaCompilerRule>) : komplex.tools.JVMCompilerRule<JavaCompilerRule, Tool<JavaCompilerRule>>() {
     override val name: String = "Java compiler"
     override val config: JavaCompilerRule = this
 
-    public fun invoke(body: JavaCompilerRule.() -> Unit): JavaCompilerRule {
+    fun invoke(body: JavaCompilerRule.() -> Unit): JavaCompilerRule {
         body()
         return this
     }
-    public var enableInline: Boolean = true
+    var enableInline: Boolean = true
 }
 
 
@@ -43,22 +39,22 @@ class JavaSource(val file: File) : SimpleJavaFileObject(file.toURI(), JavaFileOb
         openInputStream()!!.bufferedReader().readText()
 }
 
-public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
+class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
     override val name: String = "Java compiler"
 
     //    override fun compile(context: BuildStepContext, from: Iterable<Artifact>, to: Iterable<Artifact>, useLibs: Iterable<Artifact>): BuildResult = null!!
 
-    override fun execute(context: model.BuildContext,
+    override fun execute(context: komplex.model.BuildContext,
                          cfg: JavaCompilerRule,
-                         src: Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>,
-                         tgt: Iterable<model.ArtifactDesc>
-    ): model.BuildResult {
+                         src: Iterable<Pair<komplex.model.ArtifactDesc, komplex.model.ArtifactData?>>,
+                         tgt: Iterable<komplex.model.ArtifactDesc>
+    ): komplex.model.BuildResult {
         val libraries = src.filterIn(cfg.classpathSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
 
         val folder = tgt.single()
         val targetFolder =
                 when (folder) {
-                    is dsl.FolderArtifact -> {
+                    is komplex.dsl.FolderArtifact -> {
                         val dir = folder.path.toFile()
                         if (!dir.exists())
                             dir.mkdirs()
@@ -86,9 +82,9 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
 
         log.info("compilation finished. diagnostics:")
 
-        for (diag in diagnostics.getDiagnostics()) {
-            val msg = "${diag.getSource()?.getName() ?: "<no source>"} (${diag.getLineNumber()},${diag.getColumnNumber()}) ${diag.getMessage(null)}"
-            when (diag.getKind()) {
+        for (diag in diagnostics.diagnostics) {
+            val msg = "${diag.source?.name ?: "<no source>"} (${diag.lineNumber},${diag.columnNumber}) ${diag.getMessage(null)}"
+            when (diag.kind) {
                 Diagnostic.Kind.ERROR -> log.error(msg)
                 Diagnostic.Kind.NOTE -> log.debug(msg)
                 Diagnostic.Kind.MANDATORY_WARNING -> log.info(msg)
@@ -98,8 +94,8 @@ public class JavaCompiler() : komplex.model.Tool<JavaCompilerRule> {
         }
 
         return if (success)
-            model.BuildResult(utils.BuildDiagnostic.Success, listOf(Pair(folder, data.openFileSet(folder))))
-            else model.BuildResult(utils.BuildDiagnostic.Fail)
+            komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Success, listOf(Pair(folder, komplex.data.openFileSet(folder))))
+            else komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail)
     }
 }
 

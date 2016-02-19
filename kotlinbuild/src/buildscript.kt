@@ -1,5 +1,3 @@
-package kotlin.buildscript
-
 import komplex.data.OpenFileSet
 import komplex.data.VariableData
 import komplex.data.openFileSet
@@ -22,7 +20,6 @@ import komplex.tools.maven.maven
 import komplex.tools.proguard.filters
 import komplex.tools.proguard.options
 import komplex.tools.proguard.proguard
-import komplex.utils
 import komplex.utils.escape4cli
 import komplex.utils.runProcess
 import org.slf4j.LoggerFactory
@@ -38,12 +35,12 @@ fun run(vararg args: String): Int = runProcess(args.asIterable(), { log.debug(it
 val ProjectModule.copy: CopyToolRule get() = build using(tools.copy)
 
 fun ProjectModule.library(id: String, version: String? = null, scenario: Scenarios = Scenarios.Default_): komplex.tools.maven.MavenLibraryModule {
-    val libModule = komplex.tools.maven.mavenLibrary(id, version, target = folder % env.libDir.jar)
+    val libModule = komplex.tools.maven.mavenLibrary(id, version, target = folder % env.libDir!!.jar)
     this.children.add(libModule)
     return libModule
 }
 
-fun transformTargets<T: GenericSourceType>(source: T, fn: (ArtifactDesc) -> Artifact ): komplex.dsl.LambdaRule  {
+fun<T: GenericSourceType> transformTargets(source: T, fn: (ArtifactDesc) -> Artifact ): komplex.dsl.LambdaRule  {
     // \todo find more generic and safe way of implementing artifact transformation tools
     return tools.custom { srcs, tgts -> openFileSet(tgts).coll } with {
         from (source)
@@ -176,7 +173,7 @@ fun main(args: Array<String>) {
                 // choose the right one
                 //val originalProtobuf = library("com.google.protobuf:protobuf-java:2.5.0")
                 val originalProtobuf = file % ideaSdkDir / "lib/protobuf-2.5.0.jar".jar
-                val protobufLite = file % env.libDir / "protobuf-2.5.0-lite.jar".jar
+                val protobufLite = file % env.libDir!! / "protobuf-2.5.0-lite.jar".jar
 
                 build using tools.custom { srcs, tgts ->
                     val target = tgts.first() as FileArtifact
@@ -704,7 +701,7 @@ fun main(args: Array<String>) {
         /// BUILD SCRIPT
     }
 
-    val indent = utils.TwoSpaceIndentLn()
+    val indent = komplex.utils.TwoSpaceIndentLn()
 
     println("\n--- script ------------------------------")
     println(script.nicePrint(indent))
@@ -738,7 +735,7 @@ fun main(args: Array<String>) {
                 return GraphBuildContext(scenarios, graph, strm.readObject() as MutableMap<String, ByteArray>, detHashes)
             }
             catch (e: Exception) {
-                log.error("Failed to read source hashes: " + e.getMessage())
+                log.error("Failed to read source hashes: " + e.message)
             }
         }
         else
@@ -766,7 +763,7 @@ fun main(args: Array<String>) {
         }
     }
     catch (e: Exception) {
-        log.error("Failed to write source hashes: " + e.getMessage())
+        log.error("Failed to write source hashes: " + e.message)
     }
 
     println("\n-- done. --------------------------------")

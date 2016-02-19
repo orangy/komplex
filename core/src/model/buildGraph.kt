@@ -8,27 +8,26 @@ import komplex.utils.subgraphDFS
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.HashSet
-import kotlin.platform.platformName
 
-public data class ModuleFlavor(public val module: Module,
-                               public val scenarios: Scenarios) {}
+data class ModuleFlavor(val module: Module,
+                               val scenarios: Scenarios) {}
 
-public data class BuildGraphNode(public val moduleFlavor: ModuleFlavor, public val step: Step) {
+data class BuildGraphNode(val moduleFlavor: ModuleFlavor, val step: Step) {
     override fun toString(): String = "[${moduleFlavor.module.name}.${step.name}](${step.selector.scenarios})"
 }
 
-platformName("producers_map_contains")
+@JvmName("producers_map_contains")
 internal fun HashMap<ArtifactDesc, BuildGraphNode>.contains(artifact: ArtifactDesc, scenario: Scenarios): Boolean {
     val node = get(artifact)
     return if (node != null) scenario.matches(node.step.selector) else false
 }
 
-platformName("consumers_map_contains")
+@JvmName("consumers_map_contains")
 internal fun HashMap<ArtifactDesc, ArrayList<BuildGraphNode>>.contains(artifact: ArtifactDesc, scenario: Scenarios): Boolean =
     get(artifact)?.any { scenario.matches(it.step.selector) } ?: false
 
 
-public class BuildGraph() {
+class BuildGraph() {
 
     val moduleSelectors: HashMap<ModuleFlavor, ScenarioSelector> = hashMapOf()
     // all nodes index
@@ -41,10 +40,10 @@ public class BuildGraph() {
 
     protected fun add(node: BuildGraphNode) {
 
-        val srcs = node.step.sources.toArrayList()
-        val tgts = node.step.targets.toArrayList()
+        val srcs = node.step.sources
+        val tgts = node.step.targets
         // skip steps without inputs and outputs
-        if (!srcs.isEmpty() || !tgts.isEmpty()) {
+        if (srcs.any() || tgts.any()) {
             nodes.add(node)
 
             for (tgt in tgts) {
@@ -63,7 +62,7 @@ public class BuildGraph() {
     }
 
 
-    public fun add(module: Module, scenarios: Scenarios = Scenarios.Same, selector: ScenarioSelector = ScenarioSelector.Any): BuildGraph {
+    fun add(module: Module, scenarios: Scenarios = Scenarios.Same, selector: ScenarioSelector = ScenarioSelector.Any): BuildGraph {
 
         // \todo "replace" functionality
         val moduleFlavor = ModuleFlavor(module, scenarios)
@@ -111,18 +110,18 @@ public class BuildGraph() {
     }
 
 
-    public fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
-        val producingNode = producers.get(it)// ?: throw Exception("incosistent graph: missing producer for $it")
+    fun getProducingNode(it: ArtifactDesc, scenarios: Scenarios): BuildGraphNode? {
+        val producingNode = producers.get(it)// ?: throw Exception("inconsistent graph: missing producer for $it")
         return if (producingNode != null && isSelected(producingNode, scenarios)) producingNode else null
     }
 
 
-    public fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
+    fun getConsumingNodes(it: ArtifactDesc, scenarios: Scenarios): Iterable<BuildGraphNode> =
         consumers.get(it)?.filter { isSelected(it, scenarios) } ?: listOf()
 
 
     // filtered inputs
-    public fun sources(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
+    fun sources(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
             if (scenarios.matches(node.step.selector))
                 // all node sources are required
                 node.step.sources
@@ -130,14 +129,14 @@ public class BuildGraph() {
 
 
     // filtered outputs
-    public fun targets(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
+    fun targets(node: BuildGraphNode, scenarios: Scenarios): Iterable<ArtifactDesc> =
             if (scenarios.matches(node.step.selector))
                 // all node targets
                 node.step.targets
             else listOf()
 
 
-    public fun prev(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
+    fun prev(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
             if (scenarios.matches(node.step.selector)) {
                 val prev = node.step.sources
                         .map { getProducingNode(it, scenarios) }
@@ -152,7 +151,7 @@ public class BuildGraph() {
             }
 
 
-    public fun next(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
+    fun next(node: BuildGraphNode, scenarios: Scenarios): Iterable<BuildGraphNode> =
             if (scenarios.matches(node.step.selector))
                 node.step.targets
                         .flatMap { getConsumingNodes(it, scenarios) }
@@ -161,7 +160,7 @@ public class BuildGraph() {
 }
 
 
-public fun BuildGraph(modules: Iterable<Module>): BuildGraph {
+fun BuildGraph(modules: Iterable<Module>): BuildGraph {
 
     val graph = BuildGraph()
     modules.forEach { graph.add(it) }
@@ -175,26 +174,26 @@ public fun BuildGraph(modules: Iterable<Module>): BuildGraph {
 
 // returns target artifacts
 // \todo targets from submodules?
-public fun BuildGraph.targets(scenario: Scenarios): Iterable<ArtifactDesc> =
+fun BuildGraph.targets(scenario: Scenarios): Iterable<ArtifactDesc> =
         nodes.filter { scenario.matches(it.step.selector) }
              .flatMap { if (it.step.export) targets(it, scenario)
                         else targets(it, scenario).filter { !consumers.contains(it, scenario) } }
 
 // returns target artifacts
 // \todo targets from submodules?
-public fun BuildGraph.targets(modules: Iterable<Module>, scenario: Scenarios): Iterable<ArtifactDesc> {
+fun BuildGraph.targets(modules: Iterable<Module>, scenario: Scenarios): Iterable<ArtifactDesc> {
 
     val modulesSet = modules.toHashSet()
-    return nodes.filter { scenario.matches(it.step.selector) && modulesSet.contains(it.moduleFlavor) }
+    return nodes.filter { scenario.matches(it.step.selector) && modulesSet.contains(it.moduleFlavor.module) }
                 .flatMap { if (it.step.export) targets(it, scenario)
                            else targets(it, scenario).filter { !consumers.contains(it, scenario) } }
 }
 
-public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> {
+fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> {
     val roots = nodes.filter {
         if (scenario.matches(it.step.selector)) {
             val areSourcesProduced = sources(it, scenario).any { producers.contains(it, scenario) }
-            if (log.isTraceEnabled() && areSourcesProduced)
+            if (log.isTraceEnabled && areSourcesProduced)
                 log.trace("filtered out $it from roots because of produced source artifacts ${
                     sources(it, scenario).filter { producers.contains(it) }.joinToString(", ", "(", ")")}")
             !areSourcesProduced
@@ -205,14 +204,14 @@ public fun BuildGraph.roots(scenario: Scenarios): Iterable<BuildGraphNode> {
 }
 
 
-public fun BuildGraph.leafs(scenario: Scenarios): Iterable<BuildGraphNode> {
+fun BuildGraph.leafs(scenario: Scenarios): Iterable<BuildGraphNode> {
     return nodes.filter { scenario.matches(it.step.selector) &&
                           targets(it, scenario).none { consumers.contains(it, scenario) } }
 }
 
 
 // todo module flavor scenario extraction and handling (stack) on every step
-public fun BuildGraph.buildPartialApply( scenario: Scenarios,
+fun BuildGraph.buildPartialApply( scenario: Scenarios,
                                          buildFun: (BuildGraphNode) -> Boolean,
                                          sources: Set<BuildGraphNode> = this.roots(scenario).toHashSet(),
                                          targets: Iterable<BuildGraphNode> = this.leafs(scenario)) {
@@ -224,7 +223,7 @@ public fun BuildGraph.buildPartialApply( scenario: Scenarios,
                  checkTraversal = makeVisitedTraversalChecker<BuildGraphNode>())
 }
 
-public fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildGraphNode) -> Boolean) {
+fun BuildGraph.buildAllApply(scenario: Scenarios, buildFun: (node: BuildGraphNode) -> Boolean) {
     graphDFS( from = leafs(scenario),
               preorderPred = { false },
               postorderPred = buildFun,

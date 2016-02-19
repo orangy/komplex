@@ -2,23 +2,23 @@ package komplex.tools.kotlin
 
 import komplex.data.openFileSet
 import komplex.dsl.*
-import komplex.model
 import komplex.model.ArtifactDesc
 import komplex.model.Tool
 import komplex.tools.filterIn
 import komplex.tools.getPaths
-import komplex.utils
-import komplex.utils.*
+import komplex.utils.BuildDiagnostic
+import komplex.utils.escape4cli
+import komplex.utils.plus
+import komplex.utils.runProcess
 import java.nio.file.Path
-import java.util.ArrayList
 
 
-public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<KotlinJSRule, komplex.model.Tool<KotlinJSRule>>(tool) {
+class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<KotlinJSRule, komplex.model.Tool<KotlinJSRule>>(tool) {
 
-    public val explicitMetaTargets: MutableCollection<Artifact> = arrayListOf()
+    val explicitMetaTargets: MutableCollection<Artifact> = arrayListOf()
     override val targets: Iterable<ArtifactDesc> get() = explicitTargets + explicitMetaTargets
-    public var includeStdlib: Boolean = true
-    public var main: String = ""
+    var includeStdlib: Boolean = true
+    var main: String = ""
 
     override fun configure(): BuildDiagnostic {
         var ret = super.configure()
@@ -35,34 +35,34 @@ public class KotlinJSRule(tool: Tool<KotlinJSRule>) : komplex.dsl.BasicToolRule<
     }
 }
 
-public fun KotlinJSRule.meta(vararg artifacts: Iterable<Artifact>): KotlinJSRule {
+fun KotlinJSRule.meta(vararg artifacts: Iterable<Artifact>): KotlinJSRule {
     artifacts.forEach { explicitMetaTargets.addAll(it) }
     return this
 }
 
-public fun KotlinJSRule.meta(vararg artifacts: Artifact): KotlinJSRule {
+fun KotlinJSRule.meta(vararg artifacts: Artifact): KotlinJSRule {
     explicitMetaTargets.addAll(artifacts)
     return this
 }
 
 
-public fun komplex.dsl.tools.kotlinjs(compilerCmd: Iterable<String>): KotlinJSRule =
+fun komplex.dsl.tools.kotlinjs(compilerCmd: Iterable<String>): KotlinJSRule =
         KotlinJSRule(komplex.model.LazyTool<KotlinJSRule, KotlinExternalJSCompiler>("Kotlin to Javascript compiler", { KotlinExternalJSCompiler(compilerCmd) } ))
 
-public fun komplex.dsl.tools.kotlinjs(vararg compilerCmd: String): KotlinJSRule = komplex.dsl.tools.kotlinjs(compilerCmd.asIterable())
+fun komplex.dsl.tools.kotlinjs(vararg compilerCmd: String): KotlinJSRule = komplex.dsl.tools.kotlinjs(compilerCmd.asIterable())
 
-public fun komplex.dsl.tools.kotlinjs(compilerJarPath: Path): KotlinJSRule = komplex.dsl.tools.kotlinjs("java", "-cp", compilerJarPath.toString(), "org.jetbrains.kotlin.cli.js.K2JSCompiler")
+fun komplex.dsl.tools.kotlinjs(compilerJarPath: Path): KotlinJSRule = komplex.dsl.tools.kotlinjs("java", "-cp", compilerJarPath.toString(), "org.jetbrains.kotlin.cli.js.K2JSCompiler")
 
 
-public class KotlinExternalJSCompiler(val compilerCmd: Iterable<String>) : komplex.model.Tool<KotlinJSRule> {
+class KotlinExternalJSCompiler(val compilerCmd: Iterable<String>) : komplex.model.Tool<KotlinJSRule> {
 
     override val name: String = "Kotlin external JS compiler"
 
-    override fun execute(context: model.BuildContext,
+    override fun execute(context: komplex.model.BuildContext,
                          cfg: KotlinJSRule,
-                         src: Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>,
-                         tgt: Iterable<model.ArtifactDesc>
-    ): model.BuildResult {
+                         src: Iterable<Pair<komplex.model.ArtifactDesc, komplex.model.ArtifactData?>>,
+                         tgt: Iterable<komplex.model.ArtifactDesc>
+    ): komplex.model.BuildResult {
 
         val project = context.module
 
@@ -70,7 +70,7 @@ public class KotlinExternalJSCompiler(val compilerCmd: Iterable<String>) : kompl
 
         if (kotlinSources.none()) {
             log.error("Error: No sources to compile in module ${project.name}: ${src.map { it.first }}")
-            return model.BuildResult(utils.BuildDiagnostic.Fail)
+            return komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail)
         }
 
         // first is target second is meta
@@ -78,9 +78,9 @@ public class KotlinExternalJSCompiler(val compilerCmd: Iterable<String>) : kompl
                 tgt.filter { it in cfg.explicitMetaTargets }.first() as FileArtifact)
         // \todo warnings in case of ignored targets
 
-        dests.map { it.path.getParent().toFile() }.forEach { if (!it.exists()) it.mkdirs() }
+        dests.map { it.path.parent.toFile() }.forEach { if (!it.exists()) it.mkdirs() }
 
-        val ktccmdline: ArrayList<String> = compilerCmd.map { escape4cli(it) }.toArrayList()
+        val ktccmdline: MutableList<String> = compilerCmd.map { escape4cli(it) }.toMutableList()
 
         ktccmdline.addAll(listOf("-output", escape4cli(dests[0].path.toString()),
                                  "-meta-info", escape4cli(dests[1].path.toString()),
@@ -92,8 +92,8 @@ public class KotlinExternalJSCompiler(val compilerCmd: Iterable<String>) : kompl
 
         val res = runProcess(ktccmdline, { log.info(it) }, { log.info(it) })
 
-        return if (res == 0) model.BuildResult(utils.BuildDiagnostic.Success, dests.map{ Pair(it, openFileSet(it)) })
-        else model.BuildResult(utils.BuildDiagnostic.Fail)
+        return if (res == 0) komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Success, dests.map{ Pair(it, openFileSet(it)) })
+        else komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail)
     }
 }
 

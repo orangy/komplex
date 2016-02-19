@@ -1,17 +1,15 @@
 package komplex.tools.maven
 
-import komplex.dsl
 import komplex.dsl.*
 import komplex.model.ConditionalModuleDependency
 import komplex.model.Module
 import komplex.model.ModuleMetadata
-import kotlin.properties.Delegates
 
-public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
-    override val type = dsl.artifacts.jar
+data class MavenLibraryArtifact(val id: MavenId) : komplex.dsl.Artifact {
+    override val type = komplex.dsl.artifacts.jar
     override val name: String get() = id.toString()
 
-    public fun targetName(): String {
+    fun targetName(): String {
         return "${id.artifactId}${if (!id.version.isEmpty()) "-$id.version" else ""}${ext()}"
     }
     private fun ext() = ".jar" /* when (type) {
@@ -23,7 +21,7 @@ public data class MavenLibraryArtifact(public val id: MavenId) : dsl.Artifact {
     override fun hashCode(): Int = 2539 * targetName().hashCode()
 }
 
-public data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryArtifact) : dsl.Artifact {
+data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryArtifact) : komplex.dsl.Artifact {
     override val type: ArtifactType get() = sourceArtifact.type
     override val name: String get() = sourceArtifact.name
 
@@ -32,7 +30,7 @@ public data class MavenResolvedLibraryArtifact(val sourceArtifact: MavenLibraryA
 }
 
 
-public class MavenLibraryModule(public val library: MavenLibraryArtifact, public val target: dsl.FolderArtifact)
+class MavenLibraryModule(val library: MavenLibraryArtifact, val target: komplex.dsl.FolderArtifact)
 : komplex.model.Module, GenericSourceType {
 
     override val metadata = object : ModuleMetadata {}
@@ -41,8 +39,8 @@ public class MavenLibraryModule(public val library: MavenLibraryArtifact, public
     override val children: Iterable<Module> = listOf()
     override val name: String = "library ${library.name}"
 
-    override val steps by Delegates.lazy {
-        val step = dsl.tools.maven
+    override val steps by lazy {
+        val step = komplex.dsl.tools.maven
         step from library into target
         step.export = true
         listOf(step)
@@ -52,16 +50,16 @@ public class MavenLibraryModule(public val library: MavenLibraryArtifact, public
 //            listOf(MavenResolvedLibraryArtifact(library))
 }
 
-public data class MavenId(val groupId: String, val artifactId: String, val version: String) {
+data class MavenId(val groupId: String, val artifactId: String, val version: String) {
     override fun toString(): String = "$groupId:$artifactId:$version"
 }
 
 private fun mavenId(id: String, version: String?): MavenId {
     val names = id.split("[/:]".toRegex())
     return MavenId(names[0],
-            if (names.size() > 1) names[1] else names[0],
-            version ?: if (names.size() > 2) names[2] else "")
+            if (names.size > 1) names[1] else names[0],
+            version ?: if (names.size > 2) names[2] else "")
 }
 
-public fun mavenLibrary(id: String, version: String?, target: FolderArtifact): MavenLibraryModule =
+fun mavenLibrary(id: String, version: String?, target: FolderArtifact): MavenLibraryModule =
         MavenLibraryModule(MavenLibraryArtifact(mavenId(id, version)), target)

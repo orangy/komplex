@@ -7,15 +7,12 @@ import com.google.javascript.jscomp.SourceFile
 import komplex.data.openFileSet
 import komplex.data.openInputStream
 import komplex.data.openOutputStream
-import komplex.dsl
 import komplex.dsl.*
-import komplex.model
 import komplex.model.ArtifactDesc
 import komplex.model.Tool
 import komplex.tools.configureSingleTempFileTarget
 import komplex.tools.filterIn
 import komplex.tools.getPaths
-import komplex.utils
 import komplex.utils.BuildDiagnostic
 import komplex.utils.LogLevel
 import komplex.utils.LogOutputStream
@@ -26,14 +23,14 @@ import java.nio.charset.StandardCharsets
 
 val log = LoggerFactory.getLogger("komplex.tools.js")
 
-public val komplex.dsl.tools.closureCompiler: ClosureCompilerRule
+val komplex.dsl.tools.closureCompiler: ClosureCompilerRule
     get() = ClosureCompilerRule(komplex.model.LazyTool<ClosureCompilerRule, ClosureCompilerTool>("closure javascript compiler", { ClosureCompilerTool() } ))
 
-public class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.BasicToolRule<ClosureCompilerRule, komplex.model.Tool<ClosureCompilerRule>>(tool) {
+class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.BasicToolRule<ClosureCompilerRule, komplex.model.Tool<ClosureCompilerRule>>(tool) {
 
-    public val explicitExterns: RuleSources = RuleSources()
+    val explicitExterns: RuleSources = RuleSources()
 
-    public val externSources: Iterable<ArtifactDesc> get() = explicitExterns.collect(selector.scenarios)
+    val externSources: Iterable<ArtifactDesc> get() = explicitExterns.collect(selector.scenarios)
 
     override val sources: Iterable<ArtifactDesc> get() = super.sources + externSources
 
@@ -42,19 +39,19 @@ public class ClosureCompilerRule(tool: Tool<ClosureCompilerRule>) : komplex.dsl.
                     configureSingleTempFileTarget(module, artifacts.jar, { "${module.name}.${name.replace(' ','_')}.js" })
 }
 
-public fun <S: GenericSourceType> ClosureCompilerRule.extern(args: Iterable<S>): ClosureCompilerRule = addToSources(explicitExterns, args)
-public fun <S: GenericSourceType> ClosureCompilerRule.extern(vararg args: S): ClosureCompilerRule = addToSources(explicitExterns, *args)
+fun <S: GenericSourceType> ClosureCompilerRule.extern(args: Iterable<S>): ClosureCompilerRule = addToSources(explicitExterns, args)
+fun <S: GenericSourceType> ClosureCompilerRule.extern(vararg args: S): ClosureCompilerRule = addToSources(explicitExterns, *args)
 
 
-public class ClosureCompilerTool() : komplex.model.Tool<ClosureCompilerRule> {
+class ClosureCompilerTool() : komplex.model.Tool<ClosureCompilerRule> {
 
     override val name: String = "closure javascript compiler"
 
-    override fun execute(context: model.BuildContext,
+    override fun execute(context: komplex.model.BuildContext,
                          cfg: ClosureCompilerRule,
-                         src: Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>,
-                         tgt: Iterable<model.ArtifactDesc>
-    ): model.BuildResult {
+                         src: Iterable<Pair<komplex.model.ArtifactDesc, komplex.model.ArtifactData?>>,
+                         tgt: Iterable<komplex.model.ArtifactDesc>
+    ): komplex.model.BuildResult {
 
         val project = context.module
 
@@ -62,7 +59,7 @@ public class ClosureCompilerTool() : komplex.model.Tool<ClosureCompilerRule> {
 
         if (kotlinSources.none()) {
             log.error("Error: No sources to compile in module ${project.name}: ${src.map { it.first }}")
-            return model.BuildResult(utils.BuildDiagnostic.Fail)
+            return komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail)
         }
 
         // first is target second is meta
@@ -74,9 +71,9 @@ public class ClosureCompilerTool() : komplex.model.Tool<ClosureCompilerRule> {
         val compiler = Compiler(PrintStream(LogOutputStream(log, LogLevel.INFO)))
         val options = CompilerOptions()
         CompilationLevel.WHITESPACE_ONLY.setOptionsForCompilationLevel(options)
-        options.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT)
+        options.languageIn = CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT
 
-        fun Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>.openSourceStreams(): List<SourceFile> =
+        fun Iterable<Pair<komplex.model.ArtifactDesc, komplex.model.ArtifactData?>>.openSourceStreams(): List<SourceFile> =
             flatMap { openFileSet(it).coll }.map { SourceFile.fromInputStream(it.path.toString(), openInputStream(it).inputStream, StandardCharsets.UTF_8) }
 
         val res = compiler.compile(
@@ -87,8 +84,8 @@ public class ClosureCompilerTool() : komplex.model.Tool<ClosureCompilerRule> {
         if (res.success) {
             val streamData = openOutputStream(dest)
             streamData.outputStream.writer().write(compiler.toSource())
-            return model.BuildResult(utils.BuildDiagnostic.Success, listOf(Pair(dest, streamData)))
+            return komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Success, listOf(Pair(dest, streamData)))
         }
-        else return model.BuildResult(utils.BuildDiagnostic.Fail(res.errors.map { "Error in '${it.sourceName}' (${it.lineNumber}): ${it.description}" }))
+        else return komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail(res.errors.map { "Error in '${it.sourceName}' (${it.lineNumber}): ${it.description}" }))
     }
 }

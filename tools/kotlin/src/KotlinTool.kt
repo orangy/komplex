@@ -1,14 +1,11 @@
 package komplex.tools.kotlin
 
-import komplex.data
 import komplex.data.OpenFileSet
 import komplex.dsl.FolderArtifact
-import komplex.model
 import komplex.model.Tool
 import komplex.tools.filterIn
 import komplex.tools.getPaths
 import komplex.tools.singleDestFolder
-import komplex.utils
 import komplex.utils.BuildDiagnostic
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -16,27 +13,27 @@ import java.nio.file.Path
 
 internal val log = LoggerFactory.getLogger("komplex.tools.kotlin")
 
-public class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : komplex.tools.JVMCompilerRule<KotlinCompilerRule, Tool<KotlinCompilerRule>>() {
+class KotlinCompilerRule(override val tool: Tool<KotlinCompilerRule>) : komplex.tools.JVMCompilerRule<KotlinCompilerRule, Tool<KotlinCompilerRule>>() {
     override val name: String = "Kotlin compiler"
     override val config: KotlinCompilerRule = this
 
-    public fun invoke(body: KotlinCompilerRule.() -> Unit): KotlinCompilerRule {
+    fun invoke(body: KotlinCompilerRule.() -> Unit): KotlinCompilerRule {
         body()
         return this
     }
-    public var enableInline: Boolean = true
-    public var includeRuntime: Boolean = true
-    public val sourceRoots: MutableCollection<String> = arrayListOf()
+    var enableInline: Boolean = true
+    var includeRuntime: Boolean = true
+    val sourceRoots: MutableCollection<String> = arrayListOf()
 }
 
 
-public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
+abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> {
 
-    override fun execute(context: model.BuildContext,
+    override fun execute(context: komplex.model.BuildContext,
                          cfg: KotlinCompilerRule,
-                         src: Iterable<Pair<model.ArtifactDesc, model.ArtifactData?>>,
-                         tgt: Iterable<model.ArtifactDesc>
-    ): model.BuildResult {
+                         src: Iterable<Pair<komplex.model.ArtifactDesc, komplex.model.ArtifactData?>>,
+                         tgt: Iterable<komplex.model.ArtifactDesc>
+    ): komplex.model.BuildResult {
 
         val project = context.module
 
@@ -45,7 +42,7 @@ public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> 
 
         if (kotlinSources.none()) {
             log.error("Error: No sources to compile in module ${project.name}: ${src.map { it.first }}")
-            return model.BuildResult(utils.BuildDiagnostic.Fail)
+            return komplex.model.BuildResult(komplex.utils.BuildDiagnostic.Fail)
         }
 
         val libraries = src.filterIn(cfg.classpathSources).getPaths(OpenFileSet.FoldersAsLibraries).distinct()
@@ -64,8 +61,8 @@ public abstract class KotlinCompiler() : komplex.model.Tool<KotlinCompilerRule> 
         log.info("compiling result: $exitCode for module ${project.name}")
 
         return when (exitCode.status) {
-            utils.BuildDiagnostic.Status.Succeeded -> model.BuildResult(exitCode, listOf(Pair(destFolder, data.openFileSet(destFolder))))
-            else -> model.BuildResult(exitCode)
+            komplex.utils.BuildDiagnostic.Status.Succeeded -> komplex.model.BuildResult(exitCode, listOf(Pair(destFolder, komplex.data.openFileSet(destFolder))))
+            else -> komplex.model.BuildResult(exitCode)
         }
     }
 

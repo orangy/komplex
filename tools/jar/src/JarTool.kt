@@ -1,7 +1,6 @@
 package komplex.tools.jar
 
 import komplex.data.*
-import komplex.dsl
 import komplex.dsl.*
 import komplex.model.ArtifactData
 import komplex.model.ArtifactDesc
@@ -19,15 +18,15 @@ import java.util.HashSet
 import java.util.jar.*
 import java.util.zip.ZipEntry
 
-public val komplex.dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
+val komplex.dsl.tools.jar: JarPackagerRule get() = JarPackagerRule(JarPackager())
 
 val log = LoggerFactory.getLogger("komplex.tools.jar")
 
-public data class JarManifestProperty(public val name: String, public val value: String) {}
+data class JarManifestProperty(val name: String, val value: String) {}
 
 // separate class for separate class loading
 // \todo check if moving to separate file or jar is needed for really lazy tool loading, or may be that nested class will work as well
-public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRule<JarPackagerRule, komplex.model.Tool<JarPackagerRule>>(jarPackager) {
+class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRule<JarPackagerRule, komplex.model.Tool<JarPackagerRule>>(jarPackager) {
 
     override fun configure(): BuildDiagnostic =
             super.configure() +
@@ -36,36 +35,36 @@ public class JarPackagerRule(jarPackager: JarPackager) : komplex.dsl.BasicToolRu
     // this is not very flexible and quite expensive scheme
     // \todo implement generic sources/target pairs within the same rule and ability to assign attributes to targets
     internal val explicitPrefixedFroms: MutableMap<String, RuleSources> = hashMapOf()
-    override val fromSources: Iterable<ArtifactDesc> get() = super.fromSources + explicitPrefixedFroms.values().flatMap { it.collect(selector.scenarios) }
+    override val fromSources: Iterable<ArtifactDesc> get() = super.fromSources + explicitPrefixedFroms.values.flatMap { it.collect(selector.scenarios) }
     // configuration params
-    public var deflate : Boolean = true
-    public var makeDirs: Boolean = true
-    public val manifest: MutableCollection< () -> JarManifestProperty> = arrayListOf()
+    var deflate : Boolean = true
+    var makeDirs: Boolean = true
+    val manifest: MutableCollection< () -> JarManifestProperty> = arrayListOf()
 }
 
-public fun <S: GenericSourceType> JarPackagerRule.from(args: Iterable<S>, prefix: String): JarPackagerRule =
+fun <S: GenericSourceType> JarPackagerRule.from(args: Iterable<S>, prefix: String): JarPackagerRule =
         addToSources(explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), args)
-public fun <S: GenericSourceType> JarPackagerRule.from(vararg args: S, prefix: String): JarPackagerRule =
+fun <S: GenericSourceType> JarPackagerRule.from(vararg args: S, prefix: String): JarPackagerRule =
         addToSources(explicitPrefixedFroms.getOrPut(prefix, { RuleSources() }), *args)
 
-public fun JarPackagerRule.addManifestProperty(name: String, generator: () -> String): JarPackagerRule {
+fun JarPackagerRule.addManifestProperty(name: String, generator: () -> String): JarPackagerRule {
     manifest.add({ JarManifestProperty(name, generator()) })
     return this
 }
 
-public fun JarPackagerRule.addManifestProperty(name: String, value: String): JarPackagerRule {
+fun JarPackagerRule.addManifestProperty(name: String, value: String): JarPackagerRule {
     manifest.add({ JarManifestProperty(name, value) })
     return this
 }
 
 // compresses all sources into single destination described by the first target
 // \todo add multiple targets and append support
-public class JarPackager : komplex.model.Tool<JarPackagerRule> {
+class JarPackager : komplex.model.Tool<JarPackagerRule> {
     override val name: String = "jar packager"
 
     private fun prefixPath(prefix: String?, path: Path): Path {
         assert( !path.isAbsolute())
-        return if (prefix != null && prefix.length() > 0)
+        return if (prefix != null && prefix.length > 0)
                     Paths.get(prefix, path.toString())
                else path
     }
@@ -113,25 +112,25 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
     private fun addFromJar(prefix: String?, sourceJar: JarInputStream, target: JarOutputStream, entries: MutableSet<String>) {
         val buffer = ByteArray(1024)
         while (true) {
-            var entry: ZipEntry = sourceJar.getNextEntry() ?: break
-            if (prefix != null && prefix.length() > 0) {
+            var entry: ZipEntry = sourceJar.nextEntry ?: break
+            if (prefix != null && prefix.length > 0) {
                 // placing entry to another place
                 // \todo try to find more elegant way to change entry name
-                val newEntry = JarEntry(Paths.get(prefix, entry.getName()).toString())
-                newEntry.setComment(entry.getComment())
-                newEntry.setCompressedSize(entry.getCompressedSize())
-                newEntry.setCrc(entry.getCrc())
-                newEntry.setExtra(entry.getExtra())
-                newEntry.setMethod(entry.getMethod())
-                newEntry.setSize(entry.getSize())
-                newEntry.setTime(entry.getTime())
+                val newEntry = JarEntry(Paths.get(prefix, entry.name).toString())
+                newEntry.setComment(entry.comment)
+                newEntry.setCompressedSize(entry.compressedSize)
+                newEntry.setCrc(entry.crc)
+                newEntry.setExtra(entry.extra)
+                newEntry.setMethod(entry.method)
+                newEntry.setSize(entry.size)
+                newEntry.setTime(entry.time)
                 entry = newEntry
             }
             //entry.setMethod(if (deflate) ZipEntry.DEFLATED else ZipEntry.STORED)
-            if (entries.add(entry.getName())) {
-                log.trace("  ${entry.getName()}")
+            if (entries.add(entry.name)) {
+                log.trace("  ${entry.name}")
                 target.putNextEntry(entry)
-                if (!entry.isDirectory()) {
+                if (!entry.isDirectory) {
                     while (true) {
                         val count = sourceJar.read(buffer)
                         if (count < 0) break
@@ -141,7 +140,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
                 target.closeEntry()
             }
             else
-                log.debug("Duplicate entry ${entry.getName()}")
+                log.debug("Duplicate entry ${entry.name}")
         }
     }
 
@@ -157,7 +156,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
     override fun execute(context: BuildContext, cfg: JarPackagerRule, src: Iterable<Pair<ArtifactDesc, ArtifactData?>>, tgt: Iterable<ArtifactDesc>): BuildResult {
 
         val manifest = Manifest()
-        val manifestAttrs = manifest.getMainAttributes()!!
+        val manifestAttrs = manifest.mainAttributes!!
         manifestAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0")
         cfg.manifest.forEach { val prop = it(); log.debug("adding manifest property ${prop.name} = ${prop.value}"); manifestAttrs.put(Attributes.Name(prop.name), prop.value) }
 
@@ -183,7 +182,7 @@ public class JarPackager : komplex.model.Tool<JarPackagerRule> {
         val entries = hashSetOf<String>()
 
         val prefixes = hashMapOf<ArtifactDesc, String>()
-        cfg.explicitPrefixedFroms.forEach { kv -> kv.getValue().collect(cfg.selector.scenarios).forEach { prefixes.put(it, kv.getKey()) } }
+        cfg.explicitPrefixedFroms.forEach { kv -> kv.value.collect(cfg.selector.scenarios).forEach { prefixes.put(it, kv.key) } }
 
         fun getPrefix(artifact: ArtifactDesc) = prefixes.get(artifact) ?: ""
 

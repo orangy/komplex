@@ -8,16 +8,16 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 
-public interface InputStreamData : komplex.model.ArtifactData {
-    public val inputStream: InputStream
+interface InputStreamData : komplex.model.ArtifactData {
+    val inputStream: InputStream
 }
 
-public interface OutputStreamData : komplex.model.ArtifactData {
-    public val outputStream: OutputStream
+interface OutputStreamData : komplex.model.ArtifactData {
+    val outputStream: OutputStream
 }
 
 
-public open class FileInputStreamData(public val path: Path) : InputStreamData {
+open class FileInputStreamData(val path: Path) : InputStreamData {
     override val hash: ByteArray by lazy { fileHash(path) }
     override val inputStream: InputStream
         get() = BufferedInputStream(FileInputStream(path.toFile()))
@@ -26,7 +26,7 @@ public open class FileInputStreamData(public val path: Path) : InputStreamData {
 
 class BufferedOutputStreamWithHash(strm: OutputStream): BufferedOutputStream(strm) {
     val digest = MessageDigest.getInstance("SHA-1")
-    public val hash: ByteArray get() = digest.digest()
+    val hash: ByteArray get() = digest.digest()
 
     override fun write(b: Int) {
         super.write(b)
@@ -46,19 +46,22 @@ class BufferedOutputStreamWithHash(strm: OutputStream): BufferedOutputStream(str
 }
 
 
-public open class FileOutputStreamData(public val path: Path) : OutputStreamData {
+open class FileOutputStreamData(val path: Path) : OutputStreamData {
     override val hash: ByteArray get() = outputStream.hash
     override val outputStream: BufferedOutputStreamWithHash
         get() {
-            path.getParent()?.let { Files.createDirectories(it) }
+            path.parent.let { Files.createDirectories(it) }
             return BufferedOutputStreamWithHash(FileOutputStream(path.toFile()))
         }
 }
 
 
-public fun openInputStream(artifact: FileArtifact): InputStreamData = FileInputStreamData(artifact.path)
-public fun openInputStream(data: FileData): InputStreamData = FileInputStreamData(data.path)
-public fun openInputStream(data: ArtifactData): InputStreamData =
+fun openInputStream(artifact: FileArtifact): InputStreamData = FileInputStreamData(artifact.path)
+
+fun openInputStream(data: FileData): InputStreamData = FileInputStreamData(data.path)
+
+@Suppress("USELESS_CAST")
+fun openInputStream(data: ArtifactData): InputStreamData =
         when (data) {
             is FileArtifact -> openInputStream(data as FileArtifact)
             is FileData -> openInputStream(data as FileData)
@@ -66,10 +69,14 @@ public fun openInputStream(data: ArtifactData): InputStreamData =
             else -> throw UnsupportedOperationException("Cannot open input strream from '$data'")
         }
 
-public fun openOutputStream(data: FileData): OutputStreamData = FileOutputStreamData(data.path)
-public fun openOutputStream(artifact: FileArtifact): OutputStreamData = FileOutputStreamData(artifact.path)
+
+fun openOutputStream(data: FileData): OutputStreamData = FileOutputStreamData(data.path)
+
+fun openOutputStream(artifact: FileArtifact): OutputStreamData = FileOutputStreamData(artifact.path)
+
 // \todo check kotlin dispatching rules
-public fun openOutputStream(data: ArtifactData): OutputStreamData =
+@Suppress("USELESS_CAST")
+fun openOutputStream(data: ArtifactData): OutputStreamData =
         when (data) {
             is FileArtifact -> openOutputStream(data as FileArtifact)
             is FileData -> openOutputStream(data as FileData)
