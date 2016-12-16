@@ -12,7 +12,7 @@ import java.security.MessageDigest
 
 fun fileHash(path: Path): ByteArray {
     val digest = MessageDigest.getInstance("SHA-1")
-    path.toFile().forEachBlock { bytes, i -> digest.update(bytes) }
+    path.toFile().forEachBlock { bytes, _ -> digest.update(bytes) }
     return digest.digest()
 }
 

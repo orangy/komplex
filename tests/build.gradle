@@ -1,0 +1,6 @@
+subprojects {
+    dependencies {
+        compile 'junit:junit:4.12'
+        compile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    }
+}

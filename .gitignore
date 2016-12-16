@@ -1,5 +1,10 @@
-./out/
-.idea/workspace.xml
-.DS_store
-./lib/
-./artifacts/
+.idea/*
+!.idea/runConfigurations
+!.idea/runConfigurations/*
+!.idea/vcs.xml
+build
+*.iml
+
+release.properties
+local.properties
+.gradle

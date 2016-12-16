@@ -1,0 +1,7 @@
+dependencies {
+    compile project(":tools:jar")
+    compile project(":tools:javascript")
+    compile project(":tools:maven")
+    compile project(":tools:proguard")
+    compile project(":tools:kotlin")
+}

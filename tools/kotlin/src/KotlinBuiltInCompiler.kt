@@ -1,24 +1,20 @@
 package komplex.tools.kotlin
 
-import com.intellij.openapi.util.Disposer
-import komplex.dsl.FolderArtifact
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import com.intellij.openapi.util.*
+import komplex.dsl.*
+import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.messages.*
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
-import org.jetbrains.kotlin.cli.jvm.config.addJavaSourceRoot
-import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoots
-import org.jetbrains.kotlin.codegen.CompilationException
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.addKotlinSourceRoot
-import org.jetbrains.kotlin.utils.PathUtil
-import java.io.File
-import java.nio.file.Path
+import org.jetbrains.kotlin.cli.jvm.compiler.*
+import org.jetbrains.kotlin.cli.jvm.config.*
+import org.jetbrains.kotlin.codegen.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.utils.*
+import java.io.*
+import java.nio.file.*
 
 
 val komplex.dsl.tools.kotlin: KotlinCompilerRule
-    get() = KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinBuiltInCompiler>("Kotlin compiler", { KotlinBuiltInCompiler() } ))
+    get() = KotlinCompilerRule(komplex.model.LazyTool<KotlinCompilerRule, KotlinBuiltInCompiler>("Kotlin compiler", { KotlinBuiltInCompiler() }))
 
 class KotlinBuiltInCompiler() : KotlinCompiler() {
     override val name: String = "Kotlin built-in compiler"
@@ -26,10 +22,21 @@ class KotlinBuiltInCompiler() : KotlinCompiler() {
     override fun compile(destFolder: FolderArtifact, kotlinSources: Iterable<Path>, sourceRoots: Iterable<String>, libraries: Iterable<Path>, includeRuntime: Boolean): komplex.utils.BuildDiagnostic {
 
         val messageCollector = object : MessageCollector {
+            var hasErrors = false
+
+            override fun clear() {}
+
+            override fun hasErrors(): Boolean {
+                return hasErrors
+            }
+
             override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
                 fun msg() = if (location == CompilerMessageLocation.NO_LOCATION) "$message" else "$message ($location)"
                 when (severity) {
-                    in CompilerMessageSeverity.ERRORS -> log.error("Error: " + msg())
+                    in CompilerMessageSeverity.ERRORS -> {
+                        hasErrors = true
+                        log.error("Error: " + msg())
+                    }
                     CompilerMessageSeverity.LOGGING -> log.debug(msg())
                     CompilerMessageSeverity.INFO -> log.info(msg())
                     CompilerMessageSeverity.WARNING -> log.info("Warning: " + msg())
@@ -62,10 +69,10 @@ class KotlinBuiltInCompiler() : KotlinCompiler() {
         try {
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, compilerCfg, EnvironmentConfigFiles.JVM_CONFIG_FILES)
             val friendPaths = listOf<String>()
-            if (KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment, null, destFolderFile, friendPaths, includeRuntime))
+            if (KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment/*, null, destFolderFile, friendPaths, includeRuntime*/))
                 return komplex.utils.BuildDiagnostic.Success
             else
-                // \todo add errors into diagnostics
+            // \todo add errors into diagnostics
                 return komplex.utils.BuildDiagnostic.Fail("Compilation error")
         } catch (e: CompilationException) {
             messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),

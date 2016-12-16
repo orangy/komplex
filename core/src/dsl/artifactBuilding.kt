@@ -40,9 +40,9 @@ class PathBasedArtifactTypedPart(val pathPart: Path, val type: ArtifactType) {}
 
 // generic path-based artifact functions
 // from root - create incomplete artifact by adding path/string/existing artifact's path to root
-operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.mod(p: Path): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p))
-operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.mod(p: String): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p))
-operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.mod(p: PathBasedArtifact): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p.path))
+operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.rem(p: Path): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p))
+operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.rem(p: String): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p))
+operator fun<T: PathBasedArtifact> PathBasedArtifactRoot<T>.rem(p: PathBasedArtifact): IncompletePathBasedArtifact<T> = IncompletePathBasedArtifact(ctx.resolvePath(p.path))
 
 // from typed root - not generic, see definitions for every artifact type
 // \todo seek for generic solution
@@ -58,9 +58,9 @@ operator fun<T: PathBasedArtifact> IncompletePathBasedArtifact<T>.div(p: PathBas
 fun ScriptContext.file(type: ArtifactType, path: Path): FileArtifact = SimpleFileArtifact(type, resolvePath(path))
 fun ScriptContext.file(type: ArtifactType, path: String): FileArtifact = SimpleFileArtifact(type, resolvePath(path))
 // from typed root
-operator fun TypedPathBasedArtifactRoot<FileArtifact>.mod(p: Path): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p))
-operator fun TypedPathBasedArtifactRoot<FileArtifact>.mod(p: String): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p))
-operator fun TypedPathBasedArtifactRoot<FileArtifact>.mod(p: PathBasedArtifact): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p.path))
+operator fun TypedPathBasedArtifactRoot<FileArtifact>.rem(p: Path): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p))
+operator fun TypedPathBasedArtifactRoot<FileArtifact>.rem(p: String): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p))
+operator fun TypedPathBasedArtifactRoot<FileArtifact>.rem(p: PathBasedArtifact): FileArtifact = SimpleFileArtifact(type, ctx.resolvePath(p.path))
 // from other file artifact
 operator fun FileArtifact.div(p: Path): FileArtifact = SimpleFileArtifact(type, path.resolve(p))
 operator fun FileArtifact.div(p: String): FileArtifact = SimpleFileArtifact(type, path.resolve(p))
@@ -75,7 +75,7 @@ val ScriptContext.file: PathBasedArtifactRoot<FileArtifact> get() = file()
 
 // completing incomplete file artifact (or root) with type
 operator fun IncompletePathBasedArtifact<FileArtifact>.div(pt: PathBasedArtifactTypedPart): FileArtifact = SimpleFileArtifact(pt.type, path.resolve(pt.pathPart))
-operator fun PathBasedArtifactRoot<FileArtifact>.mod(pt: PathBasedArtifactTypedPart): FileArtifact = SimpleFileArtifact(pt.type, ctx.resolvePath(pt.pathPart))
+operator fun PathBasedArtifactRoot<FileArtifact>.rem(pt: PathBasedArtifactTypedPart): FileArtifact = SimpleFileArtifact(pt.type, ctx.resolvePath(pt.pathPart))
 
 
 // \todo add extrensions handling for folder and files artifacts
@@ -85,9 +85,9 @@ operator fun PathBasedArtifactRoot<FileArtifact>.mod(pt: PathBasedArtifactTypedP
 fun ScriptContext.folder(type: ArtifactType, path: Path): FolderArtifact =  FolderArtifact(type, resolvePath(path))
 fun ScriptContext.folder(type: ArtifactType, path: String): FolderArtifact = FolderArtifact(type, resolvePath(path))
 // from typed root
-operator fun TypedPathBasedArtifactRoot<FolderArtifact>.mod(p: Path): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p))
-operator fun TypedPathBasedArtifactRoot<FolderArtifact>.mod(p: String): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p))
-operator fun TypedPathBasedArtifactRoot<FolderArtifact>.mod(p: PathBasedArtifact): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p.path))
+operator fun TypedPathBasedArtifactRoot<FolderArtifact>.rem(p: Path): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p))
+operator fun TypedPathBasedArtifactRoot<FolderArtifact>.rem(p: String): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p))
+operator fun TypedPathBasedArtifactRoot<FolderArtifact>.rem(p: PathBasedArtifact): FolderArtifact = FolderArtifact(type, ctx.resolvePath(p.path))
 // from other folder artifact
 operator fun FolderArtifact.div(p: Path): FolderArtifact = FolderArtifact(type, path.resolve(p))
 operator fun FolderArtifact.div(p: String): FolderArtifact = FolderArtifact(type, path.resolve(p))
@@ -102,7 +102,7 @@ val ScriptContext.folder: PathBasedArtifactRoot<FolderArtifact> get() = folder()
 
 // completing incomplete file artifact (or root) with type
 operator fun IncompletePathBasedArtifact<FolderArtifact>.div(pt: PathBasedArtifactTypedPart): FolderArtifact = FolderArtifact(pt.type, path.resolve(pt.pathPart))
-operator fun PathBasedArtifactRoot<FolderArtifact>.mod(pt: PathBasedArtifactTypedPart): FolderArtifact = FolderArtifact(pt.type, ctx.resolvePath(pt.pathPart))
+operator fun PathBasedArtifactRoot<FolderArtifact>.rem(pt: PathBasedArtifactTypedPart): FolderArtifact = FolderArtifact(pt.type, ctx.resolvePath(pt.pathPart))
 
 // complete files artifact building functions
 // from type + path/string/other path based artifact, based on context
@@ -116,9 +116,9 @@ fun ScriptContext.files(type: ArtifactType, base: PathBasedArtifact, vararg incl
 // context independent variant with path as a base
 fun files(type: ArtifactType, base: Path, vararg include: String): FileGlobArtifact = FileGlobArtifact(type, base, include.asIterable(), listOf())
 // from typed root with first path part
-operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.mod(p: Path): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p), listOf(), listOf())
-operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.mod(p: String): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p), listOf(), listOf())
-operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.mod(p: PathBasedArtifact): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p.path), listOf(), listOf())
+operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.rem(p: Path): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p), listOf(), listOf())
+operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.rem(p: String): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p), listOf(), listOf())
+operator fun TypedPathBasedArtifactRoot<FileGlobArtifact>.rem(p: PathBasedArtifact): FileGlobArtifact = FileGlobArtifact(type, ctx.resolvePath(p.path), listOf(), listOf())
 // from other files artifact - adding path elements
 operator fun FileGlobArtifact.div(p: Path): FileGlobArtifact = FileGlobArtifact(type, path.resolve(p), included, excluded)
 operator fun FileGlobArtifact.div(p: String): FileGlobArtifact = FileGlobArtifact(type, path.resolve(p), included, excluded)
@@ -139,7 +139,7 @@ val ScriptContext.files: PathBasedArtifactRoot<FileGlobArtifact> get() = files()
 
 // completing incomplete file artifact (or root) with type
 operator fun IncompletePathBasedArtifact<FileGlobArtifact>.div(pt: PathBasedArtifactTypedPart): FileGlobArtifact = FileGlobArtifact(pt.type, path.resolve(pt.pathPart), listOf(), listOf())
-operator fun PathBasedArtifactRoot<FileGlobArtifact>.mod(pt: PathBasedArtifactTypedPart): FileGlobArtifact = FileGlobArtifact(pt.type, ctx.resolvePath(pt.pathPart), listOf(), listOf())
+operator fun PathBasedArtifactRoot<FileGlobArtifact>.rem(pt: PathBasedArtifactTypedPart): FileGlobArtifact = FileGlobArtifact(pt.type, ctx.resolvePath(pt.pathPart), listOf(), listOf())
 
 
 // \todo too common concept and/or name, propose for inclusion into stdlib or find other solution

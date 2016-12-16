@@ -54,7 +54,7 @@ class SimpleFileArtifact(override val type: ArtifactType, ipath: Path) : FileArt
     override val relPath = basePath.relativize((if (type is NamedArtifactType) type.updateExtension(ipath) else ipath).toAbsolutePath().normalize())
     override val name: String get() = "$`type` file ${path}"
 
-    override fun equals(other: Any?): Boolean = path.equals((other as? SimpleFileArtifact)?.path)
+    override fun equals(other: Any?): Boolean = path == (other as? SimpleFileArtifact)?.path
     override fun hashCode(): Int = 1783 * path.hashCode()
 }
 
@@ -71,7 +71,7 @@ abstract class AbstractFolderBasedArtifact(override val type: ArtifactType, ipat
 class FolderArtifact(type: ArtifactType, ipath: Path) : AbstractFolderBasedArtifact(type, ipath) {
     override val name: String = "$`type` folder $path"
 
-    override fun equals(other: Any?): Boolean = path.equals((other as? FolderArtifact)?.path)
+    override fun equals(other: Any?): Boolean = path == (other as? FolderArtifact)?.path
     override fun hashCode(): Int = 887 * path.hashCode()
 }
 
@@ -90,8 +90,8 @@ class FileGlobArtifact(type: ArtifactType,
 : AbstractFolderBasedArtifact(type, base) {
 
     override fun equals(other: Any?): Boolean = super.equals(other) &&
-            included.equals((other as? FileGlobArtifact)?.included) &&
-            excluded.equals((other as? FileGlobArtifact)?.excluded)
+            included == (other as? FileGlobArtifact)?.included &&
+            excluded == (other as? FileGlobArtifact)?.excluded
     override fun hashCode(): Int = 1013 * path.hashCode() + 1009 * included.hashCode() + 239 * excluded.hashCode()
 
     fun invoke(body: FileGlobArtifact.() -> Unit) {
@@ -103,7 +103,7 @@ class FileGlobArtifact(type: ArtifactType,
 
 
 class ArtifactsSet(val members: Collection<Artifact>): GenericSourceType {
-    override fun equals(other: Any?): Boolean = members.toHashSet().equals((other as? ArtifactsSet)?.members?.toHashSet())
+    override fun equals(other: Any?): Boolean = members.toHashSet() == (other as? ArtifactsSet)?.members?.toHashSet()
     override fun hashCode(): Int = members.fold(0, { r, a -> r + 17 * a.hashCode() })
 }
 
@@ -120,7 +120,7 @@ fun ScriptContext.artifactsSet(artifacts: Iterable<Any>): ArtifactsSet =
 // for reference types
 class VariableArtifact<T: Any>(override val type: ArtifactType, val ref: T) : Artifact {
     override val name: String = "$`type` var ${ref}"
-    override fun equals(other: Any?): Boolean = ref.equals((other as? VariableArtifact<T>)?.ref)
+    override fun equals(other: Any?): Boolean = ref == (other as? VariableArtifact<T>)?.ref
     override fun hashCode(): Int = ref.hashCode()
 }
 

@@ -1,0 +1,3 @@
+dependencies {
+    compile "com.jcabi:jcabi-aether:0.10.1"
+}

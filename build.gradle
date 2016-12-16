@@ -1,0 +1,40 @@
+group = 'org.jetbrains.komplex'
+version = '0.0.1-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = "1.1.0-dev-5520"
+
+    repositories {
+        mavenCentral()
+        maven { url "http://dl.bintray.com/kotlin/kotlin-dev" }
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+subprojects {
+    ext.kotlin_version = "1.1.0-dev-5520"
+
+    apply plugin: 'java'
+    apply plugin: 'kotlin'
+
+    repositories {
+        mavenCentral()
+        maven { url "http://dl.bintray.com/kotlin/kotlin-dev" }
+    }
+
+    dependencies {
+        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+        compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    }
+    if (project.name != "core") {
+        dependencies.compile project(":core")
+    }
+
+    sourceSets {
+        main.kotlin.srcDirs += 'src'
+        main.java.srcDirs += 'src'
+    }
+}

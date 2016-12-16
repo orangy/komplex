@@ -1,0 +1,4 @@
+dependencies {
+    compile project(":tools:javac")
+    compile "org.jetbrains.kotlin:kotlin-compiler:$kotlin_version"
+}

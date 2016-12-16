@@ -13,17 +13,17 @@ import java.io.File
 class ScriptingHost {
     fun run(args: Array<String>) {
         val arguments = K2JVMCompilerArguments()
-        arguments.freeArgs = Args.parse(arguments, args)
+        arguments.freeArgs = Args.parse(arguments, args, false)
 
         val rootDisposable = Disposer.newDisposable()
 
+// \todo: restore functionality
+/*
         val messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
         val configuration = CompilerConfiguration()
 
         val paths = PathUtil.getKotlinPathsForCompiler()
 
-// \todo: restore functionality
-/*
         configuration.addAll(JVMConfigurationKeys.CLASSPATH_KEY, getClasspath(paths, arguments))
         //configuration.addAll(JVMConfigurationKeys.ANNOTATIONS_PATH_KEY, getAnnotationsPath(paths, arguments))
         configuration.addAll(CommonConfigurationKeys.SOURCE_ROOTS_KEY, arguments.freeArgs ?: listOf())

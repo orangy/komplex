@@ -1,0 +1,15 @@
+rootProject.name = 'komplex'
+
+include "core"
+include "tools:jar"
+include "tools:javac"
+include "tools:javascript"
+include "tools:kotlin"
+include "tools:maven"
+include "tools:proguard"
+include "tests:komplex-tests"
+include "tests:self-build"
+
+include "kotlinbuild"
+include "launcher"
+include "samples"
